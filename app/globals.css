@@ -1,0 +1,122 @@
+@import 'tailwindcss';
+
+/*
+  EventsMa design tokens, carried from the prototype's visual language:
+  forest, mint, terracotta, warm canvas. Semantic names only — no raw hex in
+  components, so a tenant brand override is a variable swap, not a refactor.
+*/
+@theme {
+  --color-forest: #183d33;
+  --color-forest-hover: #244e42;
+  --color-mint: #dbece3;
+  --color-mint-subtle: #edf6f0;
+  --color-terracotta: #c56e4e;
+  --color-terracotta-soft: #f7e7e0;
+  --color-gold: #d5ad63;
+  --color-canvas: #f6f8f6;
+  --color-paper: #ffffff;
+  --color-ink: #202a25;
+  --color-ink-muted: #68766d;
+  --color-hairline: #e3eae4;
+  --color-positive: #2c6b44;
+  --color-warning: #a8652f;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-playfair), Georgia, 'Times New Roman', serif;
+
+  --radius-card: 1rem;
+  --radius-control: 0.625rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'tnum' 1, 'cv02' 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Tabular figures everywhere money appears, so totals do not jitter. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-forest);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-mint);
+    color: var(--color-forest);
+  }
+}
+
+@layer utilities {
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--color-mint-subtle);
+  }
+
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.65) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 1.4s infinite;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .print-only {
+    display: none;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block;
+  }
+  body {
+    background: white;
+  }
+}

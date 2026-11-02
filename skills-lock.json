@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "skills": {
+    "egm-bootstrap": {
+      "source": "google/elephant-goldfish-model",
+      "sourceType": "github",
+      "skillPath": "skills/egm_bootstrap/SKILL.md",
+      "computedHash": "5ef951f3363011154d8b39e5cebbbc1c91415eb69d0e2d66ac2159b8e15fa4a9"
+    },
+    "egm-brainstorm": {
+      "source": "google/elephant-goldfish-model",
+      "sourceType": "github",
+      "skillPath": "skills/egm_brainstorm/SKILL.md",
+      "computedHash": "073e212d7ea2f48ec0ce75ae7a19e8678ac5487a70a4cd0d811133a90069bb76"
+    },
+    "egm-draft": {
+      "source": "google/elephant-goldfish-model",
+      "sourceType": "github",
+      "skillPath": "skills/egm_draft/SKILL.md",
+      "computedHash": "c669623888b427545526057a59537789bd2fd9928af47465c8d08e69ec3a7342"
+    },
+    "egm-drift-report": {
+      "source": "google/elephant-goldfish-model",
+      "sourceType": "github",
+      "skillPath": "skills/egm_drift_report/SKILL.md",
+      "computedHash": "fff8216a4ac6e9a82648381130f9cc1461d1e5c0a7302fc75107ef089b5e1364"
+    },
+    "egm-resolve": {
+      "source": "google/elephant-goldfish-model",
+      "sourceType": "github",
+      "skillPath": "skills/egm_resolve/SKILL.md",
+      "computedHash": "2007f090f84278d6891815c3c7d40c3a3bd124a529b90695a6d6db8b05fd10ac"
+    },
+    "egm-review": {
+      "source": "google/elephant-goldfish-model",
+      "sourceType": "github",
+      "skillPath": "skills/egm_review/SKILL.md",
+      "computedHash": "20efc0d052256b036d779a09affa0e7a54bb7c68464774d826c28b816ce82b74"
+    },
+    "egm-review-loop": {
+      "source": "google/elephant-goldfish-model",
+      "sourceType": "github",
+      "skillPath": "skills/egm_review_loop/SKILL.md",
+      "computedHash": "55825e5eecb5c324b4a3c4d36af3f2d9635c5e99744cc4cc054178d13fbd0087"
+    },
+    "graphify": {
+      "source": "graphify-labs/graphify",
+      "sourceType": "github",
+      "skillPath": "graphify/SKILL.md",
+      "computedHash": "c1cd46827ae02759648f34abffafa19215560bb792cfdf1379421216b5778ff9"
+    },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase/SKILL.md",
+      "computedHash": "af1844ade632808fc0c15cf2db87daf3b2431c5262dc8a0c3ea7d70880fadf91"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
+      "computedHash": "128fac78002d916c8ca908245d398e634f540d8bcf20915b2b2359aeb18eba59"
+    }
+  }
+}
