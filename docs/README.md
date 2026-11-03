@@ -26,6 +26,8 @@ interviews, then the per-feature design documents named in the review.
 | 07 | [Roadmap, metrics, risks](07-roadmap-metrics-risks.md) | Phases with exit criteria, the numbers we track, the risk register, the open questions for real caterers |
 | 08 | [Knowledge graph](08-knowledge-graph.md) | Entities, relationships, god nodes and communities across the whole design (graphify method) |
 | 09 | [Project setup and skills](09-project-setup-and-skills.md) | What was installed and why, how the Elephant/Goldfish workflow was applied, what was deliberately skipped |
+| 10 | [Hosting and infrastructure](10-hosting-and-infrastructure.md) | What Supabase, Vercel and Cloudflare actually cost, what breaks on the free tiers, and the triggers that force the paid jump |
+| 11 | [Competitive analysis and gaps](11-competitive-analysis-and-gaps.md) | What the five competitor studies reveal, the gaps they all share, what to adopt now and what to deliberately skip |
 | — | [Design review](reviews/2026-10-24-elephant-self-review.md) | Adversarial review of these documents, the 14 findings and how each was resolved |
 
 Per-feature design documents (required before code) live in [`designs/`](designs/README.md).
