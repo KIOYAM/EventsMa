@@ -5,9 +5,13 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
 
+  // @react-pdf/renderer must stay external. Bundling it for the server breaks
+  // its reconciler at runtime ("Cannot read properties of undefined (reading 'S')").
+  serverExternalPackages: ['@react-pdf/renderer'],
+
   // Tree-shake barrel imports so a single icon does not ship the whole set.
   experimental: {
-    optimizePackageImports: ['lucide-react', 'sonner', 'vaul', '@react-pdf/renderer'],
+    optimizePackageImports: ['lucide-react', 'sonner'],
     staleTimes: { dynamic: 0, static: 180 },
   },
 
