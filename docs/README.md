@@ -28,6 +28,7 @@ interviews, then the per-feature design documents named in the review.
 | 09 | [Project setup and skills](09-project-setup-and-skills.md) | What was installed and why, how the Elephant/Goldfish workflow was applied, what was deliberately skipped |
 | 10 | [Hosting and infrastructure](10-hosting-and-infrastructure.md) | What Supabase, Vercel and Cloudflare actually cost, what breaks on the free tiers, and the triggers that force the paid jump |
 | 11 | [Competitive analysis and gaps](11-competitive-analysis-and-gaps.md) | What the five competitor studies reveal, the gaps they all share, what to adopt now and what to deliberately skip |
+| 12 | [Prototype page parity](12-prototype-page-parity.md) | Every prototype page mapped to a built route, a gap, or a deliberate omission, with priority order |
 | — | [Design review](reviews/2026-10-24-elephant-self-review.md) | Adversarial review of these documents, the 14 findings and how each was resolved |
 
 Per-feature design documents (required before code) live in [`designs/`](designs/README.md).
