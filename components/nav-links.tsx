@@ -2,14 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FileText, Layers, LayoutGrid, Package } from 'lucide-react'
+import { BookOpen, Boxes, FileText, Layers, LayoutGrid, Package, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/services', label: 'Services', icon: Layers },
+  { href: '/menu', label: 'Menu', icon: BookOpen },
   { href: '/catalogue', label: 'Catalogue', icon: Package },
   { href: '/quotes', label: 'Quotes', icon: FileText },
+  { href: '/inventory', label: 'Stock', icon: Boxes },
+  { href: '/team', label: 'Team', icon: Users },
+  { href: '/services', label: 'Services', icon: Layers },
 ] as const
 
 export function NavLinks({ variant }: { variant: 'rail' | 'mobile' }) {
@@ -17,7 +20,7 @@ export function NavLinks({ variant }: { variant: 'rail' | 'mobile' }) {
 
   if (variant === 'mobile') {
     return (
-      <>
+      <div className="flex w-full items-stretch justify-around gap-0.5 overflow-x-auto no-scrollbar">
         {NAV.map((item) => {
           const Icon = item.icon
           const isActive = pathname.startsWith(item.href)
@@ -27,7 +30,7 @@ export function NavLinks({ variant }: { variant: 'rail' | 'mobile' }) {
               href={item.href}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'flex h-16 flex-col items-center justify-center gap-1 text-[11px]',
+                'flex h-16 min-w-[54px] flex-1 flex-col items-center justify-center gap-1 text-[10px]',
                 isActive ? 'text-forest' : 'text-ink-muted',
               )}
             >
@@ -36,7 +39,7 @@ export function NavLinks({ variant }: { variant: 'rail' | 'mobile' }) {
             </Link>
           )
         })}
-      </>
+      </div>
     )
   }
 

@@ -152,3 +152,48 @@ create policy usage_events_select on public.usage_events
 --   select count(*) from public.service_items where org_id = '<org-a-uuid>'; -- 0
 --   select count(*) from public.payments where org_id = '<org-a-uuid>';      -- 0
 -- ---------------------------------------------------------------------------
+
+-- menu_sections / menu_groups -------------------------------------------------
+alter table public.menu_sections enable row level security;
+drop policy if exists menu_sections_select on public.menu_sections;
+create policy menu_sections_select on public.menu_sections
+  for select using (public.is_org_member(org_id));
+drop policy if exists menu_sections_write on public.menu_sections;
+create policy menu_sections_write on public.menu_sections
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.menu_groups enable row level security;
+drop policy if exists menu_groups_select on public.menu_groups;
+create policy menu_groups_select on public.menu_groups
+  for select using (public.is_org_member(org_id));
+drop policy if exists menu_groups_write on public.menu_groups;
+create policy menu_groups_write on public.menu_groups
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+-- inventory -------------------------------------------------------------------
+alter table public.inventory_items enable row level security;
+drop policy if exists inventory_items_select on public.inventory_items;
+create policy inventory_items_select on public.inventory_items
+  for select using (public.is_org_member(org_id));
+drop policy if exists inventory_items_write on public.inventory_items;
+create policy inventory_items_write on public.inventory_items
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+-- Movements are append-only: there is deliberately no update or delete policy.
+alter table public.inventory_movements enable row level security;
+drop policy if exists inventory_movements_select on public.inventory_movements;
+create policy inventory_movements_select on public.inventory_movements
+  for select using (public.is_org_member(org_id));
+drop policy if exists inventory_movements_insert on public.inventory_movements;
+create policy inventory_movements_insert on public.inventory_movements
+  for insert with check (public.has_org_role(org_id, array['owner','manager']));
+
+-- invitations are owner-only ------------------------------------------------
+alter table public.invitations enable row level security;
+drop policy if exists invitations_owner on public.invitations;
+create policy invitations_owner on public.invitations
+  for all using (public.has_org_role(org_id, array['owner']))
+  with check (public.has_org_role(org_id, array['owner']));

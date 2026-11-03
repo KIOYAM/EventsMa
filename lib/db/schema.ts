@@ -83,6 +83,9 @@ export const memberships = pgTable(
       .references(() => organisations.id, { onDelete: 'cascade' }),
     userId: uuid('user_id').notNull(),
     role: memberRole('role').notNull().default('owner'),
+    /** Cached from auth so the team screen never needs the auth schema. */
+    email: text('email'),
+    displayName: text('display_name'),
     status: text('status').notNull().default('active'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -145,6 +148,45 @@ export const businessServices = pgTable(
   ],
 )
 
+/** A meal period: breakfast, lunch, dinner, high tea, live counters. Display sorting only. */
+export const menuSections = pgTable(
+  'menu_sections',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    /** 'HH:MM' in 24h, tenant-local. Presentation only — never used in pricing. */
+    windowStart: text('window_start'),
+    windowEnd: text('window_end'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('menu_sections_org_sort_idx').on(t.orgId, t.active, t.sortOrder)],
+)
+
+/** A group inside a meal period: "South Indian hot", "Live counters", "Desserts". */
+export const menuGroups = pgTable(
+  'menu_groups',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    sectionId: uuid('section_id')
+      .notNull()
+      .references(() => menuSections.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('menu_groups_org_section_idx').on(t.orgId, t.sectionId, t.sortOrder)],
+)
+
 export const serviceItems = pgTable(
   'service_items',
   {
@@ -164,6 +206,15 @@ export const serviceItems = pgTable(
     /** veg, allergens, coverage hours, dimensions — vertical-specific, never queried by the engine. */
     attrs: jsonb('attrs').$type<Record<string, unknown>>().notNull().default({}),
     imagePath: text('image_path'),
+    description: text('description'),
+    /** Which meal period this dish is served in. Nullable: quotes never require it. */
+    sectionId: uuid('section_id').references(() => menuSections.id, { onDelete: 'set null' }),
+    groupId: uuid('group_id').references(() => menuGroups.id, { onDelete: 'set null' }),
+    /** Bytes actually stored, so the per-org quota is a sum, not a guess. */
+    imageBytes: integer('image_bytes').notNull().default(0),
+    /** 'veg' | 'non_veg' | 'egg' | null — an FSSAI marker, not a dietary engine. */
+    dietary: text('dietary'),
+    sortOrder: integer('sort_order').notNull().default(0),
     active: boolean('active').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -484,4 +535,66 @@ export const quoteCounters = pgTable(
     value: integer('value').notNull().default(0),
   },
   (t) => [uniqueIndex('quote_counters_org_year_key').on(t.orgId, t.year)],
+)
+
+/** Stock is the sum of movements. There is no mutable on-hand column to drift. */
+export const inventoryItems = pgTable(
+  'inventory_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    /** kg | ltr | pcs | dozen | pack — a label, quantities stay integer milli-units. */
+    unit: text('unit').notNull().default('kg'),
+    reorderLevelMilli: integer('reorder_level_milli').notNull().default(0),
+    costPaisePerUnit: integer('cost_paise_per_unit'),
+    supplier: text('supplier'),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('inventory_items_org_name_idx').on(t.orgId, t.active, t.name)],
+)
+
+/** Append-only. A correction is a reversing movement, never an update. */
+export const inventoryMovements = pgTable(
+  'inventory_movements',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    itemId: uuid('item_id')
+      .notNull()
+      .references(() => inventoryItems.id, { onDelete: 'cascade' }),
+    /** Signed thousandths of a unit: +1500 = 1.5 kg received. */
+    deltaMilli: integer('delta_milli').notNull(),
+    reason: text('reason').notNull(),
+    note: text('note'),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('inventory_movements_org_item_idx').on(t.orgId, t.itemId, t.createdAt)],
+)
+
+export const invitations = pgTable(
+  'invitations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    role: memberRole('role').notNull().default('employee'),
+    token: text('token').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    invitedBy: uuid('invited_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('invitations_token_key').on(t.token),
+    index('invitations_org_email_idx').on(t.orgId, t.email),
+  ],
 )
