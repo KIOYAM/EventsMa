@@ -26,9 +26,6 @@ export function isDatabaseConfigured(): boolean {
  *   so a concurrent burst (a layout and its page querying at once) waits on
  *   connections that never come back. That showed up in production as a page
  *   whose Suspense boundary never resolved; serialising costs one round trip.
- *
- * `statement_timeout` turns any future stall into a visible error instead of a
- * request that streams forever.
  */
 export function getDb(): EventsMaDatabase {
   const url = process.env.DATABASE_URL
@@ -43,7 +40,6 @@ export function getDb(): EventsMaDatabase {
       connect_timeout: 10,
       prepare: false,
       max_pipeline: 1,
-      connection: { application_name: 'eventsma', statement_timeout: 15_000 },
       onnotice: () => {},
     }
     const client = postgres(url, options)
