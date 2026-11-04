@@ -7,7 +7,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   const business = await getBusinessIdentity(ctx.orgId, ctx.demo)
 
   return (
-    <AppShell businessName={business.name} demo={ctx.demo}>
+    <AppShell businessName={business.name} demo={ctx.demo} email={ctx.demo ? null : ctx.email}>
       {children}
     </AppShell>
   )

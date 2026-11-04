@@ -5,10 +5,10 @@ The existing `FeastFlow_Marketplace_220_Accounts_Client_Portal.html` is a clicka
 prototype, not a product. Nothing in this folder is code; it is the design layer we
 build from.
 
-**Last updated:** 24 October 2026
-**Status:** Design phase. No application code yet. Design reviewed once (self-review,
-not an independent Goldfish review — see the linked report). Next: five caterer
-interviews, then the per-feature design documents named in the review.
+**Last updated:** 3 November 2026
+**Status:** MVP-1 screens built in labelled demo mode. Design reviewed once (self-review,
+not an independent Goldfish review — see the linked report). Blocking next step: a real
+Supabase project, so migrations and RLS can execute before any of it is called working.
 
 ---
 
@@ -29,6 +29,7 @@ interviews, then the per-feature design documents named in the review.
 | 10 | [Hosting and infrastructure](10-hosting-and-infrastructure.md) | What Supabase, Vercel and Cloudflare actually cost, what breaks on the free tiers, and the triggers that force the paid jump |
 | 11 | [Competitive analysis and gaps](11-competitive-analysis-and-gaps.md) | What the five competitor studies reveal, the gaps they all share, what to adopt now and what to deliberately skip |
 | 12 | [Prototype page parity](12-prototype-page-parity.md) | Every prototype page mapped to a built route, a gap, or a deliberate omission, with priority order |
+| 13 | [Performance and UX ledger](13-performance-ledger.md) | Which speed practices are implemented, which are gated on infrastructure, the budgets, and the honest gaps |
 | — | [Design review](reviews/2026-10-24-elephant-self-review.md) | Adversarial review of these documents, the 14 findings and how each was resolved |
 
 Per-feature design documents (required before code) live in [`designs/`](designs/README.md).

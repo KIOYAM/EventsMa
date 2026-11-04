@@ -1,18 +1,23 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { NavLinks } from '@/components/nav-links'
+import { PerfMonitor } from '@/components/perf-monitor'
+import { signOut } from '@/app/login/actions'
 
 export function AppShell({
   children,
   businessName,
   demo,
+  email,
 }: {
   children: React.ReactNode
   businessName: string
   demo: boolean
+  email: string | null
 }) {
   return (
     <div className="min-h-dvh bg-canvas">
+      <PerfMonitor />
       <div className="mx-auto flex w-full max-w-[1400px]">
         {/* Desktop rail: 252px, matching the prototype's information architecture. */}
         <aside className="sticky top-0 hidden h-dvh w-[252px] shrink-0 flex-col border-r border-hairline bg-paper px-4 py-6 lg:flex">
@@ -42,6 +47,17 @@ export function AppShell({
                 Live workspace
               </Badge>
             )}
+            {email ? (
+              <form action={signOut}>
+                <p className="truncate text-xs text-ink-muted">{email}</p>
+                <button
+                  type="submit"
+                  className="mt-2 text-xs font-medium text-forest underline-offset-4 hover:underline"
+                >
+                  Sign out
+                </button>
+              </form>
+            ) : null}
           </div>
         </aside>
 

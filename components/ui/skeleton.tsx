@@ -18,6 +18,16 @@ export function StatSkeleton() {
   )
 }
 
+export function PageHeaderSkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-3 w-24" />
+      <Skeleton className="h-8 w-2/3 max-w-md" />
+      <Skeleton className="h-4 w-full max-w-2xl" />
+    </div>
+  )
+}
+
 export function RowSkeleton() {
   return (
     <div className="flex items-center gap-3 border-b border-hairline px-5 py-4 last:border-b-0">

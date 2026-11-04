@@ -1,7 +1,7 @@
 # 12 — Prototype Page Parity
 
 **Source of truth:** `FeastFlow_Marketplace_220_Accounts_Client_Portal.html`
-**Measured:** 3 November 2026, at commit `7e2c495`
+**Measured:** 3 November 2026 (second pass, after the operations build)
 **Question answered:** which screens in the visual prototype still have no equivalent in the app?
 
 The prototype declares its pages in two places: the sidebar (`data-page`) and
@@ -12,15 +12,17 @@ Status key:
 
 | Status | Meaning |
 |---|---|
+| **BUILT** | A real route covers what the prototype screen does, with server-verified data. |
 | **PARTIAL** | A real route exists and does part of what the prototype screen shows; the listed gaps are missing. |
 | **PENDING** | No screen, and (where noted) no table behind it. |
 | **NOT BUILDING** | A deliberate product decision, not an oversight. Cite the reason. |
 
-**Count: 0 at full parity · 8 partial · 12 pending · 2 deliberately not building.**
+**Count: 1 built · 18 partial · 1 pending · 2 deliberately not building.**
 
 Parity is not the goal on its own — the prototype contains screens we decided not to
 port. What matters is the revenue loop: enquiry → client → event → quote → payment →
-delivery. That loop is broken in four places, listed in §3.
+delivery. That loop now exists end to end in demo mode; its weakest joints are listed
+in §3.
 
 ---
 
@@ -29,22 +31,22 @@ delivery. That loop is broken in four places, listed in §3.
 | # | Prototype page | Prototype shows | Today | Status | Priority |
 |---|---|---|---|---|---|
 | 1 | `dashboard` — Business overview | KPI cards, 6-month cash chart, upcoming events, attention list | `/dashboard`: four server-computed KPIs (pipeline, awaiting reply, upcoming, average margin), enabled-services strip, recent quotes | PARTIAL | P1 (attention list), P3 (chart) |
-| 2 | `storefront` — My storefront | Hero, services, menus, portfolio, reviews, map, enquiry CTA, share link, public URL | `/p/[slug]`: server-rendered public page with services, catalogue counts, enquiry form writing to `enquiries`, demo label, 5-minute revalidate | PARTIAL | P3 |
-| 3 | `menus` — Menus & packages | Dish cards (price, unit, dietary, allergen, image), package cards with minimum guests and staff-per-100, search, filters, duplicate | `/menu`: meal periods with service windows → groups → dishes, dietary markers, grouped and full-list views, image quota (200 KB/file, 25 MB/org). `/catalogue`: priced items with typed units and tax | PARTIAL | **P1 (packages)** |
-| 4 | `portfolio` — Event portfolio | Completed events, photos, public-visibility toggle | Nothing. No table, no screen, no media library beyond menu images | PENDING | P3 |
-| 5 | `clients` — Clients & enquiries | Client list, enquiry list, lead statuses, convert enquiry to event, phone dedupe | `enquiries` rows exist and the public form writes them. No list, no triage, no status change, no conversion, no client record | PENDING | **P1** |
-| 6 | `events` — Events & bookings | Create/edit event (date, venue, guests, package, extras, staff, transport, rentals, discount, tax), calendar, status pipeline | `events` table exists and the dashboard counts upcoming rows. No create, edit, calendar or pipeline screen | PENDING | **P1** |
-| 7 | `operations` — Event operations | Per-event task timeline with owners and dates, vendor list, budget cap vs actual, run-of-show, activity log | Nothing. No tasks, vendors, run-sheet, budget or expense tables | PENDING | P2 |
+| 2 | `storefront` — My storefront | Hero, services, menus, portfolio, reviews, map, enquiry CTA, share link, public URL | `/p/[slug]`: server-rendered public page with services, catalogue counts, enquiry form, demo label, 5-minute revalidate. `/storefront`: what a stranger sees, the public link and the publish switch | PARTIAL | P3 (reviews, map) |
+| 3 | `menus` — Menus & packages | Dish cards (price, unit, dietary, allergen, image), package cards with minimum guests and staff-per-100, search, filters, duplicate | `/menu`: meal periods → groups → dishes, dietary markers, grouped and full-list views, image quota. `/catalogue`: priced items with typed units and tax. `/packages`: packages with minimum guests, per-head pricing and included lines. `/menu/card`: print-ready card | PARTIAL | P3 (search, duplicate) |
+| 4 | `portfolio` — Event portfolio | Completed events, photos, public-visibility toggle | `/portfolio`: text-first entries (title, date, venue, note) with publish toggles that feed `/p/[slug]`. No photo library | PARTIAL | P3 (photos) |
+| 5 | `clients` — Clients & enquiries | Client list, enquiry list, lead statuses, convert enquiry to event, phone dedupe | `/clients`: paged enquiry inbox, status filters, debounced search, convert-to-event that creates the client record and a tentative event | PARTIAL | P2 (client detail, dedupe) |
+| 6 | `events` — Events & bookings | Create/edit event (date, venue, guests, package, extras, staff, transport, rentals, discount, tax), calendar, status pipeline | `/events`: paged list with open-task counts, create form. `/events/[id]`: operations, crew, vendors, money tabs. No calendar and no full edit form | PARTIAL | **P1 (calendar, edit)** |
+| 7 | `operations` — Event operations | Per-event task timeline, vendor list, budget cap vs actual, run-of-show, activity log | `/events/[id]`: task board, vendor assignments, crew assignments, per-event payments and expenses, budget vs captured. No run-of-show or activity log | PARTIAL | P2 |
 | 8 | `servicecatalog` — Services & occasions | 20 verticals, event types, cuisines, service areas, capacity, lead time | `/services`: enable/disable verticals, allowed unit classes, default tax, three config fields per vertical, generic specialist vertical | PARTIAL | P2 |
-| 9 | `serviceworkspaces` — Service workspaces | Per-vertical packages, resources, crew, jobs, deliverables, configuration | Nothing. The vertical/catalogue split covers part of the intent; there is no per-vertical workspace | PENDING | P2 |
-| 10 | `quotations` — Quotations & invoices | Quote preview, printable quote, statuses, record payment, invoice | `/quotes`, `/quotes/new`, `/quotes/[id]`: server-priced composer, immutable sent versions, public token page `/q/[token]`, PDF at `/api/quotes/[id]/pdf`, UPI card, Razorpay webhook appending payments | PARTIAL | **P1 (invoice + manual payment)** |
-| 11 | `team` — Employees & duties | Staff records, skills, shift assignment, task checkboxes, check-in | `/team`: memberships, roles, invitations with token, deactivate, last-owner guard | PARTIAL | P2 |
-| 12 | `inventory` — Inventory & suppliers | Stock vs threshold, unit cost, supplier, purchase modal, recipe mapping per dish | `/inventory`: append-only movements, on-hand derived from the ledger, low-stock flags, stock value, supplier as free text | PARTIAL | P2 |
-| 13 | `finance` — Money management | Income/expense transactions, categories, donut, filters | Nothing beyond payments arriving through the webhook | PENDING | P2 |
-| 14 | `reports` — Reports & insights | Revenue, cost, event count, CSV export | Nothing | PENDING | P3 |
-| 15 | `employee` — Employee workspace | Assigned events, tasks, leave request | Nothing. Roles exist, but no role-scoped screen | PENDING | P2 |
-| 16 | `settings` — Business settings | Profile, tax %, advance %, quote validity, storefront toggles, backup export/import | Nothing. Defaults are hardcoded per vertical; profile is seeded only | PENDING | **P1** |
-| 17 | `brandstudio` — Brand studio | Name, tagline, logo, font, theme, live preview | Nothing | PENDING | P3 |
+| 9 | `serviceworkspaces` — Service workspaces | Per-vertical packages, resources, crew, jobs, deliverables, configuration | Nothing per vertical. Packages and crew are shared across the business, not scoped to a vertical | PENDING | P3 |
+| 10 | `quotations` — Quotations & invoices | Quote preview, printable quote, statuses, record payment, invoice | `/quotes`, `/quotes/new`, `/quotes/[id]`: server-priced composer, immutable sent versions, public token page `/q/[token]`, PDF, UPI card, Razorpay webhook. `/invoices`: sequential per-org/per-year numbering, manual payment capture, append-only payments, void guard when money exists | PARTIAL | P2 (credit notes) |
+| 11 | `team` — Employees & duties | Staff records, skills, shift assignment, task checkboxes, check-in | `/team`: memberships, roles, invitations with token, deactivate, last-owner guard, skills and day wage on the member | PARTIAL | P2 (shift rota) |
+| 12 | `inventory` — Inventory & suppliers | Stock vs threshold, unit cost, supplier, purchase modal, recipe mapping per dish | `/inventory`: append-only movements, on-hand derived from the ledger, low-stock flags, stock value, supplier as free text | PARTIAL | P2 (recipes) |
+| 13 | `finance` — Money management | Income/expense transactions, categories, donut, filters | `/finance`: merged ledger over captured payments and expenses, category entry form, paged, CSV export | PARTIAL | P3 (donut, filters) |
+| 14 | `reports` — Reports & insights | Revenue, cost, event count, CSV export | `/reports`: six-month CSS chart, margin, quote conversion, expense categories, event and quote counts, ledger and monthly CSV | PARTIAL | P3 (date range) |
+| 15 | `employee` — Employee workspace | Assigned events, tasks, leave request | `/me`: assigned events with open-task counts and links. No leave request, no check-in | PARTIAL | P2 (leave) |
+| 16 | `settings` — Business settings | Profile, tax %, advance %, quote validity, storefront toggles, backup export/import | `/settings`: profile, brand colour and font, tax mode, advance %, validity, service areas, publish toggle. No backup import/export | PARTIAL | P3 (backup) |
+| 17 | `brandstudio` — Brand studio | Name, tagline, logo, font, theme, live preview | Colour, font and tagline in `/settings`, previewed on `/storefront`. No logo upload or theme presets | PARTIAL | P3 |
 | 18 | `prototype` — Prototype coverage | Walkthrough of what the demo claims to cover | Nothing | **NOT BUILDING** | — (audit §6 says delete from the customer-facing build) |
 
 ## 2. Public, account and platform pages
@@ -53,8 +55,8 @@ delivery. That loop is broken in four places, listed in §3.
 |---|---|---|---|---|---|
 | 19 | `marketplace` — Event marketplace | 220 synthetic providers, filters, sorting, favourites, quote request | Nothing | **NOT BUILDING** | — Phase 1 promises no leads; no fake listings ([03](03-ideation-and-mvp.md), [11](11-competitive-analysis-and-gaps.md)) |
 | 20 | `customerportal` — My event plan | Request list, event plan, saved businesses, profile | `/q/[token]` (view and pay one quote) and `/p/[slug]` (enquire). No account, request list, plan or saved list | PARTIAL | P3 (needs auth) |
-| 21 | `superadmin` — Superadmin console | Organisation list, user list, suspend, platform log, stats, CSV | Nothing | PENDING | P4 — needs its own design and a separate access path |
-| 22 | `menucard` — Menu card | Print-ready menu card for the guest table | Nothing | PENDING | P3 |
+| 21 | `superadmin` — Superadmin console | Organisation list, user list, suspend, platform log, stats, CSV | `/admin`: read-only organisation list with plan, member and event counts, gated by `PLATFORM_ADMIN_EMAILS`. No suspend, no log, no CSV | PARTIAL | P4 |
+| 22 | `menucard` — Menu card | Print-ready menu card for the guest table | `/menu/card`: print stylesheet, brand accent, sections, groups, dietary markers, unit labels, footer disclaimer. Built from the same rows as the quote engine | BUILT | — |
 
 Non-page surfaces in the prototype:
 
@@ -69,29 +71,27 @@ Non-page surfaces in the prototype:
 
 ---
 
-## 3. The four gaps that actually break the product
+## 3. What still breaks the loop
 
-The menu and quote engine were built first, and they work. Everything around them is
-missing, which means a quote today has **no origin, no event and no settlement**.
+The enquiry → client → event → quote → payment → delivery path exists in demo mode.
+Five joints are still weak:
 
-1. **No enquiry inbox.** Enquiries land in a table nobody can open, so there is no
-   follow-up queue, no lead status and no phone-based dedupe. The first paying customer
-   needs this on day one.
-2. **No event screen.** Quotations carry `event_date` and `guests`, but an event cannot
-   be created, edited, rescheduled or marked delivered. Deposits and balances have
-   nothing to attach to.
-3. **No packages.** `service_packages` exists in the schema with no UI. Caterers sell
-   "veg banquet, 250 guests, ₹850/plate", not a list of 14 dishes; without packages the
-   composer is slower than the spreadsheet it replaces. Minimum-guest enforcement is
-   also absent, so a 100-guest package can be quoted at 30.
-4. **No invoice or manual payment.** A quote can be accepted and paid online, but a
-   bank transfer or cash advance cannot be recorded, and there is no immutable invoice
-   document. Money stops at "sent".
+1. **No real tenancy.** RLS policies exist for every tenant table, including the seven
+   added in this pass, but no Supabase project has applied them. The app connects as
+   table owner, so a policy mistake today is invisible. Everything else waits on this.
+2. **No calendar or edit form.** An event can be created and worked, but rescheduling
+   means editing the database. A caterer moves dates constantly; this is the first
+   operational screen to finish.
+3. **No client record.** An enquiry converts to an event, but there is no client detail
+   page, so repeat business, phone dedupe and history are unproven.
+4. **No audit trail.** Money and status changes are append-only by design, but nothing
+   records who changed what. Finance cannot be defended without it.
+5. **Portfolio has no photographs.** Text entries publish; a portfolio without images
+   does not sell, so this stays P3 until the media pipeline exists.
 
-A fifth gap is configuration rather than a page: **tax rate, advance percentage and
-quote validity are hardcoded per vertical**, so every business using that vertical is
-forced into the same commercial terms. `/settings` is a prerequisite for honest
-quotations, not polish.
+A sixth gap is configuration rather than a page: **platform credentials**. Until
+Supabase, Razorpay and Resend keys exist, every write is refused in demo mode and the
+public pages cannot be shared with a real client.
 
 ---
 
@@ -99,22 +99,23 @@ quotations, not polish.
 
 | Phase | Work | Why here |
 |---|---|---|
-| **P0** | Supabase project, migrations, `db/policies.sql`, real auth, the two-tenant test | RLS has never executed; today the app connects as table owner and bypasses it. No page work is trustworthy before this. |
-| **P1** | Enquiries inbox → clients → events → packages → settings (tax/advance/validity) → invoice + record payment | Completes the loop the quote engine already sits in. Each item is a vertical slice: schema, policy, action, screen, test. |
-| **P2** | Event operations, team duties + employee view, suppliers/recipes, finance ledger, audit trail | Post-booking delivery and the cost side; this is where margin becomes visible. |
-| **P3** | Storefront editor, brand studio, menu card, reports, customer portal | Growth and presentation. Safe to defer until real quotes are flowing. |
-| **P4** | Superadmin, bulk import, public reviews | Platform and migration tooling; needs real tenants first. |
+| **P0** | Supabase project, migrations, `db/policies.sql`, real auth, the two-tenant test | RLS has never executed. No page work is trustworthy before this. |
+| **P1** | Calendar view, event edit, client detail with phone dedupe | The screens a caterer touches hourly. |
+| **P2** | Audit trail, shift rota, leave request, recipes, run-of-show | Delivery and the cost side; where margin becomes visible. |
+| **P3** | Portfolio photos, reports date range, storefront reviews/map, backup export | Growth and presentation. |
+| **P4** | Service workspaces, superadmin actions, bulk import | Needs real tenants first. |
 
 ---
 
 ## 5. Verification notes
 
-- All routes above return `200` in labelled demo mode; typecheck, unit tests and
-  production build passed at `7e2c495`.
-- **Demo mode is read-only.** Writes such as catalogue items, menu dishes, invites and
-  stock movements are refused until Supabase is connected.
-- RLS policies exist in `db/policies.sql` but have **never been applied or executed**.
-  Do not read "route returns 200" as "tenancy is enforced".
+- `npm run typecheck` and `npm run test` (11 pricing tests) pass after this pass.
+- All new routes render in labelled demo mode; the production build is recorded in
+  [13](13-performance-ledger.md).
+- **Demo mode is read-only.** Every new action refuses writes when `ctx.demo` is set,
+  so a walkthrough cannot invent a payment or an expense.
+- RLS policies exist for the seven new tables but have **never been applied or
+  executed**. Do not read "route returns 200" as "tenancy is enforced".
 - The prototype page count includes pages the audit recommended deleting
   (`prototype`) and pages deferred by decision (`marketplace`); they are counted so
   the inventory reconciles with `pageMeta`, not because they are owed.

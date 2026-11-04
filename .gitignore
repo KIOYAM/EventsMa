@@ -40,3 +40,6 @@ Thumbs.db
 graphify-out/
 *.log
 npm-debug.log*
+
+.vercel
+.env*

@@ -52,6 +52,7 @@ export const eventStatus = pgEnum('event_status', [
   'cancelled',
 ])
 export const paymentStatus = pgEnum('payment_status', ['pending', 'captured', 'failed', 'refunded'])
+export const invoiceStatus = pgEnum('invoice_status', ['issued', 'part_paid', 'paid', 'void'])
 export const unitClassEnum = pgEnum('unit_class', [
   'PER_GUEST',
   'PER_UNIT',
@@ -86,6 +87,10 @@ export const memberships = pgTable(
     /** Cached from auth so the team screen never needs the auth schema. */
     email: text('email'),
     displayName: text('display_name'),
+    phone: text('phone'),
+    /** Free-text skills for crew assignment: "dosa counter", "drone". */
+    skills: text('skills').array().notNull().default([]),
+    wagePaisePerDay: integer('wage_paise_per_day'),
     status: text('status').notNull().default('active'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -401,6 +406,38 @@ export const quotationLines = pgTable(
   (t) => [index('quotation_lines_version_idx').on(t.versionId, t.sortOrder)],
 )
 
+/**
+ * An invoice is a financial document, not a quote with a new label. It has its
+ * own number, due date and status, and points at the frozen quotation it was
+ * raised from. Nothing here is recomputed from live catalogue prices.
+ */
+export const invoices = pgTable(
+  'invoices',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id, { onDelete: 'cascade' }),
+    quotationId: uuid('quotation_id').references(() => quotations.id, { onDelete: 'set null' }),
+    number: text('number').notNull(),
+    status: invoiceStatus('status').notNull().default('issued'),
+    amountPaise: integer('amount_paise').notNull(),
+    taxPaise: integer('tax_paise').notNull().default(0),
+    dueOn: date('due_on'),
+    notes: text('notes'),
+    issuedAt: timestamp('issued_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('invoices_org_number_key').on(t.orgId, t.number),
+    index('invoices_org_status_due_idx').on(t.orgId, t.status, t.dueOn),
+    index('invoices_org_event_idx').on(t.orgId, t.eventId),
+  ],
+)
+
 export const payments = pgTable(
   'payments',
   {
@@ -410,6 +447,7 @@ export const payments = pgTable(
       .references(() => organisations.id, { onDelete: 'cascade' }),
     eventId: uuid('event_id').references(() => events.id, { onDelete: 'set null' }),
     quotationId: uuid('quotation_id').references(() => quotations.id, { onDelete: 'set null' }),
+    invoiceId: uuid('invoice_id').references(() => invoices.id, { onDelete: 'set null' }),
     amountPaise: integer('amount_paise').notNull(),
     mode: text('mode').notNull().default('upi'),
     gatewayRef: text('gateway_ref'),
@@ -423,6 +461,7 @@ export const payments = pgTable(
   (t) => [
     uniqueIndex('payments_idempotency_key').on(t.idempotencyKey),
     index('payments_org_created_idx').on(t.orgId, t.createdAt),
+    index('payments_org_invoice_idx').on(t.orgId, t.invoiceId),
   ],
 )
 
@@ -597,4 +636,132 @@ export const invitations = pgTable(
     uniqueIndex('invitations_token_key').on(t.token),
     index('invitations_org_email_idx').on(t.orgId, t.email),
   ],
+)
+
+/** A supplier is a record, not a text field, so purchases can point at it. */
+export const suppliers = pgTable(
+  'suppliers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    category: text('category'),
+    phone: text('phone'),
+    notes: text('notes'),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('suppliers_org_active_name_idx').on(t.orgId, t.active, t.name)],
+)
+
+/** Append-only money out. A correction is a new row, never an edit. */
+export const expenses = pgTable(
+  'expenses',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'set null' }),
+    category: text('category').notNull().default('other'),
+    amountPaise: integer('amount_paise').notNull(),
+    note: text('note'),
+    incurredOn: date('incurred_on').notNull(),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('expenses_org_date_idx').on(t.orgId, t.incurredOn),
+    index('expenses_org_event_idx').on(t.orgId, t.eventId),
+  ],
+)
+
+/** The run-of-show checklist. Status is a short vocabulary, not a workflow engine. */
+export const eventTasks = pgTable(
+  'event_tasks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    ownerMembershipId: uuid('owner_membership_id').references(() => memberships.id, {
+      onDelete: 'set null',
+    }),
+    dueOn: date('due_on'),
+    status: text('status').notNull().default('todo'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('event_tasks_org_event_status_idx').on(t.orgId, t.eventId, t.status, t.dueOn)],
+)
+
+export const eventVendors = pgTable(
+  'event_vendors',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    category: text('category'),
+    amountPaise: integer('amount_paise').notNull().default(0),
+    status: text('status').notNull().default('booked'),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('event_vendors_org_event_idx').on(t.orgId, t.eventId, t.status)],
+)
+
+export const eventStaff = pgTable(
+  'event_staff',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id, { onDelete: 'cascade' }),
+    membershipId: uuid('membership_id')
+      .notNull()
+      .references(() => memberships.id, { onDelete: 'cascade' }),
+    roleLabel: text('role_label'),
+    shiftStart: text('shift_start'),
+    shiftEnd: text('shift_end'),
+    checkedInAt: timestamp('checked_in_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('event_staff_event_member_key').on(t.eventId, t.membershipId),
+    index('event_staff_org_member_idx').on(t.orgId, t.membershipId),
+  ],
+)
+
+/** Completed work that feeds the public page. Not every photo ever taken. */
+export const portfolioItems = pgTable(
+  'portfolio_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    eventDate: date('event_date'),
+    venueName: text('venue_name'),
+    description: text('description'),
+    coverPath: text('cover_path'),
+    published: boolean('published').notNull().default(false),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('portfolio_items_org_published_idx').on(t.orgId, t.published, t.eventDate)],
 )

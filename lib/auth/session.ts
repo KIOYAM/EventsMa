@@ -15,6 +15,8 @@ export interface WorkspaceContext {
   orgId: string
   role: WorkspaceRole
   demo: boolean
+  /** The membership row, so field screens can show only what this person owns. */
+  membershipId: string
 }
 
 export function hasSupabaseEnv(): boolean {
@@ -72,6 +74,7 @@ export async function requireWorkspace(): Promise<WorkspaceContext> {
       orgId: DEMO_ORG_ID,
       role: 'owner',
       demo: true,
+      membershipId: '00000000-0000-4000-8000-0000000000b1',
     }
   }
 
@@ -80,7 +83,7 @@ export async function requireWorkspace(): Promise<WorkspaceContext> {
 
   const db = getDb()
   const [row] = await db
-    .select({ orgId: memberships.orgId, role: memberships.role })
+    .select({ id: memberships.id, orgId: memberships.orgId, role: memberships.role })
     .from(memberships)
     .where(eq(memberships.userId, user.id))
     .limit(1)
@@ -96,6 +99,7 @@ export async function requireWorkspace(): Promise<WorkspaceContext> {
     orgId: row.orgId,
     role: row.role as WorkspaceRole,
     demo: false,
+    membershipId: row.id,
   }
 }
 

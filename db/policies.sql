@@ -197,3 +197,81 @@ drop policy if exists invitations_owner on public.invitations;
 create policy invitations_owner on public.invitations
   for all using (public.has_org_role(org_id, array['owner']))
   with check (public.has_org_role(org_id, array['owner']));
+
+-- invoices / expenses --------------------------------------------------------
+-- Invoices carry totals and a client's billing history; expenses carry margin.
+-- Both are commercial tables, so an employee account cannot read them.
+alter table public.invoices enable row level security;
+drop policy if exists invoices_select on public.invoices;
+create policy invoices_select on public.invoices
+  for select using (public.has_org_role(org_id, array['owner','manager']));
+drop policy if exists invoices_write on public.invoices;
+create policy invoices_write on public.invoices
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.expenses enable row level security;
+drop policy if exists expenses_select on public.expenses;
+create policy expenses_select on public.expenses
+  for select using (public.has_org_role(org_id, array['owner','manager']));
+drop policy if exists expenses_write on public.expenses;
+create policy expenses_write on public.expenses
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+-- suppliers ------------------------------------------------------------------
+alter table public.suppliers enable row level security;
+drop policy if exists suppliers_select on public.suppliers;
+create policy suppliers_select on public.suppliers
+  for select using (public.has_org_role(org_id, array['owner','manager']));
+drop policy if exists suppliers_write on public.suppliers;
+create policy suppliers_write on public.suppliers
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+-- event operations -----------------------------------------------------------
+-- Tasks are the one new operational table: any active member may read the
+-- board, only owners and managers may change it. Vendor and staff rows hold
+-- rates, so they stay commercial.
+alter table public.event_tasks enable row level security;
+drop policy if exists event_tasks_select on public.event_tasks;
+create policy event_tasks_select on public.event_tasks
+  for select using (public.is_org_member(org_id));
+drop policy if exists event_tasks_write on public.event_tasks;
+create policy event_tasks_write on public.event_tasks
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.event_vendors enable row level security;
+drop policy if exists event_vendors_select on public.event_vendors;
+create policy event_vendors_select on public.event_vendors
+  for select using (public.has_org_role(org_id, array['owner','manager']));
+drop policy if exists event_vendors_write on public.event_vendors;
+create policy event_vendors_write on public.event_vendors
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.event_staff enable row level security;
+drop policy if exists event_staff_select on public.event_staff;
+create policy event_staff_select on public.event_staff
+  for select using (public.has_org_role(org_id, array['owner','manager']));
+drop policy if exists event_staff_write on public.event_staff;
+create policy event_staff_write on public.event_staff
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+-- portfolio ------------------------------------------------------------------
+alter table public.portfolio_items enable row level security;
+drop policy if exists portfolio_items_select on public.portfolio_items;
+create policy portfolio_items_select on public.portfolio_items
+  for select using (public.is_org_member(org_id));
+drop policy if exists portfolio_items_write on public.portfolio_items;
+create policy portfolio_items_write on public.portfolio_items
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+-- quote counters ---------------------------------------------------------------
+-- Internal numbering sequence written only by the server under an advisory
+-- lock. RLS is enabled without any policy: no role except the owner sees a row,
+-- so an exposed PostgREST route cannot leak another tenant's quote volume.
+alter table public.quote_counters enable row level security;

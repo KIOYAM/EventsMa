@@ -27,6 +27,14 @@ function statusTone(status: string): StatusTone {
   return STATUS_TONE[status] ?? 'neutral'
 }
 
+/** "dish" → "dishes", "decor element" → "decor elements". */
+function pluralItem(noun: string, count: number): string {
+  if (count === 1) return noun
+  if (/(s|sh|ch|x|z)$/.test(noun)) return `${noun}es`
+  if (/[^aeiou]y$/.test(noun)) return `${noun.slice(0, -1)}ies`
+  return `${noun}s`
+}
+
 export default async function DashboardPage() {
   const ctx = await requireWorkspace()
 
@@ -116,8 +124,7 @@ async function DashboardBody({ ctx }: { ctx: WorkspaceContext }) {
                 >
                   <p className="text-sm font-medium text-ink">{descriptor.label}</p>
                   <p className="mt-1 text-xs text-ink-muted">
-                    {service.itemCount} {descriptor.itemNoun}
-                    {service.itemCount === 1 ? '' : 's'}
+                    {service.itemCount} {pluralItem(descriptor.itemNoun, service.itemCount)}
                   </p>
                 </div>
               )
