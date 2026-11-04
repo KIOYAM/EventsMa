@@ -11,8 +11,19 @@ export function isDatabaseConfigured(): boolean {
 }
 
 /**
- * One pooled client per process. `prepare: false` is required because Supabase's
- * transaction pooler does not support named prepared statements.
+ * One pooled client per process.
+ *
+ * Two settings exist for Supabase's transaction pooler (port 6543):
+ * - `prepare: false` — the pooler does not support named prepared statements.
+ * - `max_pipeline: 1` — postgres-js pipelines queries by default, and a
+ *   transaction pooler gives each pipeline step its own server connection, so a
+ *   concurrent burst (the layout and a page querying at the same time) waits on
+ *   connections that never free up. Observed in production as a page whose
+ *   Suspense boundary never resolved. Serialising per connection costs a round
+ *   trip and removes the hang.
+ *
+ * `statement_timeout` turns any future stall into a visible error instead of a
+ * request that streams forever.
  */
 export function getDb(): EventsMaDatabase {
   const url = process.env.DATABASE_URL
@@ -26,6 +37,8 @@ export function getDb(): EventsMaDatabase {
       idle_timeout: 20,
       connect_timeout: 10,
       prepare: false,
+      max_pipeline: 1,
+      connection: { application_name: 'eventsma', statement_timeout: '15000' },
       onnotice: () => {},
     })
     globalForDb.__eventsmaDb = drizzle(client, { schema })
