@@ -30,6 +30,7 @@ Supabase project, so migrations and RLS can execute before any of it is called w
 | 11 | [Competitive analysis and gaps](11-competitive-analysis-and-gaps.md) | What the five competitor studies reveal, the gaps they all share, what to adopt now and what to deliberately skip |
 | 12 | [Prototype page parity](12-prototype-page-parity.md) | Every prototype page mapped to a built route, a gap, or a deliberate omission, with priority order |
 | 13 | [Performance and UX ledger](13-performance-ledger.md) | Which speed practices are implemented, which are gated on infrastructure, the budgets, and the honest gaps |
+| 14 | [Deployment runbook](14-deployment-runbook.md) | What is deployed where, the exact failures hit on the way, how to fix each if it returns, and how to prove a deploy works |
 | — | [Design review](reviews/2026-10-24-elephant-self-review.md) | Adversarial review of these documents, the 14 findings and how each was resolved |
 
 Per-feature design documents (required before code) live in [`designs/`](designs/README.md).
