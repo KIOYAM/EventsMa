@@ -17,7 +17,10 @@ Status key:
 | **PENDING** | No screen, and (where noted) no table behind it. |
 | **NOT BUILDING** | A deliberate product decision, not an oversight. Cite the reason. |
 
-**Count: 1 built · 18 partial · 1 pending · 2 deliberately not building.**
+**Count: 1 built · 19 partial · 1 pending · 2 deliberately not building** across the 22
+prototype pages (measured again on 4 November 2026). Auth, onboarding and session
+handling were the three PENDING non-page surfaces; they are now built and are listed
+under §2.
 
 Parity is not the goal on its own — the prototype contains screens we decided not to
 port. What matters is the revenue loop: enquiry → client → event → quote → payment →
@@ -62,8 +65,9 @@ Non-page surfaces in the prototype:
 
 | Surface | Today | Status |
 |---|---|---|
-| Sign in / sign up / password reset | `/login` is a disabled form that names the missing Supabase variables; no signup, reset or session | PENDING — blocker |
-| Guided onboarding | `/onboarding` is a static explainer; it does not call `bootstrap_org` | PENDING |
+| Sign in / sign up | `/login` (email + password, server action, cookie refresh via `middleware.ts`) and `/signup` (account creation, hands off to onboarding). No password reset yet | PARTIAL — reset missing |
+| Guided onboarding | `/onboarding` creates organisation, business profile, enabled services and owner membership in one transaction | BUILT |
+| Session security | Supabase cookie refresh in `middleware.ts`; `/admin` gated by `PLATFORM_ADMIN_EMAILS`; sign-out in the app shell | BUILT |
 | Bulk import | Nothing | PENDING (P4) |
 | Public review form | Nothing; needs moderation before it can exist | PENDING (P4) |
 | Printable quotation | PDF route verified: `200`, `application/pdf`, `%PDF-` header | BUILT |
@@ -76,9 +80,11 @@ Non-page surfaces in the prototype:
 The enquiry → client → event → quote → payment → delivery path exists in demo mode.
 Five joints are still weak:
 
-1. **No real tenancy.** RLS policies exist for every tenant table, including the seven
-   added in this pass, but no Supabase project has applied them. The app connects as
-   table owner, so a policy mistake today is invisible. Everything else waits on this.
+1. **Tenancy is enforced in the database, but not exercised by the app.** The Supabase
+   project has migrations and `db/policies.sql` applied (31 tables, 31 with RLS, 59
+   policies) and the rolled-back two-tenant test in `db/setup.mjs` passes. Runtime
+   queries still connect as the table owner, so RLS is proven by that test, not by
+   production traffic.
 2. **No calendar or edit form.** An event can be created and worked, but rescheduling
    means editing the database. A caterer moves dates constantly; this is the first
    operational screen to finish.
