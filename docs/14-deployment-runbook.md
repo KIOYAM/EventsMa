@@ -104,8 +104,22 @@ Cause: `postgres-js` pipelines queries over a socket. Supabase's transaction poo
 (:6543) gives each pipeline step its own server connection, so a layout and its page
 querying at the same time wait on connections that never come back.
 
-Fix: in `lib/db/client.ts` set `max_pipeline: 1` alongside `prepare: false`. The option
-exists at runtime but is missing from postgres 3.4.x typings, so the file declares it:
+Fix, in two parts:
+
+1. `lib/db/client.ts` sets `max_pipeline: 1` alongside `prepare: false`. The option exists
+   at runtime but is missing from postgres 3.4.x typings, so the file declares it:
+
+```ts
+type PoolOptions = NonNullable<Parameters<typeof postgres>[1]> & { max_pipeline?: number }
+```
+
+2. Remove any `connection: { ... }` option. It sends startup parameters that the pooler
+   rejects, which left the same pages hanging. It was removed in commit `42a5aa3`; after
+   that deploy `/admin`, `/settings` and `/clients` all resolved (`pending: false`).
+
+---
+
+#### (superseded) original note
 
 ```ts
 type PoolOptions = NonNullable<Parameters<typeof postgres>[1]> & { max_pipeline?: number }
@@ -222,8 +236,10 @@ policies isolate tenants. Keep it passing.
 
 ## 8. Known gaps (state them, do not hide them)
 
-- `/admin` and `/settings` were the pages that hung hardest under F2; re-check both after
-  any change to `lib/db/client.ts`.
+- `/admin`, `/settings` and `/clients` were the pages that hung hardest under F2. After the
+  final fix they returned 200 with no `<!--$~-->` marker and the expected content
+  (`/admin` listed the tenant, `/settings` rendered the business profile). Re-check those
+  three after any change to `lib/db/client.ts`.
 - Email/password sign-up depends on Supabase's email confirmation setting. With
   confirmation on, the sign-up screen says "confirm your email" and the user must click
   the link before signing in; with it off, they go straight to `/onboarding`.
