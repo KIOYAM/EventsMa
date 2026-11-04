@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { eq } from 'drizzle-orm'
 import { Badge } from '@/components/ui/badge'
@@ -47,12 +48,13 @@ export default async function OnboardingPage({
       </div>
 
       <p className="mt-6 text-xs font-medium uppercase tracking-[0.14em] text-ink-muted">
-        Onboarding
+        Step 2 of 2 · your business
       </p>
-      <h1 className="mt-2 font-display text-2xl text-forest">Set up your workspace</h1>
+      <h1 className="mt-2 font-display text-2xl text-forest">Tell us about your business</h1>
       <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-muted">
-        One organisation, one business profile and an owner membership are created together in a
-        single transaction. Signed in as <span className="text-ink">{user.email}</span>.
+        This is what customers see on your quotes and public page. Your workspace, business profile
+        and owner membership are created together, so a half-built workspace cannot exist. Signed in
+        as <span className="text-ink">{user.email}</span>.
       </p>
 
       {params.error && ERROR_COPY[params.error] ? (
@@ -124,6 +126,13 @@ export default async function OnboardingPage({
         <p className="text-xs leading-relaxed text-ink-muted">
           Nothing is charged and no demo rows are copied in. The workspace starts empty so every
           number on the dashboard comes from your own data.
+        </p>
+        <p className="text-xs text-ink-muted">
+          Signed up with the wrong email?{' '}
+          <Link href="/login" className="text-forest underline-offset-4 hover:underline">
+            Go back to sign in
+          </Link>
+          .
         </p>
       </form>
     </main>

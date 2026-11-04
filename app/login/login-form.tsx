@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
+import Link from 'next/link'
 import { Field, Input } from '@/components/ui/input'
 import { signIn, type LoginState } from './actions'
 
@@ -15,7 +16,7 @@ function SubmitButton() {
       disabled={pending}
       className="inline-flex h-11 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-60"
     >
-      {pending ? 'Signing in…' : 'Sign in'}
+      {pending ? 'Signing in…' : 'Sign in to my workspace'}
     </button>
   )
 }
@@ -25,14 +26,14 @@ export function LoginForm() {
 
   return (
     <form action={formAction} className="mt-5 space-y-4">
-      <Field label="Work email" htmlFor="email">
+      <Field label="Work email" htmlFor="email" hint="The email you signed up with.">
         <Input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
           required
-          placeholder="you@business.in"
+          placeholder="you@yourbusiness.in"
         />
       </Field>
       <Field label="Password" htmlFor="password">
@@ -47,7 +48,10 @@ export function LoginForm() {
 
       {state.error ? (
         <p role="alert" className="rounded-control bg-red-50 px-3 py-2 text-sm text-red-700">
-          {state.error}
+          {state.error}{' '}
+          <Link href="/signup" className="underline underline-offset-4">
+            Create an account
+          </Link>
         </p>
       ) : null}
 
