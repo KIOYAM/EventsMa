@@ -13,6 +13,10 @@ import {
   EVENT_STATUSES,
   EVENT_STATUS_LABEL,
   type EventStatus,
+  EVENT_TYPE_GROUPS,
+  EventTypeMaster,
+  groupEventTypes,
+  allMasters,
 } from '@/lib/domain/ops'
 import { PAGE_SIZE, pageHref, parsePage } from '@/lib/pagination'
 import { relativeDays, shortDate } from '@/lib/utils'
@@ -71,8 +75,7 @@ export default async function EventsPage({
               href="#new"
               className="inline-flex h-11 items-center gap-2 rounded-control bg-forest px-4 text-sm font-medium text-white"
             >
-              <CalendarPlus className="h-4 w-4" aria-hidden />
-              New event
+              <CalendarPlus className="h-4 w-4" aria-hidden /> New event
             </Link>
           </>
         }
@@ -173,7 +176,26 @@ export default async function EventsPage({
               <Input id="title" name="title" placeholder="Meera & Karthik — Wedding lunch" maxLength={160} />
             </Field>
             <Field label="Occasion" htmlFor="eventType">
-              <Input id="eventType" name="eventType" placeholder="Wedding lunch" maxLength={80} />
+              <Select id="eventType" name="eventType" defaultValue="">
+                {groupEventTypes().map((group) => {
+                  if (group.groupName === 'Custom') {
+                    return (
+                      <optgroup key="custom" label="Custom">
+                        <option value="">Custom (type occasion)</option>
+                      </optgroup>
+                    )
+                  }
+                  return (
+                    <optgroup key={group.groupName} label={group.groupName}>
+                      {group.rows.map((opt) => (
+                        <option key={opt.name} value={opt.name}>
+                          {opt.name} {opt.description && ` — ${opt.description}`}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )
+                })}
+              </Select>
             </Field>
 
             <Field label="Client" htmlFor="clientId" hint="Or add a new client below.">
@@ -229,7 +251,12 @@ export default async function EventsPage({
               <Input id="venueAddress" name="venueAddress" maxLength={240} />
             </Field>
             <Field label="Notes" htmlFor="notes" className="md:col-span-2">
-              <Textarea id="notes" name="notes" maxLength={2000} placeholder="Pure veg, banana leaf for elders, stage florals in marigold." />
+              <Textarea
+                id="notes"
+                name="notes"
+                maxLength={2000}
+                placeholder="Pure veg, banana leaf for elders, stage florals in marigold."
+              />
             </Field>
 
             <div className="md:col-span-2">

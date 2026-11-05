@@ -16,6 +16,8 @@ import { demoBusiness, demoComputation, demoItems, demoQuotes, demoServices } fr
 import type { UnitClass } from '@/lib/domain/units'
 import type { PaymentDetails } from '@/lib/domain/ops'
 import { EMPTY_PAYMENT_DETAILS, paymentDetailsFrom } from '@/lib/domain/payments'
+import { EnabledService, buildServiceNavigation } from '@/lib/domain/service-registry'
+import { verticalDescriptor } from '@/lib/domain/verticals'
 
 export interface ServiceRow {
   verticalKey: string
@@ -510,4 +512,49 @@ export async function getQuoteDocument(
     marginPaise: row.marginPaise,
     marginBp: taxable > 0 ? Math.round((row.marginPaise * 10_000) / taxable) : 0,
   }
+}
+
+/** Return every business service for an org, resolved with its vertical descriptor. */
+export async function getEnabledServices(
+  orgId: string,
+  demo: boolean,
+): Promise<EnabledService[]> {
+  if (demo) {
+    return demoServices.map((s) => ({
+      key: s.verticalKey,
+      label: verticalDescriptor(s.verticalKey).label,
+      enabled: s.enabled,
+      sortOrder: s.sortOrder,
+      config: s.config as Record<string, string>,
+      descriptor: verticalDescriptor(s.verticalKey),
+    }))
+  }
+
+  if (!isDatabaseConfigured()) return []
+
+  const db = getDb()
+  const rows = await db
+    .select({
+      verticalKey: businessServices.verticalKey,
+      enabled: businessServices.enabled,
+      config: businessServices.config,
+      sortOrder: businessServices.sortOrder,
+    })
+    .from(businessServices)
+    .where(eq(businessServices.orgId, orgId))
+    .orderBy(businessServices.sortOrder)
+
+  return rows.map((row) => ({
+    key: row.verticalKey,
+    label: verticalDescriptor(row.verticalKey).label,
+    enabled: row.enabled,
+    sortOrder: row.sortOrder,
+    config: row.config ?? {},
+    descriptor: verticalDescriptor(row.verticalKey),
+  }))
+}
+
+/** Build the full navigation rail from enabled services. */
+export function serviceNavigation(enabled: readonly EnabledService[]) {
+  return buildServiceNavigation(enabled)
 }

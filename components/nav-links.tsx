@@ -9,105 +9,97 @@ import {
   FileText,
   Images,
   Inbox,
-  LayoutGrid,
   Layers,
+  LayoutGrid,
+  Palette,
   Package,
   Receipt,
   Settings,
   Store,
   TrendingUp,
-  Users,
   UtensilsCrossed,
   Wallet,
+  Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-/**
- * A nav entry can require an enabled service vertical. This is the gate that
- * keeps a photography-only business from being shown a catering menu — and its
- * converse, a caterer who adopted catering from losing the menu they use daily.
- */
-interface NavItem {
-  href: string
-  label: string
-  icon: LucideIcon
-  requires?: string
+interface NavEntry {
+  readonly key: string
+  readonly path: string
+  readonly label: string
+  readonly icon: string
+  readonly group: 'sell' | 'catalogue' | 'business'
 }
 
-const GROUPS: { label: string; items: NavItem[] }[] = [
-  {
-    label: 'Sell',
-    items: [
-      { href: '/clients', label: 'Clients', icon: Inbox },
-      { href: '/events', label: 'Events', icon: CalendarDays },
-      { href: '/quotes', label: 'Quotes', icon: FileText },
-      { href: '/invoices', label: 'Invoices', icon: Receipt },
-    ],
-  },
-  {
-    label: 'Catalogue',
-    items: [
-      { href: '/menu', label: 'Menu', icon: BookOpen, requires: 'catering' },
-      { href: '/catering', label: 'Catering', icon: UtensilsCrossed, requires: 'catering' },
-      { href: '/packages', label: 'Packages', icon: Layers },
-      { href: '/catalogue', label: 'Catalogue', icon: Package },
-      { href: '/inventory', label: 'Stock', icon: Boxes },
-    ],
-  },
-  {
-    label: 'Business',
-    items: [
-      { href: '/finance', label: 'Money', icon: Wallet },
-      { href: '/reports', label: 'Reports', icon: TrendingUp },
-      { href: '/team', label: 'Team', icon: Users },
-      { href: '/services', label: 'Services', icon: Layers },
-      { href: '/portfolio', label: 'Portfolio', icon: Images },
-      { href: '/storefront', label: 'Storefront', icon: Store },
-      { href: '/settings', label: 'Settings', icon: Settings },
-    ],
-  },
-]
+const ICON_MAP: Record<string, LucideIcon> = {
+  UtensilsCrossed,
+  Images,
+  Layers,
+  Package,
+  Palette,
+  FileText,
+  CalendarDays,
+  Wallet,
+  Receipt,
+  Settings,
+  Store,
+  TrendingUp,
+  Users,
+  Inbox,
+  Boxes,
+  BookOpen,
+  LayoutGrid,
+}
+
+function iconFor(name: string): LucideIcon {
+  return ICON_MAP[name] ?? Package
+}
 
 /** Four tabs, because a fifth target is a miss on a phone held one-handed. */
-const MOBILE = [
-  { href: '/dashboard', label: 'Home', icon: LayoutGrid },
-  { href: '/clients', label: 'Clients', icon: Inbox },
-  { href: '/events', label: 'Events', icon: CalendarDays },
-  { href: '/invoices', label: 'Invoices', icon: Receipt },
+const MOBILE: NavEntry[] = [
+  { key: 'dashboard', path: '/dashboard', label: 'Home', icon: 'LayoutGrid', group: 'sell' },
+  { key: 'clients', path: '/clients', label: 'Clients', icon: 'Inbox', group: 'sell' },
+  { key: 'events', path: '/events', label: 'Events', icon: 'CalendarDays', group: 'sell' },
+  { key: 'invoices', path: '/invoices', label: 'Invoices', icon: 'Receipt', group: 'sell' },
 ] as const
 
 function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
-export function NavLinks({
-  variant,
-  verticals = [],
-}: {
+interface NavLinksProps {
   variant: 'rail' | 'mobile'
-  verticals?: readonly string[]
-}) {
+  entries?: readonly NavEntry[]
+}
+
+export function NavLinks({ variant, entries = [] }: NavLinksProps) {
   const pathname = usePathname()
-  /**
-   * A workspace with no service rows is a legacy tenant, not a business that
-   * offers nothing: hide nothing rather than strip their menu overnight. The
-   * gate only starts gating once at least one vertical is configured.
-   */
-  const ungated = verticals.length === 0
-  const allowed = (item: NavItem) =>
-    ungated || !item.requires || verticals.includes(item.requires)
+
+  // Group entries by their declared group, preserving declaration order.
+  const groups: { label: string; items: NavEntry[] }[] = []
+  const groupOrder: ('sell' | 'catalogue' | 'business')[] = ['sell', 'catalogue', 'business']
+  const groupLabels: Record<'sell' | 'catalogue' | 'business', string> = {
+    sell: 'Sell',
+    catalogue: 'Catalogue',
+    business: 'Business',
+  }
+
+  for (const g of groupOrder) {
+    const items = entries.filter((e) => e.group === g)
+    if (items.length) groups.push({ label: groupLabels[g], items })
+  }
 
   if (variant === 'mobile') {
     return (
       <div className="contents">
         {MOBILE.map((item) => {
-          const Icon = item.icon
-          const active = isActive(pathname, item.href)
+          const Icon = iconFor(item.icon)
+          const active = isActive(pathname, item.path)
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={item.key}
+              href={item.path}
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex h-16 flex-col items-center justify-center gap-1 text-[10px]',
@@ -139,22 +131,19 @@ export function NavLinks({
         Dashboard
       </Link>
 
-      {GROUPS.map((group) => {
-        const items = group.items.filter(allowed)
-        if (items.length === 0) return null
-        return (
+      {groups.map((group) => (
         <div key={group.label}>
           <p className="px-2.5 pb-1 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-muted">
             {group.label}
           </p>
           <div className="space-y-0.5">
-            {items.map((item) => {
-              const Icon = item.icon
-              const active = isActive(pathname, item.href)
+            {group.items.map((item) => {
+              const Icon = iconFor(item.icon)
+              const active = isActive(pathname, item.path)
               return (
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  key={item.key}
+                  href={item.path}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'flex h-9 items-center gap-2.5 rounded-control px-2.5 text-sm transition-colors',
@@ -170,8 +159,7 @@ export function NavLinks({
             })}
           </div>
         </div>
-        )
-      })}
+      ))}
 
       <div className="border-t border-hairline pt-3">
         <Link

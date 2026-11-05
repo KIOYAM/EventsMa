@@ -3,21 +3,24 @@ import { Badge } from '@/components/ui/badge'
 import { NavLinks } from '@/components/nav-links'
 import { PerfMonitor } from '@/components/perf-monitor'
 import { signOut } from '@/app/login/actions'
+import { buildServiceNavigation, type EnabledService } from '@/lib/domain/service-registry'
 
 export function AppShell({
   children,
   businessName,
   demo,
   email,
-  verticals,
+  enabledServices,
 }: {
   children: React.ReactNode
   businessName: string
   demo: boolean
   email: string | null
-  /** Enabled service verticals; the sidebar shows only what the business offers. */
-  verticals: readonly string[]
+  /** Enabled services with resolved descriptors; drives the sidebar navigation. */
+  enabledServices: readonly EnabledService[]
 }) {
+  const nav = buildServiceNavigation(enabledServices)
+
   return (
     <div className="min-h-dvh bg-canvas">
       <PerfMonitor />
@@ -34,7 +37,7 @@ export function AppShell({
           <p className="mt-6 px-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
             Workspace
           </p>
-          <NavLinks variant="rail" verticals={verticals} />
+          <NavLinks variant="rail" entries={nav} />
 
           <div className="mt-auto space-y-3 rounded-card border border-hairline bg-canvas p-3">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
@@ -83,7 +86,7 @@ export function AppShell({
             aria-label="Primary"
             className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-hairline bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
           >
-            <NavLinks variant="mobile" verticals={verticals} />
+            <NavLinks variant="mobile" entries={nav} />
           </nav>
         </div>
       </div>

@@ -36,6 +36,7 @@ export const demoServices: DemoService[] = [
   { id: 's1', verticalKey: 'catering', enabled: true, sortOrder: 0, config: { serviceStyle: 'Banana leaf + buffet', minOrder: '50 guests' } },
   { id: 's2', verticalKey: 'decor', enabled: true, sortOrder: 1, config: { setupWindow: '6 hours before' } },
   { id: 's3', verticalKey: 'photography', enabled: true, sortOrder: 2, config: { coverageHours: '8 hours + travel' } },
+  { id: 's4', verticalKey: 'makeup', enabled: true, sortOrder: 3, config: { makeupStyles: 'Bridal, HD, airbrush', trialDuration: '60', travelFee: '50000', serviceLocations: 'Venue, home' } },
 ]
 
 export const demoItems = [
@@ -46,6 +47,10 @@ export const demoItems = [
   { id: 'i5', verticalKey: 'decor', name: 'Floral centrepieces', unitClass: 'PER_UNIT' as const, pricePaise: 15_000, costPaise: 8_000, taxRateBp: 1800, active: true, category: 'Floral' },
   { id: 'i6', verticalKey: 'photography', name: 'Full-day wedding coverage', unitClass: 'FLAT' as const, pricePaise: 350_000, costPaise: 180_000, taxRateBp: 1800, active: true, category: 'Coverage' },
   { id: 'i7', verticalKey: 'photography', name: 'Second photographer', unitClass: 'PER_DAY' as const, pricePaise: 80_000, costPaise: 45_000, taxRateBp: 1800, active: true, category: 'Crew' },
+  { id: 'i8', verticalKey: 'makeup', name: 'Bridal makeup trial', unitClass: 'FLAT' as const, pricePaise: 350_000, costPaise: 200_000, taxRateBp: 1800, active: true, category: 'Trial' },
+  { id: 'i9', verticalKey: 'makeup', name: 'Bridal makeup day-of', unitClass: 'FLAT' as const, pricePaise: 600_000, costPaise: 350_000, taxRateBp: 1800, active: true, category: 'Bridal' },
+  { id: 'i10', verticalKey: 'makeup', name: 'Bridal party makeup', unitClass: 'PER_GUEST' as const, pricePaise: 300_000, costPaise: 180_000, taxRateBp: 1800, active: true, category: 'Party' },
+  { id: 'i11', verticalKey: 'makeup', name: 'Hair styling', unitClass: 'PER_GUEST' as const, pricePaise: 250_000, costPaise: 150_000, taxRateBp: 1800, active: true, category: 'Hair' },
 ]
 
 export const demoClients = [

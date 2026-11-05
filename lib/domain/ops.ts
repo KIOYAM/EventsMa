@@ -408,3 +408,61 @@ export interface StaffOption {
   role: string
   skills: string[]
 }
+
+/** Master list of Indian catering occasions, grouped by category. The known groups determine display order; 'Custom' is always appended. */
+export const EVENT_TYPE_GROUPS = ['Wedding', 'Traditional', 'Corporate', 'Social', 'Festival']
+export type EventTypeGroup = (typeof EVENT_TYPE_GROUPS)[number]
+
+export interface EventTypeMaster {
+  name: string
+  groupName: EventTypeGroup
+  description?: string
+}
+
+export const EVENT_TYPE_MASTERS: readonly EventTypeMaster[] = [
+  // Wedding
+  { name: 'Roka', groupName: 'Wedding', description: 'Families meet and fix the match; tea, snacks and a light meal.' },
+  { name: 'Engagement', groupName: 'Wedding', description: 'Ring exchange, usually lunch or dinner for close family.' },
+  { name: 'Mehendi', groupName: 'Wedding', description: 'Afternoon henna function; chaat, coolers, live counters.' },
+  { name: 'Haldi', groupName: 'Wedding', description: 'Morning turmeric ritual; light breakfast and snacks.' },
+  { name: 'Sangeet', groupName: 'Wedding', description: 'Evening music and dance; dinner with live counters.' },
+  { name: 'Reception', groupName: 'Wedding', description: 'The largest guest count of the week; buffet or seated dinner.' },
+  // Traditional
+  { name: 'Naming ceremony', groupName: 'Traditional', description: 'Namakaranam, around the 11th day; family lunch.' },
+  { name: 'First rice ceremony', groupName: 'Traditional', description: 'Annaprasanam, around the sixth month; kheer and a full meal.' },
+  { name: 'Housewarming', groupName: 'Traditional', description: 'Grihapravesham with pooja; vegetarian lunch, no onion or garlic on request.' },
+  // Corporate
+  { name: 'Conference', groupName: 'Corporate', description: 'Full-day; morning tea, lunch, afternoon tea.' },
+  { name: 'Product launch', groupName: 'Corporate', description: 'Reception format; canapes, mocktails, dessert.' },
+  { name: 'Annual day', groupName: 'Corporate', description: 'Employee and family event; dinner and snacks.' },
+  // Social
+  { name: 'Birthday party', groupName: 'Social', description: 'Cake, snacks and dinner; children\'s menu.' },
+  { name: 'Anniversary', groupName: 'Social', description: 'Family dinner, often a seated menu.' },
+  // Festival
+  { name: 'Diwali', groupName: 'Festival', description: 'Sweets, savouries and a festive dinner.' },
+  { name: 'Onam', groupName: 'Festival', description: 'Onam sadya on a banana leaf, fixed count of dishes.' },
+  // Custom fallback
+  { name: 'Custom (type occasion)', groupName: 'Custom', description: 'Type any other occasion not listed above.' },
+]
+
+/** Group masters by groupName in display order, plus a Custom entry at the end. */
+export function groupEventTypes(): readonly { groupName: string; rows: readonly EventTypeMaster[] }[] {
+  const grouped: Record<string, EventTypeMaster[]> = {}
+  for (const row of EVENT_TYPE_MASTERS) {
+    ;(grouped[row.groupName] ??= []).push(row)
+  }
+  const knownRows: { groupName: string; rows: readonly EventTypeMaster[] }[] = []
+  for (const g of EVENT_TYPE_GROUPS) {
+    const rows = grouped[g]
+    if (rows && rows.length) knownRows.push({ groupName: g, rows: rows as readonly EventTypeMaster[] })
+  }
+  const customRow = EVENT_TYPE_MASTERS[EVENT_TYPE_MASTERS.length - 1]
+  if (customRow) knownRows.push({ groupName: 'Custom', rows: [customRow] })
+  return knownRows
+}
+
+/** All masters as flat rows, with a custom fallback at the end. */
+export function allMasters(): readonly EventTypeMaster[] {
+  const last = EVENT_TYPE_MASTERS[EVENT_TYPE_MASTERS.length - 1]!
+  return [...EVENT_TYPE_MASTERS.slice(0, -1), last]
+}
