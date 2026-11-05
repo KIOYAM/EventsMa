@@ -132,6 +132,12 @@ export default async function EventDetailPage({
             Edit event
           </Link>
           <Link
+            href={`/events/${event.id}/catering`}
+            className="inline-flex h-10 items-center rounded-control border border-hairline bg-paper px-3 text-xs text-ink"
+          >
+            Catering plan
+          </Link>
+          <Link
             href={`/invoices?event=${event.id}`}
             className="text-xs text-forest underline underline-offset-4"
           >

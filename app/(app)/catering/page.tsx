@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Check, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -56,6 +57,14 @@ export default async function CateringPage({
         eyebrow="Catering engine"
         title="Your sessions, your categories, your rules"
         description="Nothing on this page is a fixed list. Breakfast, lunch and dinner are starter rows you can rename, reorder or switch off; the selection limits are yours to set."
+        actions={
+          <Link
+            href="/catering/recipes"
+            className="inline-flex h-9 items-center rounded-control border border-hairline bg-paper px-3 text-sm font-medium text-ink hover:bg-mint-subtle"
+          >
+            Dishes, categories and recipes
+          </Link>
+        }
       />
 
       {banner ? (

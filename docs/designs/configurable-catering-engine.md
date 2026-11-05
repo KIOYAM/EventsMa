@@ -1,6 +1,7 @@
 # Design — Configurable catering engine
 
-**Status:** slice 1 shipped (schema, engines, configuration screen, nav gate)
+**Status:** slices 1–3 shipped (schema and engines, configuration screen, nav gate,
+event catering panel, recipe builder, kitchen production sheet)
 **Owner:** product + engineering
 **Supersedes:** nothing. Extends [04](../04-architecture-cost-and-scale.md) and [12](../12-prototype-page-parity.md).
 **Rule this document protects:** the application does not decide how a catering business
@@ -90,8 +91,8 @@ second tenant with catering disabled sees no Menu link.
 | Slice | Contents | State |
 |---|---|---|
 | 1 | Schema, RLS, engines, tests, `/catering` configuration, nav gate | **shipped** — 10 tables, 20 RLS policies, 17 unit tests, verified against the live database |
-| 2 | Event catering panel: multi-session, guest counts, dish selection against rules | next |
-| 3 | Recipe builder + production sheet + inventory demand | after 2 |
+| 2 | Event catering panel: multi-session, guest counts, dish selection against rules | **shipped** — `/events/[id]/catering`; sessions copied from templates or typed as one-offs, per-session guest counts, server-side rule re-check, dietary counts, snapshot on confirm |
+| 3 | Recipe builder + production sheet + inventory demand | **shipped (demand only)** — `/catering/recipes` and the production sheet on the event page; inventory is still a read-only demand number, nothing writes stock |
 | 4 | Snapshots on quote send, revision approval | after 2 |
 | 5 | Individual guest selection by name, segment pricing | after 4 |
 | 6 | Staff and equipment ratios, session profitability | after 3 |
@@ -101,4 +102,4 @@ second tenant with catering disabled sees no Menu link.
 - **Config sprawl.** Four screens of configuration can overwhelm a 20-guest caterer. Mitigation: seed a working default set on adoption; every list starts with three rows, not zero.
 - **Snapshot drift.** A session copied at quote time diverges from the live menu by design; the UI must label a snapshot as such rather than showing it as editable.
 - **Rule change after selection.** Rules can tighten after dishes are chosen; the check runs on read as well as on write and surfaces "this session no longer matches its rules".
-- **Over-scoping.** Slice 1 deliberately ships no production sheet. Recipes are stored so slice 3 has data, but nothing claims to compute stock yet.
+- **Demand without consumption.** The production sheet multiplies recipes by session guest counts and shows wastage, but no stock is decremented and no purchase order is raised. Calling that "inventory management" would overstate the build.
