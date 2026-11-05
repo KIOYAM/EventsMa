@@ -28,8 +28,16 @@ export async function signIn(_previous: LoginState, formData: FormData): Promise
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-  // One message for both wrong password and unknown email: do not confirm accounts.
-  if (error) return { error: 'That email and password do not match an account.' }
+  if (error) {
+    // Supabase returns "Email not confirmed" when email confirmation is on and
+    // the account exists but hasn't been verified yet.
+    const notConfirmed = /email not confirmed|not confirmed|confirm your email/i.test(error.message)
+    return {
+      error: notConfirmed
+        ? 'That account exists but hasn’t been confirmed yet. Check your email for the confirmation link, or contact admin@eventsma.in.'
+        : 'That email and password do not match an account.',
+    }
+  }
 
   redirect(next)
 }

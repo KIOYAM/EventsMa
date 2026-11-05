@@ -17,11 +17,25 @@ import {
   Store,
   TrendingUp,
   Users,
+  UtensilsCrossed,
   Wallet,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const GROUPS = [
+/**
+ * A nav entry can require an enabled service vertical. This is the gate that
+ * keeps a photography-only business from being shown a catering menu — and its
+ * converse, a caterer who adopted catering from losing the menu they use daily.
+ */
+interface NavItem {
+  href: string
+  label: string
+  icon: LucideIcon
+  requires?: string
+}
+
+const GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Sell',
     items: [
@@ -34,7 +48,8 @@ const GROUPS = [
   {
     label: 'Catalogue',
     items: [
-      { href: '/menu', label: 'Menu', icon: BookOpen },
+      { href: '/menu', label: 'Menu', icon: BookOpen, requires: 'catering' },
+      { href: '/catering', label: 'Catering', icon: UtensilsCrossed, requires: 'catering' },
       { href: '/packages', label: 'Packages', icon: Layers },
       { href: '/catalogue', label: 'Catalogue', icon: Package },
       { href: '/inventory', label: 'Stock', icon: Boxes },
@@ -52,7 +67,7 @@ const GROUPS = [
       { href: '/settings', label: 'Settings', icon: Settings },
     ],
   },
-] as const
+]
 
 /** Four tabs, because a fifth target is a miss on a phone held one-handed. */
 const MOBILE = [
@@ -66,8 +81,15 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
-export function NavLinks({ variant }: { variant: 'rail' | 'mobile' }) {
+export function NavLinks({
+  variant,
+  verticals = [],
+}: {
+  variant: 'rail' | 'mobile'
+  verticals?: readonly string[]
+}) {
   const pathname = usePathname()
+  const allowed = (item: NavItem) => !item.requires || verticals.includes(item.requires)
 
   if (variant === 'mobile') {
     return (
@@ -110,13 +132,16 @@ export function NavLinks({ variant }: { variant: 'rail' | 'mobile' }) {
         Dashboard
       </Link>
 
-      {GROUPS.map((group) => (
+      {GROUPS.map((group) => {
+        const items = group.items.filter(allowed)
+        if (items.length === 0) return null
+        return (
         <div key={group.label}>
           <p className="px-2.5 pb-1 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-muted">
             {group.label}
           </p>
           <div className="space-y-0.5">
-            {group.items.map((item) => {
+            {items.map((item) => {
               const Icon = item.icon
               const active = isActive(pathname, item.href)
               return (
@@ -138,7 +163,8 @@ export function NavLinks({ variant }: { variant: 'rail' | 'mobile' }) {
             })}
           </div>
         </div>
-      ))}
+        )
+      })}
 
       <div className="border-t border-hairline pt-3">
         <Link

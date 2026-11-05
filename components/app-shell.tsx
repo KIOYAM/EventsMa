@@ -9,11 +9,14 @@ export function AppShell({
   businessName,
   demo,
   email,
+  verticals,
 }: {
   children: React.ReactNode
   businessName: string
   demo: boolean
   email: string | null
+  /** Enabled service verticals; the sidebar shows only what the business offers. */
+  verticals: readonly string[]
 }) {
   return (
     <div className="min-h-dvh bg-canvas">
@@ -31,7 +34,7 @@ export function AppShell({
           <p className="mt-6 px-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
             Workspace
           </p>
-          <NavLinks variant="rail" />
+          <NavLinks variant="rail" verticals={verticals} />
 
           <div className="mt-auto space-y-3 rounded-card border border-hairline bg-canvas p-3">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
@@ -80,7 +83,7 @@ export function AppShell({
             aria-label="Primary"
             className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-hairline bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
           >
-            <NavLinks variant="mobile" />
+            <NavLinks variant="mobile" verticals={verticals} />
           </nav>
         </div>
       </div>

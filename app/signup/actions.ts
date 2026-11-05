@@ -45,10 +45,13 @@ export async function signUp(_previous: SignupState, formData: FormData): Promis
 
   if (error) {
     const already = /already|registered|exists/i.test(error.message)
+    const rateLimited = /rate limit|over_email_send_rate_limit|too many/i.test(error.message)
     return {
       error: already
         ? 'That email already has an account. Sign in instead.'
-        : 'We could not create the account. Try again in a moment.',
+        : rateLimited
+          ? 'Account creation is temporarily blocked: we cannot send confirmation emails right now. Please try again in a few minutes or contact admin@eventsma.in.'
+          : 'We could not create the account. Try again in a moment.',
       sentTo: null,
     }
   }

@@ -94,6 +94,9 @@ try {
                (${orgB}, ${userB}, 'owner', 'active', 'b@isolation.test')
       `
       await tx`insert into clients (org_id, name) values (${orgA}, 'Tenant A client')`
+      await tx`
+        insert into catering_sessions (org_id, name) values (${orgA}, 'Isolation lunch')
+      `
 
       await tx`set local role authenticated`
       await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: userB, role: 'authenticated' })}, true)`
@@ -102,14 +105,15 @@ try {
       const [orgs] = await tx`select count(*)::int as n from organisations where id = ${orgA}`
       const [members] = await tx`select count(*)::int as n from memberships where org_id = ${orgA}`
       const [own] = await tx`select count(*)::int as n from organisations where id = ${orgB}`
+      const [sessions] = await tx`select count(*)::int as n from catering_sessions where org_id = ${orgA}`
 
       await tx`rollback to savepoint isolation_test`
-      return { seen: seen.n, orgs: orgs.n, members: members.n, own: own.n }
+      return { seen: seen.n, orgs: orgs.n, members: members.n, own: own.n, sessions: sessions.n }
     })
 
-    if (result.seen !== 0 || result.orgs !== 0 || result.members !== 0) {
+    if (result.seen !== 0 || result.orgs !== 0 || result.members !== 0 || result.sessions !== 0) {
       fail(
-        `tenant B can read tenant A (clients ${result.seen}, orgs ${result.orgs}, members ${result.members})`,
+        `tenant B can read tenant A (clients ${result.seen}, orgs ${result.orgs}, members ${result.members}, catering sessions ${result.sessions})`,
       )
     }
     if (result.own !== 1) fail('tenant B cannot read its own organisation')

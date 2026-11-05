@@ -275,3 +275,97 @@ create policy portfolio_items_write on public.portfolio_items
 -- lock. RLS is enabled without any policy: no role except the owner sees a row,
 -- so an exposed PostgREST route cannot leak another tenant's quote volume.
 alter table public.quote_counters enable row level security;
+
+-- catering engine ------------------------------------------------------------
+-- Session templates, categories, dietary labels and selection limits are the
+-- owner's configuration. Reading is open to any member (a chef needs to know
+-- the rules); writing is owner/manager only. Every table carries org_id.
+alter table public.catering_sessions enable row level security;
+drop policy if exists catering_sessions_select on public.catering_sessions;
+create policy catering_sessions_select on public.catering_sessions
+  for select using (public.is_org_member(org_id));
+drop policy if exists catering_sessions_write on public.catering_sessions;
+create policy catering_sessions_write on public.catering_sessions
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.menu_categories enable row level security;
+drop policy if exists menu_categories_select on public.menu_categories;
+create policy menu_categories_select on public.menu_categories
+  for select using (public.is_org_member(org_id));
+drop policy if exists menu_categories_write on public.menu_categories;
+create policy menu_categories_write on public.menu_categories
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.dietary_profiles enable row level security;
+drop policy if exists dietary_profiles_select on public.dietary_profiles;
+create policy dietary_profiles_select on public.dietary_profiles
+  for select using (public.is_org_member(org_id));
+drop policy if exists dietary_profiles_write on public.dietary_profiles;
+create policy dietary_profiles_write on public.dietary_profiles
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.category_selection_rules enable row level security;
+drop policy if exists category_selection_rules_select on public.category_selection_rules;
+create policy category_selection_rules_select on public.category_selection_rules
+  for select using (public.is_org_member(org_id));
+drop policy if exists category_selection_rules_write on public.category_selection_rules;
+create policy category_selection_rules_write on public.category_selection_rules
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.menu_item_categories enable row level security;
+drop policy if exists menu_item_categories_select on public.menu_item_categories;
+create policy menu_item_categories_select on public.menu_item_categories
+  for select using (public.is_org_member(org_id));
+drop policy if exists menu_item_categories_write on public.menu_item_categories;
+create policy menu_item_categories_write on public.menu_item_categories
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.event_catering_sessions enable row level security;
+drop policy if exists event_catering_sessions_select on public.event_catering_sessions;
+create policy event_catering_sessions_select on public.event_catering_sessions
+  for select using (public.is_org_member(org_id));
+drop policy if exists event_catering_sessions_write on public.event_catering_sessions;
+create policy event_catering_sessions_write on public.event_catering_sessions
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.session_menu_items enable row level security;
+drop policy if exists session_menu_items_select on public.session_menu_items;
+create policy session_menu_items_select on public.session_menu_items
+  for select using (public.is_org_member(org_id));
+drop policy if exists session_menu_items_write on public.session_menu_items;
+create policy session_menu_items_write on public.session_menu_items
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.session_dietary_counts enable row level security;
+drop policy if exists session_dietary_counts_select on public.session_dietary_counts;
+create policy session_dietary_counts_select on public.session_dietary_counts
+  for select using (public.is_org_member(org_id));
+drop policy if exists session_dietary_counts_write on public.session_dietary_counts;
+create policy session_dietary_counts_write on public.session_dietary_counts
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.menu_item_ingredients enable row level security;
+drop policy if exists menu_item_ingredients_select on public.menu_item_ingredients;
+create policy menu_item_ingredients_select on public.menu_item_ingredients
+  for select using (public.is_org_member(org_id));
+drop policy if exists menu_item_ingredients_write on public.menu_item_ingredients;
+create policy menu_item_ingredients_write on public.menu_item_ingredients
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+-- Snapshots are written by the server on quote send and never edited.
+alter table public.catering_snapshots enable row level security;
+drop policy if exists catering_snapshots_select on public.catering_snapshots;
+create policy catering_snapshots_select on public.catering_snapshots
+  for select using (public.has_org_role(org_id, array['owner','manager']));
+drop policy if exists catering_snapshots_insert on public.catering_snapshots;
+create policy catering_snapshots_insert on public.catering_snapshots
+  for insert with check (public.has_org_role(org_id, array['owner','manager']));
