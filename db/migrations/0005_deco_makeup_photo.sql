@@ -144,7 +144,7 @@ CREATE TABLE "makeup_trials" (
 CREATE TABLE "photography_coverage" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"org_id" uuid NOT NULL,
-	"event_id" uuid NOT NULL,
+	"event_id" uuid,
 	"coverage_type" text NOT NULL,
 	"coverage_start" timestamp with time zone NOT NULL,
 	"coverage_end" timestamp with time zone NOT NULL,
@@ -162,7 +162,7 @@ CREATE TABLE "photography_coverage" (
 CREATE TABLE "photography_assignments" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"org_id" uuid NOT NULL,
-	"event_id" uuid NOT NULL,
+	"event_id" uuid,
 	"coverage_id" uuid,
 	"photographer_name" text NOT NULL,
 	"role" text NOT NULL,
@@ -178,7 +178,7 @@ CREATE TABLE "photography_assignments" (
 CREATE TABLE "photography_shot_lists" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"org_id" uuid NOT NULL,
-	"event_id" uuid NOT NULL,
+	"event_id" uuid,
 	"moment" text NOT NULL,
 	"description" text,
 	"priority" text DEFAULT 'normal' NOT NULL,
@@ -193,7 +193,7 @@ CREATE TABLE "photography_shot_lists" (
 CREATE TABLE "photography_deliverables" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"org_id" uuid NOT NULL,
-	"event_id" uuid NOT NULL,
+	"event_id" uuid,
 	"deliverable_type" text NOT NULL,
 	"quantity" integer DEFAULT 1 NOT NULL,
 	"status" text DEFAULT 'pending' NOT NULL,

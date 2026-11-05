@@ -213,9 +213,7 @@ export const photographyCoverage = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organisations.id, { onDelete: 'cascade' }),
-    eventId: uuid('event_id')
-      .notNull()
-      .references(() => events.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'cascade' }),
     coverageType: text('coverage_type').notNull(),
     coverageStart: timestamp('coverage_start', { withTimezone: true }).notNull(),
     coverageEnd: timestamp('coverage_end', { withTimezone: true }).notNull(),
@@ -241,9 +239,7 @@ export const photographyAssignments = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organisations.id, { onDelete: 'cascade' }),
-    eventId: uuid('event_id')
-      .notNull()
-      .references(() => events.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'cascade' }),
     coverageId: uuid('coverage_id').references(() => photographyCoverage.id, {
       onDelete: 'set null',
     }),
@@ -266,9 +262,7 @@ export const photographyShotLists = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organisations.id, { onDelete: 'cascade' }),
-    eventId: uuid('event_id')
-      .notNull()
-      .references(() => events.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'cascade' }),
     moment: text('moment').notNull(),
     description: text('description'),
     priority: shotPriority('priority').notNull().default('normal'),
@@ -288,9 +282,7 @@ export const photographyDeliverables = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organisations.id, { onDelete: 'cascade' }),
-    eventId: uuid('event_id')
-      .notNull()
-      .references(() => events.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'cascade' }),
     deliverableType: text('deliverable_type').notNull(),
     quantity: integer('quantity').notNull().default(1),
     status: deliverableStatus('status').notNull().default('pending'),
