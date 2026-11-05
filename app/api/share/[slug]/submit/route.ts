@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb, isDatabaseConfigured } from '@/lib/db/client'
 import { eq } from 'drizzle-orm'
@@ -16,10 +16,13 @@ const SubmitSchema = z.object({
 })
 
 export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ slug: string }> }
+  request: NextRequest,
+  { params }: { params: Promise<Record<string, string>> }
 ) {
   const { slug } = await params
+  if (!slug) {
+    return NextResponse.json({ error: 'Missing slug' }, { status: 400 })
+  }
 
   if (!isDatabaseConfigured()) {
     return NextResponse.json(

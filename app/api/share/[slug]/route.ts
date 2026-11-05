@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getDb, isDatabaseConfigured } from '@/lib/db/client'
 import { eq } from 'drizzle-orm'
 import { events } from '@/lib/db/schema'
@@ -8,10 +8,13 @@ import { verticalDescriptor } from '@/lib/domain/verticals'
 export const revalidate = 0
 
 export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ slug: string }> }
+  _request: NextRequest,
+  { params }: { params: Promise<Record<string, string>> }
 ) {
   const { slug } = await params
+  if (!slug) {
+    return NextResponse.json({ error: 'Missing slug' }, { status: 400 })
+  }
 
   if (!isDatabaseConfigured()) {
     return NextResponse.json(
