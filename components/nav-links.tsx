@@ -89,7 +89,14 @@ export function NavLinks({
   verticals?: readonly string[]
 }) {
   const pathname = usePathname()
-  const allowed = (item: NavItem) => !item.requires || verticals.includes(item.requires)
+  /**
+   * A workspace with no service rows is a legacy tenant, not a business that
+   * offers nothing: hide nothing rather than strip their menu overnight. The
+   * gate only starts gating once at least one vertical is configured.
+   */
+  const ungated = verticals.length === 0
+  const allowed = (item: NavItem) =>
+    ungated || !item.requires || verticals.includes(item.requires)
 
   if (variant === 'mobile') {
     return (

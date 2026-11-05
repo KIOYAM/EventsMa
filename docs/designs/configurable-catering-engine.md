@@ -1,6 +1,6 @@
 # Design — Configurable catering engine
 
-**Status:** approved for build, slice 1 in progress
+**Status:** slice 1 shipped (schema, engines, configuration screen, nav gate)
 **Owner:** product + engineering
 **Supersedes:** nothing. Extends [04](../04-architecture-cost-and-scale.md) and [12](../12-prototype-page-parity.md).
 **Rule this document protects:** the application does not decide how a catering business
@@ -89,7 +89,7 @@ second tenant with catering disabled sees no Menu link.
 
 | Slice | Contents | State |
 |---|---|---|
-| 1 | Schema, RLS, engines, tests, `/catering` configuration, nav gate | this change |
+| 1 | Schema, RLS, engines, tests, `/catering` configuration, nav gate | **shipped** — 10 tables, 20 RLS policies, 17 unit tests, verified against the live database |
 | 2 | Event catering panel: multi-session, guest counts, dish selection against rules | next |
 | 3 | Recipe builder + production sheet + inventory demand | after 2 |
 | 4 | Snapshots on quote send, revision approval | after 2 |

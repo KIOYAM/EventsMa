@@ -165,5 +165,5 @@ CREATE UNIQUE INDEX "session_dietary_counts_session_profile_key" ON "session_die
 CREATE INDEX "session_dietary_counts_org_session_idx" ON "session_dietary_counts" USING btree ("org_id","event_session_id");--> statement-breakpoint
 CREATE INDEX "session_menu_items_org_session_idx" ON "session_menu_items" USING btree ("org_id","event_session_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "session_menu_items_session_item_key" ON "session_menu_items" USING btree ("event_session_id","item_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "clients_org_phone_key" ON "clients" USING btree ("org_id","phone_normalized") WHERE "clients"."phone_normalized" is not null;--> statement-breakpoint
-CREATE UNIQUE INDEX "invoices_org_quotation_key" ON "invoices" USING btree ("org_id","quotation_id") WHERE "invoices"."quotation_id" is not null;
+CREATE UNIQUE INDEX IF NOT EXISTS "clients_org_phone_key" ON "clients" USING btree ("org_id","phone_normalized") WHERE "clients"."phone_normalized" is not null;--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "invoices_org_quotation_key" ON "invoices" USING btree ("org_id","quotation_id") WHERE "invoices"."quotation_id" is not null;
