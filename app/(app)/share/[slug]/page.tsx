@@ -1,12 +1,40 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import React, { useState } from 'react'
+import { ArrowLeft, Check, Layers, Mail, Phone, Send } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/page-header'
 import { formatINR } from '@/lib/domain/money'
-import { getEventDetail } from '@/lib/db/events'
-import { getEventCatering } from '@/lib/db/catering-events'
+
+interface ShareService {
+  id: string
+  key: string
+  label: string
+  status: string
+  configSnapshot: Record<string, unknown>
+}
+
+interface ShareEvent {
+  id: string
+  title: string
+  eventDate: string
+  startTime: string | null
+  endTime: string | null
+  venueName: string | null
+  venueAddress: string | null
+  guests: number
+  status: string
+  eventType: string | null
+  notes: string | null
+}
+
+interface ShareData {
+  event: ShareEvent
+  orgId: string
+  services: ShareService[]
+}
 
 export const metadata = { title: 'Event Share View' }
 
@@ -17,29 +45,29 @@ export default async function SharePage({
 }) {
   const { slug } = await params
 
-  const event = await getEventDetail('kannan-events', false, slug)
-  if (!event) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/share/${slug}`, {
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
     notFound()
   }
 
-  let catering = (await getEventCatering('kannan-events', slug, false)) as any
-  if (!catering?.sessions) {
-    catering = { sessions: [], categories: [] }
-  }
+  const data: ShareData = await res.json()
 
   return (
     <div className="min-h-screen bg-paper text-ink">
       <header className="border-b border-hairline bg-white/90 backdrop-blur px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link
-            href="/events"
+            href="/"
             className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-forest"
           >
-            <ArrowLeft className="h-4 w-4" aria-hidden /> Back to events
+            <ArrowLeft className="h-4 w-4" aria-hidden /> Back to EventsMa
           </Link>
           <div className="flex items-center gap-4">
-            <h1 className="font-display text-2xl text-forest">{event.title}</h1>
-            <Badge tone="outline">{event.eventType || 'Occasion'}</Badge>
+            <h1 className="font-display text-2xl text-forest">{data.event.title}</h1>
+            <Badge tone="outline">{data.event.eventType || 'Occasion'}</Badge>
           </div>
         </div>
       </header>
@@ -54,227 +82,296 @@ export default async function SharePage({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-ink-muted">Date</p>
-                <p className="font-medium">{event.eventDate}</p>
+                <p className="font-medium">{data.event.eventDate}</p>
               </div>
               <div>
                 <p className="text-sm text-ink-muted">Guests</p>
-                <p className="font-medium">{event.guests}</p>
+                <p className="font-medium">{data.event.guests}</p>
               </div>
               <div>
                 <p className="text-sm text-ink-muted">Venue</p>
-                <p className="font-medium">{event.venueName || 'Not specified'}</p>
+                <p className="font-medium">{data.event.venueName || 'Not specified'}</p>
               </div>
             </div>
-
-            {event.notes && (
+            {data.event.notes && (
               <div>
                 <p className="text-sm text-ink-muted">Notes</p>
-                <p className="font-medium">{event.notes}</p>
+                <p className="font-medium">{data.event.notes}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Catering sessions */}
+        {/* Services available */}
         <Card>
           <CardHeader>
-            <CardTitle>Catering plan</CardTitle>
-            <Badge tone="outline">{catering.sessions.length || 0} sessions</Badge>
-          </CardHeader>
-          <CardContent>
-            {catering.sessions.length === 0 ? (
-              <EmptyState
-                icon={<div className="h-6 w-6">✕</div>}
-                title="No catering sessions"
-                description="The event has no catering sessions configured yet."
-              />
-            ) : (
-              <div className="space-y-4">
-                {catering.sessions.map((session: any) => (
-                  <details key={session.id} className="border rounded">
-                    <summary>
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-forest">
-                          {session.name} {session.guestCount} guests
-                        </span>
-                        <span className="text-xs text-ink-muted">
-                          {session.startTime || '—'} - {session.endTime || '—'}
-                        </span>
-                      </div>
-                    </summary>
-                    <CardContent className="pt-3">
-                      <p className="text-sm text-ink-muted">
-                        {session.notes || 'No additional notes'}
-                      </p>
-                      <p className="mt-2 text-xs text-ink-muted">
-                        Menu items will be selected from the catalogue
-                      </p>
-                    </CardContent>
-                  </details>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Client selection interface */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Select your menu</CardTitle>
+            <CardTitle>Services for this event</CardTitle>
             <p className="text-sm text-ink-muted">
-              Choose dishes for {event.guests} guests. Average pricing is shown — final quote will be computed by the owner.
+              Select the services you need. Each service has its own options and pricing.
             </p>
           </CardHeader>
           <CardContent>
-            {catering.categories.length === 0 ? (
+            {data.services.length === 0 ? (
               <EmptyState
-                icon={<div className="h-6 w-6">📋</div>}
-                title="No categories available"
-                description="The event catalog is being loaded. Please check back soon."
+                icon={<Layers className="h-6 w-6" aria-hidden />}
+                title="No services configured"
+                description="The event owner hasn't added any services to this event yet."
               />
             ) : (
-              <div className="grid gap-4">
-                {catering.categories.map((cat: any) => (
-                  <div
-                    key={cat.id}
-                    className="border rounded p-4 hover:border-forest transition-colors"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-forest">{cat.name}</span>
-                      <span className="text-xs text-ink-muted">
-                        {cat.minSelections ?? 0}-{cat.maxSelections ?? '∞'} selections
-                      </span>
-                    </div>
-                    <p className="text-sm text-ink-muted">
-                      {cat.description || 'Select dishes from the catalogue below'}
-                    </p>
-                    <div className="mt-3 space-y-2">
-                      {cat.items.map((item: any) => (
-                        <div
-                          key={item.id}
-                          className="border rounded p-3 bg-paper/50"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-forest">
-                              {item.name_snapshot || item.name}
-                            </span>
-                            <span className="text-xs text-ink-muted">
-                              avg ₹{formatINR(item.unit_price_paise / 100)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-ink-muted">
-                            {item.quantity ? `${item.quantity} × ` : ''}
-                            {item.unit_class_snapshot || 'per portion'}
-                          </p>
-                          <p className="text-xs text-ink-muted">
-                            Estimated total for this item: ₹{
-                              Math.round(
-                                (item.unit_price_paise / 100) *
-                                  (item.quantity || 1) *
-                                  (event.guests || 1)
-                              )
-                            } (average range)
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {data.services.map((svc) => (
+                  <ServiceCard key={svc.id} service={svc} />
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Submission section */}
+        {/* Submission form */}
         <Card>
           <CardHeader>
-            <CardTitle>Submit your choices</CardTitle>
+            <CardTitle>Submit your requirements</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-ink-muted mb-4">
-              Selected dishes and preferences will be sent to the event owner for review. They will contact you with a final quotation.
-            </p>
-            <form
-              onSubmit={async (e: React.FormEvent) => {
-                e.preventDefault()
-
-                // Collect form data
-                const formData = new FormData(e.target as HTMLFormElement)
-                const clientName = formData.get('clientName') as string || 'Unknown client'
-                const clientEmail = formData.get('clientEmail') as string || ''
-                const clientPhone = formData.get('clientPhone') as string || ''
-
-                // Build the summary of selections
-                const selectionLines: Array<{name: string; qty: string; total: string}> = []
-                catering.categories.forEach((cat: any) => {
-                  cat.items.forEach((item: any) => {
-                    const qty = item.quantity ? String(item.quantity) : '1'
-                    const total = Math.round((item.unit_price_paise / 100) * (item.quantity || 1) * (event.guests || 1))
-                    selectionLines.push({
-                      name: item.name_snapshot || item.name,
-                      qty,
-                      total: String(total)
-                    })
-                  })
-                })
-
-                // Show success alert
-                alert(
-                  `Thank you! Your choices for ${event.title} have been submitted.${'\n\n'}The event owner will review and send a quotation via email or call soon.`
-                )
-              }}
-            >
-              <div className="grid gap-3 mb-4">
-                <div className="row-span-2 space-y-3">
-                  <label className="block text-sm text-ink-muted">Your name</label>
-                  <input
-                    type="text"
-                    name="clientName"
-                    placeholder="Your name"
-                    className="flex h-11 w-full rounded-control border border-hairline bg-paper px-3 text-ink"
-                    required
-                  />
-                </div>
-                <div className="row-span-2 space-y-3">
-                  <label className="block text-sm text-ink-muted">Email (optional)</label>
-                  <input
-                    type="email"
-                    name="clientEmail"
-                    placeholder="you@example.com"
-                    className="flex h-11 w-full rounded-control border border-hairline bg-paper px-3 text-ink"
-                  />
-                </div>
-                <div className="row-span-2 space-y-3">
-                  <label className="block text-sm text-ink-muted">Phone (optional)</label>
-                  <input
-                    type="tel"
-                    name="clientPhone"
-                    placeholder="+91 98765 43210"
-                    className="flex h-11 w-full rounded-control border border-hairline bg-paper px-3 text-ink"
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="inline-flex h-11 w-full items-center justify-center rounded-control bg-forest px-6 text-sm font-medium text-white"
-              >
-                Submit choices to owner
-              </button>
-            </form>
-            <p className="mt-3 text-xs text-ink-muted">
-              After submission, the owner will review and send a quotation via email or call.
-            </p>
+            <ShareSubmissionForm eventId={data.event.id} services={data.services} />
           </CardContent>
         </Card>
       </main>
 
       <footer className="border-t border-hairline bg-white/90 backdrop-blur px-6 py-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <p className="text-sm text-ink-muted">
-            This is a shared view for {event.title}. For questions, contact the event organizer directly.
+            This is a shared view for <b>{data.event.title}</b>. For questions, contact the event
+            organizer directly.
           </p>
+          <div className="flex items-center gap-4">
+            <a href="mailto:" className="text-sm text-ink-muted flex items-center gap-1.5 hover:text-forest">
+              <Mail className="h-4 w-4" aria-hidden />
+              Email
+            </a>
+            <a href="tel:" className="text-sm text-ink-muted flex items-center gap-1.5 hover:text-forest">
+              <Phone className="h-4 w-4" aria-hidden />
+              Call
+            </a>
+          </div>
         </div>
       </footer>
     </div>
   )
+}
+
+function ServiceCard({ service }: { service: ShareService }) {
+  const serviceConfig: Record<string, string> = {}
+  for (const [k, v] of Object.entries(service.configSnapshot)) {
+    if (typeof v === 'string') serviceConfig[k] = v
+  }
+
+  return (
+    <Card className="border border-hairline bg-paper/50 hover:border-mint/50 transition-colors">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm">{service.label}</CardTitle>
+          <Badge tone="outline" className="text-[9px] px-2 py-1">
+            {service.status}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-3">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+              Service key
+            </span>
+            <span className="text-[10px] text-ink-muted truncate">{service.key}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+              Status
+            </span>
+            <Badge tone={service.status === 'confirmed' ? 'success' : 'mint'} className="text-[9px]">
+              {service.status}
+            </Badge>
+          </div>
+        </div>
+        <p className="text-[10px] text-ink-muted mt-3">
+          Configure this service in the owner workspace to see available options.
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ShareSubmissionForm({
+  eventId,
+  services,
+}: {
+  eventId: string
+  services: ShareService[]
+}) {
+  const [submitting, setSubmitting] = React.useState(false)
+  const [submitted, setSubmitted] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setError(null)
+
+    const formData = new FormData(e.currentTarget as HTMLFormElement)
+    const clientName = formData.get('clientName') as string
+    const clientEmail = formData.get('clientEmail') as string
+    const clientPhone = formData.get('clientPhone') as string
+    const message = formData.get('message') as string
+
+    // Collect selections per service
+    const selections: Record<string, any> = {}
+    services.forEach((svc) => {
+      const svcSelections: Record<string, any> = {}
+      // Collect all form fields prefixed with the service key
+      for (const [key, value] of formData.entries()) {
+        if (key.startsWith(`${svc.key}:`)) {
+          const fieldKey = key.slice(`${svc.key}:`.length)
+          svcSelections[fieldKey] = value
+        }
+      }
+      if (Object.keys(svcSelections).length > 0) {
+        selections[svc.key] = svcSelections
+      }
+    })
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/share/${eventId}/submit`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eventId,
+            clientName,
+            clientEmail,
+            clientPhone,
+            selections,
+            message,
+          }),
+        }
+      )
+
+      if (!res.ok) {
+        throw new Error('Submission failed')
+      }
+
+      setSubmitted(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Submission failed. Try again.')
+      setSubmitting(false)
+    }
+  }
+
+  if (submitted) {
+    return (
+      <div className="rounded-card border border-mint bg-mint-subtle px-6 py-8 text-center">
+        <Check className="h-10 w-10 text-positive mx-auto mb-3" aria-hidden />
+        <h2 className="text-lg font-medium text-ink">Submitted successfully</h2>
+        <p className="text-sm text-ink-muted mt-2">
+          Your selections have been sent to the event owner. They will review and contact you
+          with a quotation.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-ink mb-1">Your name</label>
+          <input
+            name="clientName"
+            type="text"
+            required
+            className="h-10 w-full rounded-control border border-hairline bg-paper px-3 text-ink placeholder:text-ink-muted/70"
+            placeholder="Your name"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-ink mb-1">Email (optional)</label>
+          <input
+            name="clientEmail"
+            type="email"
+            className="h-10 w-full rounded-control border border-hairline bg-paper px-3 text-ink placeholder:text-ink-muted/70"
+            placeholder="you@example.com"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-ink mb-1">Phone (optional)</label>
+          <input
+            name="clientPhone"
+            type="tel"
+            className="h-10 w-full rounded-control border border-hairline bg-paper px-3 text-ink placeholder:text-ink-muted/70"
+            placeholder="+91 98765 43210"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-ink mb-1">Message to the owner</label>
+          <textarea
+            name="message"
+            rows={3}
+            className="h-24 w-full rounded-control border border-hairline bg-paper px-3 text-ink placeholder:text-ink-muted/70"
+            placeholder="Any special requirements or questions..."
+          />
+        </div>
+      </div>
+
+      <div className="mt-6 pt-6 border-t border-hairline">
+        <h3 className="text-xs font-medium uppercase tracking-[0.16em] text-ink-muted mb-3">
+          Your service selections
+        </h3>
+        <div className="space-y-3">
+          {services.map((svc) => (
+            <div key={svc.id} className="p-3 rounded-control border border-hairline bg-paper/50">
+              <p className="text-xs font-medium text-ink">{serviceLabel(svc.key)}</p>
+              <p className="text-[10px] text-ink-muted">
+                Select {serviceLabel(svc.key)} options above, then submit below.
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div className="rounded-control border border-terracotta/30 bg-terracotta-soft px-3 py-2 text-sm text-terracotta">
+          {error}
+        </div>
+      )}
+
+      <Button
+        type="submit"
+        disabled={submitting}
+        className="w-full bg-forest text-white hover:bg-forest-hover"
+      >
+        {submitting ? (
+          <>
+            <Send className="h-4 w-4 mr-2" aria-hidden />
+            Submitting...
+          </>
+        ) : (
+          <>
+            <Send className="h-4 w-4 mr-2" aria-hidden />
+            Submit requirements
+          </>
+        )}
+      </Button>
+    </form>
+  )
+}
+
+function serviceLabel(key: string): string {
+  const labels: Record<string, string> = {
+    catering: 'Catering & food service',
+    decor: 'Decoration & styling',
+    makeup: 'Makeup & beauty',
+    photography: 'Photography & video',
+    specialist: 'Specialist service',
+  }
+  return labels[key] || key
 }
