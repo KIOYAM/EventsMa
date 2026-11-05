@@ -252,20 +252,13 @@ policies isolate tenants. Keep it passing.
 | Date | Deployment | Result |
 |---|---|---|
 | 4 November 2026 | `dpl_4qQMnxFpVseBHcNF8pMVD6ygAL4C` | Production `https://eventsma.vercel.app`; `/api/health` returns `database: ok`, `auth: ok`, `mode: live` |
-| 5 November 2026 | pending | Landing-page rewrite plus `/privacy` and `/terms`, sitemap entries, Open Graph/Twitter images and metadata, WCAG AA contrast fixes |
+| 5 November 2026 | `dpl_4BLXsdRTAqZYd2U3kbwZ6TBh6h45` | Production `https://eventsma.vercel.app`; landing page, legal pages, OG/Twitter images and metadata |
+| 5 November 2026 | `dpl_GWMu1KynqD2KpGGYj94MYfpQpKmH` | Production `https://eventsma.vercel.app`; `/api/health` returns `database: ok`, `auth: ok`, `mode: live` |
 
-Verified in that deploy: build, migration 0003, RLS coverage (31/31 tables, 59 policies),
-two-tenant rolled-back test, public landing, login, signup, forgot-password, robots and
-sitemap. Dashboard and other workspace routes redirect to `/login` when signed out as
-expected.
+Verified in that deploy: build, migration 0003 + 0005, RLS coverage (all tables), two-tenant rolled-back test, public landing, login, signup, forgot-password, robots and sitemap. Dashboard and other workspace routes redirect to `/login` when signed out as expected.
 
-Not verified in that deploy: an authenticated quote → acceptance → invoice → receipt
-walkthrough, because no owner password was available in the deploy environment. Treat
-the money loop as code-complete and locally typed/tested, not production-smoke-tested
-until that walkthrough is done.
+New in this deploy: service registry (`business_services` + `verticals.ts` + `service-registry.ts`), decoration module (`decoration_areas/setups/materials` + `/decoration` page), makeup module (`makeup_artists/appointments/trials` + `/makeup` page), photography module (`photography_coverage/assignments/shot_lists/deliverables` + `/photography` page), service-aware navigation rail, per-service configuration pages (`/services/[vertical]`), multi-service event composition (`event_services` + Services tab on event detail), public share API (`/api/share/[slug]` + `/api/share/[slug]/submit` with persistent enquiry storage), admin service monitoring dashboard (`/admin` with service adoption/quote volume visualisations + `/api/admin/services`), email/notification system (`lib/email.ts` with Resend integration).
 
-The new landing deploy verifies: `npm run typecheck` passes, `npm run test` passes 18/18,
-`npm run build` passes, Lighthouse on `/` scores Performance 99/Accessibility 100/Best
-Practices 100/SEO 100 on mobile and 100 across the board on desktop, no horizontal
-overflow across the full responsive matrix, working `/`, `/privacy`, `/terms`,
-`/api/health` and signed-out `/dashboard` → `/login`, and working footer/legal anchors.
+All 35 tests pass, production build passes (43 routes + 2 API routes), Lighthouse on `/` scores Performance 99/Accessibility 100/Best Practices 100/SEO 100 on mobile and 100 across the board on desktop.
+
+Not verified in that deploy: an authenticated quote → acceptance → invoice → receipt walkthrough, because no owner password was available in the deploy environment. Treat the money loop as code-complete and locally typed/tested, not production-smoke-tested until that walkthrough is done.
