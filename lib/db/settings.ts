@@ -3,6 +3,7 @@ import { and, asc, desc, eq } from 'drizzle-orm'
 import { getDb, isDatabaseConfigured } from './client'
 import { businesses, memberships, organisations, portfolioItems } from './schema'
 import type { PortfolioRow, SettingsData, StaffOption } from '@/lib/domain/ops'
+import { paymentDetailsFrom } from '@/lib/domain/payments'
 import { demoPortfolio, demoSettings, demoStaff } from '@/lib/demo/workspace'
 
 const FALLBACK_SLUG = 'workspace'
@@ -71,6 +72,7 @@ export async function getSettings(orgId: string, demo: boolean): Promise<Setting
       serviceAreas: settings.serviceAreas ?? [],
       brandPrimary: settings.brand?.primary ?? '#1f4d3a',
       brandFont: settings.brand?.font ?? 'Inter',
+      payment: paymentDetailsFrom(settings.payment),
     },
   }
 }

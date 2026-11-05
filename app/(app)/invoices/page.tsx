@@ -32,7 +32,14 @@ const ERROR_COPY: Record<string, string> = {
 export default async function InvoicesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; page?: string; error?: string; saved?: string; event?: string }>
+  searchParams: Promise<{
+    status?: string
+    page?: string
+    error?: string
+    saved?: string
+    event?: string
+    quote?: string
+  }>
 }) {
   const ctx = await requireWorkspace()
   const params = await searchParams
@@ -146,7 +153,7 @@ export default async function InvoicesPage({
         params={{ status: params.status }}
       />
 
-      <Card>
+      <Card id="new">
         <CardHeader>
           <CardTitle>Raise an invoice</CardTitle>
           <Badge tone="outline">{available.length} ready</Badge>
@@ -159,7 +166,7 @@ export default async function InvoicesPage({
           ) : (
             <form action={createInvoice} className="grid gap-4 md:grid-cols-2">
               <Field label="Accepted quote" htmlFor="quotationId" className="md:col-span-2">
-                <Select id="quotationId" name="quotationId" required defaultValue="">
+                <Select id="quotationId" name="quotationId" required defaultValue={params.quote ?? ''}>
                   <option value="" disabled>
                     Choose a quote
                   </option>

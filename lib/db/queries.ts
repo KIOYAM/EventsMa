@@ -14,6 +14,8 @@ import {
 } from './schema'
 import { demoBusiness, demoComputation, demoItems, demoQuotes, demoServices } from '@/lib/demo/data'
 import type { UnitClass } from '@/lib/domain/units'
+import type { PaymentDetails } from '@/lib/domain/ops'
+import { EMPTY_PAYMENT_DETAILS, paymentDetailsFrom } from '@/lib/domain/payments'
 
 export interface ServiceRow {
   verticalKey: string
@@ -314,14 +316,20 @@ export async function getComposerData(orgId: string, demo: boolean): Promise<Com
 }
 
 export interface QuoteDocument {
+  id: string
   number: string
   status: string
+  publicToken: string | null
+  tokenExpiresAt: string | null
+  acceptedAt: string | null
+  acceptedByEmail: string | null
   title: string
   eventDate: string
   venueName: string | null
   guests: number
   businessName: string
   businessPhone: string | null
+  payment: PaymentDetails
   serviceGroups: {
     serviceKey: string
     lines: {
@@ -370,14 +378,23 @@ export function demoQuoteDocument(): QuoteDocument {
   }
 
   return {
+    id: '00000000-0000-4000-8000-0000000000d1',
     number: 'QT-2026-0041',
     status: 'sent',
-    title: 'Meera & Karthik — Wedding lunch',
+    publicToken: 'demo-quote-token',
+    tokenExpiresAt: null,
+    acceptedAt: null,
+    acceptedByEmail: null,
+    title: 'Meera & Karthik - Wedding lunch',
     eventDate: daysFromNow(10),
     venueName: 'Sree Lakshmi Mahal, Peelamedu',
     guests: 350,
     businessName: demoBusiness.name,
     businessPhone: demoBusiness.phone,
+    payment: {
+      ...EMPTY_PAYMENT_DETAILS,
+      instructions: 'Demo only. No money is collected from this page.',
+    },
     serviceGroups: [...groups.values()],
     subtotalPaise: computed.subtotalPaise,
     discountPaise: computed.discountPaise,
@@ -399,8 +416,13 @@ export async function getQuoteDocument(
   const db = getDb()
   const [row] = await db
     .select({
+      id: quotations.id,
       number: quotations.number,
       status: quotations.status,
+      publicToken: quotations.publicToken,
+      tokenExpiresAt: quotations.tokenExpiresAt,
+      acceptedAt: quotations.acceptedAt,
+      acceptedByEmail: quotations.acceptedByEmail,
       versionId: quotationVersions.id,
       title: events.title,
       eventDate: events.eventDate,
@@ -415,6 +437,7 @@ export async function getQuoteDocument(
       marginPaise: quotationVersions.marginPaise,
       businessName: businesses.name,
       businessPhone: businesses.phone,
+      businessSettings: businesses.settings,
     })
     .from(quotations)
     .innerJoin(events, eq(quotations.eventId, events.id))
@@ -464,14 +487,20 @@ export async function getQuoteDocument(
 
   const taxable = row.totalPaise - row.taxPaise
   return {
+    id: row.id,
     number: row.number,
     status: row.status,
+    publicToken: row.publicToken,
+    tokenExpiresAt: row.tokenExpiresAt ? row.tokenExpiresAt.toISOString() : null,
+    acceptedAt: row.acceptedAt ? row.acceptedAt.toISOString() : null,
+    acceptedByEmail: row.acceptedByEmail,
     title: row.title,
     eventDate: row.eventDate,
     venueName: row.venueName,
     guests: row.guests,
     businessName: row.businessName,
     businessPhone: row.businessPhone,
+    payment: paymentDetailsFrom(row.businessSettings?.payment),
     serviceGroups: [...groups.values()],
     subtotalPaise: row.subtotalPaise,
     discountPaise: row.discountPaise,

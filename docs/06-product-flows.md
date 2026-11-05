@@ -170,11 +170,12 @@ Send
 ```
 Customer opens /q/<token>
   → sees itemised quote, taxes, total, validity, business contact
-  → "Accept" → name + email one-time code → accepted_at recorded
-     (email only in MVP: SMS costs money and adds a vendor; phone OTP later)
-  → "Pay advance" → Razorpay checkout → webhook → payment row → receipt
-  → owner notified; event moves to confirmed
-  → confirmation email carries the receipt and the event details
+  → ticks acceptance, optionally leaves an email → status=accepted, accepted_at recorded
+     (no OTP in the MVP; the unguessable token is the access control)
+  → sees the business's own bank/UPI instructions; no online checkout
+  → sends the transfer reference to the business
+  → owner records the receipt manually against the invoice (append-only)
+  → accepted quote can be raised as an invoice; event moves to confirmed
 ```
 
 | Failure | Behaviour |

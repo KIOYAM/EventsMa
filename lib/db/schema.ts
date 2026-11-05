@@ -24,6 +24,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 
 export const memberRole = pgEnum('member_role', ['owner', 'manager', 'employee'])
 export const quoteStatus = pgEnum('quote_status', [
@@ -124,6 +125,14 @@ export const businesses = pgTable(
         quoteValidityDays?: number
         serviceAreas?: string[]
         brand?: { primary?: string; font?: string }
+        payment?: {
+          instructions?: string
+          upiVpa?: string
+          bankName?: string
+          accountName?: string
+          accountNumber?: string
+          ifsc?: string
+        }
       }>()
       .notNull()
       .default({}),
@@ -268,6 +277,9 @@ export const clients = pgTable(
   },
   (t) => [
     index('clients_org_phone_idx').on(t.orgId, t.phoneNormalized),
+    uniqueIndex('clients_org_phone_key')
+      .on(t.orgId, t.phoneNormalized)
+      .where(sql`${t.phoneNormalized} is not null`),
     index('clients_org_name_idx').on(t.orgId, t.name),
   ],
 )
@@ -433,6 +445,9 @@ export const invoices = pgTable(
   },
   (t) => [
     uniqueIndex('invoices_org_number_key').on(t.orgId, t.number),
+    uniqueIndex('invoices_org_quotation_key')
+      .on(t.orgId, t.quotationId)
+      .where(sql`${t.quotationId} is not null`),
     index('invoices_org_status_due_idx').on(t.orgId, t.status, t.dueOn),
     index('invoices_org_event_idx').on(t.orgId, t.eventId),
   ],

@@ -21,7 +21,7 @@ function SubmitButton() {
   )
 }
 
-export function SignupForm() {
+export function SignupForm({ next = '/onboarding' }: { next?: string }) {
   const [state, formAction] = useActionState(signUp, initial)
 
   if (state.sentTo) {
@@ -47,6 +47,7 @@ export function SignupForm() {
 
   return (
     <form action={formAction} className="mt-5 space-y-4">
+      <input type="hidden" name="next" value={next} />
       <Field label="Work email" htmlFor="email" hint="This becomes your login for the business.">
         <Input
           id="email"

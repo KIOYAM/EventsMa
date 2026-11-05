@@ -21,11 +21,12 @@ function SubmitButton() {
   )
 }
 
-export function LoginForm() {
+export function LoginForm({ next = '/dashboard' }: { next?: string }) {
   const [state, formAction] = useActionState(signIn, initial)
 
   return (
     <form action={formAction} className="mt-5 space-y-4">
+      <input type="hidden" name="next" value={next} />
       <Field label="Work email" htmlFor="email" hint="The email you signed up with.">
         <Input
           id="email"
@@ -45,6 +46,12 @@ export function LoginForm() {
           required
         />
       </Field>
+
+      <p className="-mt-1 text-right text-xs">
+        <Link href="/forgot-password" className="text-forest underline-offset-4 hover:underline">
+          Forgot your password?
+        </Link>
+      </p>
 
       {state.error ? (
         <p role="alert" className="rounded-control bg-red-50 px-3 py-2 text-sm text-red-700">

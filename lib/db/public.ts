@@ -1,7 +1,9 @@
 import 'server-only'
+import { cache } from 'react'
 import { and, eq, sql } from 'drizzle-orm'
 import { getDb, isDatabaseConfigured } from './client'
 import { businessServices, businesses, organisations, serviceItems } from './schema'
+import { isDemoEnvironment } from '@/lib/environment'
 import { demoBusiness, demoItems, demoServices } from '@/lib/demo/data'
 import { verticalDescriptor } from '@/lib/domain/verticals'
 
@@ -31,8 +33,9 @@ export function demoPublicProfile(): PublicProfile {
   }
 }
 
-export async function getPublicProfile(slug: string): Promise<PublicProfile | null> {
-  if (!isDatabaseConfigured()) return demoPublicProfile()
+export const getPublicProfile = cache(async (slug: string): Promise<PublicProfile | null> => {
+  if (isDemoEnvironment()) return demoPublicProfile()
+  if (!isDatabaseConfigured()) return null
 
   const db = getDb()
   const [row] = await db
@@ -80,4 +83,4 @@ export async function getPublicProfile(slug: string): Promise<PublicProfile | nu
       itemCount: countMap.get(s.verticalKey) ?? 0,
     })),
   }
-}
+})

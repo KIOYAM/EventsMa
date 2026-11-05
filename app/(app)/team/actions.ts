@@ -1,6 +1,6 @@
 'use server'
 
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, gt, isNull, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { randomUUID } from 'node:crypto'
@@ -33,12 +33,28 @@ export async function inviteMember(formData: FormData): Promise<void> {
 
   if (existing) redirect('/team?error=already')
 
+  const [pending] = await db
+    .select({ id: invitations.id })
+    .from(invitations)
+    .where(
+      and(
+        eq(invitations.orgId, ctx.orgId),
+        eq(invitations.email, email),
+        isNull(invitations.acceptedAt),
+        gt(invitations.expiresAt, new Date()),
+      ),
+    )
+    .limit(1)
+
+  if (pending) redirect('/team?error=pending')
+
   await db.insert(invitations).values({
     orgId: ctx.orgId,
     email,
     role: roleRaw,
     token: randomUUID(),
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    invitedBy: ctx.userId,
   })
 
   revalidatePath('/team')

@@ -153,7 +153,7 @@ tenancy tests, pricing tests, or the payment reconciliation.
 | Quotation | Line items, package + extras, discount, transport, per-line tax, round-off, server-computed totals, PDF/link, expiry, version 1 | Total on screen equals total in the PDF equals total in the database |
 | Share | WhatsApp message + link, copy link, PDF download, print | Sent from a phone in 3 taps |
 | Margin | Dish cost from recipe/ingredient prices, quote contribution and margin %, warning below target | Owner can see cost and margin for every quote line total |
-| Payments | Advance rule, Razorpay payment link, webhook updates ledger, receipt | Test-mode payment moves the balance and writes an immutable payment row |
+| Payments | Advance rule, business bank/UPI instructions on the quote, manual receipt entry, invoice status derived from append-only payments | Recording a receipt moves the balance, writes an immutable payment row and updates the invoice status |
 | Public page | One page per business: services, packages, gallery, contact, enquiry | Indexable URL, LCP < 2.5s on 4G, enquiry delivered |
 | Enquiry delivery | Email to owner + WhatsApp deep link + customer confirmation | Owner receives within 60 seconds; customer sees confirmation |
 | Dashboard | Today, upcoming events, quotes awaiting response, money due | Every number links to the list that produced it |

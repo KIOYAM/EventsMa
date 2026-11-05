@@ -152,6 +152,45 @@ export default async function SettingsPage({
           </Card>
         </div>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Manual payments</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs leading-relaxed text-ink-muted">
+              No payment gateway is connected. These details appear on the public quotation so a
+              customer knows where to send money; you record the receipt against the invoice.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="UPI ID" htmlFor="upiVpa" hint="Optional. Example: business@okicici">
+                <Input id="upiVpa" name="upiVpa" defaultValue={data.settings.payment.upiVpa} maxLength={120} />
+              </Field>
+              <Field label="Bank name" htmlFor="bankName">
+                <Input id="bankName" name="bankName" defaultValue={data.settings.payment.bankName} maxLength={120} />
+              </Field>
+              <Field label="Account name" htmlFor="accountName">
+                <Input id="accountName" name="accountName" defaultValue={data.settings.payment.accountName} maxLength={120} />
+              </Field>
+              <Field label="Account number" htmlFor="accountNumber">
+                <Input id="accountNumber" name="accountNumber" defaultValue={data.settings.payment.accountNumber} maxLength={60} />
+              </Field>
+              <Field label="IFSC" htmlFor="ifsc">
+                <Input id="ifsc" name="ifsc" defaultValue={data.settings.payment.ifsc} maxLength={20} />
+              </Field>
+              <Field label="Payment instructions" htmlFor="paymentInstructions" className="md:col-span-2">
+                <Textarea
+                  id="paymentInstructions"
+                  name="paymentInstructions"
+                  className="min-h-20"
+                  defaultValue={data.settings.payment.instructions}
+                  maxLength={600}
+                  placeholder="Pay 30% advance, send the reference on WhatsApp, receipt follows."
+                />
+              </Field>
+            </div>
+          </CardContent>
+        </Card>
+
         <button
           type="submit"
           disabled={!canEdit}

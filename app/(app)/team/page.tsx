@@ -1,8 +1,10 @@
 import { and, asc, eq, gt } from 'drizzle-orm'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CopyButton } from '@/components/copy-button'
 import { Field, Input, Select } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
+import { appUrl } from '@/lib/app-url'
 import { requireWorkspace } from '@/lib/auth/session'
 import { getDb } from '@/lib/db/client'
 import { invitations, memberships } from '@/lib/db/schema'
@@ -16,6 +18,7 @@ const ERROR_COPY: Record<string, string> = {
   role: 'That role is not valid.',
   missing: 'That member no longer exists.',
   already: 'That email is already on the team.',
+  pending: 'That email already has a pending invitation. Copy the existing link below.',
   last_owner: 'A workspace must keep at least one active owner.',
   demo: 'Demo mode: connect a database before inviting anyone.',
 }
@@ -58,7 +61,7 @@ export default async function TeamPage({
   const pending = demo
     ? []
     : await getDb()
-        .select({ id: invitations.id, email: invitations.email, role: invitations.role, expiresAt: invitations.expiresAt })
+        .select({ id: invitations.id, email: invitations.email, role: invitations.role, token: invitations.token, expiresAt: invitations.expiresAt })
         .from(invitations)
         .where(
           and(
@@ -190,9 +193,21 @@ export default async function TeamPage({
                 <p className="text-xs text-ink-muted">Nothing waiting.</p>
               ) : (
                 pending.map((invite) => (
-                  <div key={invite.id} className="flex items-center justify-between gap-3 text-xs">
-                    <span className="min-w-0 truncate text-ink">{invite.email}</span>
-                    <span className="text-ink-muted">{ROLE_LABEL[invite.role] ?? invite.role}</span>
+                  <div key={invite.id} className="space-y-1.5 border-b border-hairline pb-2 last:border-0 last:pb-0">
+                    <div className="flex items-center justify-between gap-3 text-xs">
+                      <span className="min-w-0 truncate text-ink">{invite.email}</span>
+                      <span className="text-ink-muted">{ROLE_LABEL[invite.role] ?? invite.role}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <code className="min-w-0 flex-1 truncate rounded bg-canvas px-1.5 py-1 text-[10px] text-ink-muted">
+                        {appUrl()}/invite/{invite.token}
+                      </code>
+                      <CopyButton
+                        value={`${appUrl()}/invite/${invite.token}`}
+                        label="Copy"
+                        copiedLabel="Copied"
+                      />
+                    </div>
                   </div>
                 ))
               )}

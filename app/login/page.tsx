@@ -1,27 +1,56 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AuthShell } from '@/components/auth-shell'
+import { safeNext } from '@/lib/app-url'
 import { getCurrentUser, hasSupabaseEnv } from '@/lib/auth/session'
 import { LoginForm } from './login-form'
 
-export const metadata = { title: 'Sign in to your business' }
+export const metadata = { title: 'Sign in to your business', robots: { index: false, follow: false } }
 
-export default async function LoginPage() {
+const ERROR_COPY: Record<string, string> = {
+  config: 'Sign-in is not configured on this deployment.',
+  link: 'That link has expired. Request a new one and try again.',
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string; error?: string; reset?: string }>
+}) {
+  const params = await searchParams
+  const next = safeNext(params.next)
   const configured = hasSupabaseEnv()
   if (configured) {
     const user = await getCurrentUser()
-    if (user) redirect('/dashboard')
+    if (user) redirect(next)
   }
 
   return (
     <AuthShell
       active="signin"
-      step="Existing business · sign in"
+      step="Existing business - sign in"
       title="Sign in to your business workspace"
       description="Use the work email and password you created for your event business. Your quotes, invoices and team are already inside."
     >
+      {params.error && ERROR_COPY[params.error] ? (
+        <div
+          role="alert"
+          className="mb-4 rounded-control border border-terracotta/30 bg-terracotta-soft px-3 py-2.5 text-xs leading-relaxed text-terracotta"
+        >
+          {ERROR_COPY[params.error]}
+        </div>
+      ) : null}
+      {params.reset ? (
+        <div
+          role="status"
+          className="mb-4 rounded-control border border-mint bg-mint-subtle px-3 py-2.5 text-xs leading-relaxed text-forest"
+        >
+          Password changed. Sign in with the new password.
+        </div>
+      ) : null}
+
       {configured ? (
-        <LoginForm />
+        <LoginForm next={next} />
       ) : (
         <div className="mt-5 rounded-control bg-mint-subtle px-3 py-2.5 text-xs leading-relaxed text-forest">
           Sign-in is not configured on this deployment. Set{' '}
@@ -35,7 +64,7 @@ export default async function LoginPage() {
         <Link href="/signup" className="font-medium text-forest underline-offset-4 hover:underline">
           Create your business account
         </Link>{' '}
-        — it takes about a minute.
+        - it takes about a minute.
       </p>
     </AuthShell>
   )

@@ -34,5 +34,35 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
+  // Session refresh only where a session can change what is rendered. Public
+  // storefronts, quote links, health and vitals are deliberately excluded: they
+  // must stay cacheable and must not pay for an auth round trip.
+  matcher: [
+    '/dashboard/:path*',
+    '/events/:path*',
+    '/clients/:path*',
+    '/quotes/:path*',
+    '/invoices/:path*',
+    '/finance/:path*',
+    '/reports/:path*',
+    '/team/:path*',
+    '/services/:path*',
+    '/portfolio/:path*',
+    '/storefront/:path*',
+    '/settings/:path*',
+    '/catalogue/:path*',
+    '/menu/:path*',
+    '/packages/:path*',
+    '/inventory/:path*',
+    '/me/:path*',
+    '/admin/:path*',
+    '/onboarding/:path*',
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/reset-password',
+    '/invite/:path*',
+    '/api/quotes/:path*',
+    '/api/exports/:path*',
+  ],
 }

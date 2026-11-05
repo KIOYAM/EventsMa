@@ -19,7 +19,7 @@ or retention · **P3** polish.
 | ID | Gap | Evidence | Impact | Severity | Fix |
 |---|---|---|---|---|---|
 | B1 | The prototype implies a working marketplace that does not exist (220 synthetic providers) | `FF_MKT_DEMO_COUNT=220`, `sample:true`, `verifiedDemo:true` | A caterer or investor may believe demand exists; a real customer searching finds fake businesses. Reputation damage. | P0 | Ship public profile pages only. Label demo data as demo in every non-production environment. Never index synthetic listings. |
-| B2 | No way to charge for the product | Plans exist as labels (`Starter`, `Professional`, `Trial`); no subscription, invoice, trial or dunning | No revenue; no way to test willingness to pay | P0 | Razorpay subscriptions, 14-day Growth trial, plan limits enforced server-side |
+| B2 | No way to charge for the product | Plans exist as labels (`Starter`, `Professional`, `Trial`); no subscription, invoice, trial or dunning | No revenue; no way to test willingness to pay | P0 | Manual plan invoices + 14-day Growth trial + plan limits enforced server-side (no payment gateway in MVP) |
 | B3 | Value proposition is split between two incompatible stories ("manage your business" vs "get more customers") | Auth screen copy and marketplace copy disagree | Buyers cannot repeat what we do; demos wander | P0 | One sentence: quote fast, know your margin. Public profile is a feature, not the promise |
 | B4 | Free alternatives are credible (CateringMenu free, Ziyafat open source) | Vendor pricing pages, Oct 2026 | Price cannot be the reason to switch | P1 | Win on quote speed + margin + mobile; free tier limited but genuinely useful |
 | B5 | No written validation with real caterers | Research file's own next-steps list is unchecked | All pricing and workflow assumptions are unproven | P0 | 5 design partners, structured interviews, watch them quote |
@@ -37,7 +37,7 @@ or retention · **P3** polish.
 |---|---|---|---|---|---|
 | P1 | No backend or multi-device sync | localStorage only | Team cannot collaborate; phone and laptop disagree; data dies with the browser | P0 | Supabase Postgres + Auth + RLS |
 | P2 | Quotes are printable HTML, not documents | `quoteHtml()` opens a new window | No version, no acceptance, no expiry enforcement, no audit | P0 | `quotation` + `quotation_version` tables, immutable PDF snapshot, accept link |
-| P3 | No real payment collection | "Record payment" only writes a number | Owner chases cash manually; no proof of payment | P0 | Razorpay payment links + webhook → ledger, reconciliation screen |
+| P3 | No real payment collection | "Record payment" only writes a number | Owner chases cash manually; no proof of payment | P0 | Manual bank/UPI instructions, append-only receipt rows and reconciliation screen (gateway deliberately deferred) |
 | P4 | Enquiry never reaches a provider | `ffMktSaveProviderInquiry` writes to local demo workspace | Customer believes they enquired; nobody responds | P0 | Server-side enquiry + email/WhatsApp notification + SLA timer |
 | P5 | No availability or capacity check | Calendar displays events only | Double booking, over-capacity kitchen, staff shortage | P0 | Date-level availability, capacity per day, conflict warnings |
 | P6 | No margin/cost on the quote | Recipes and unit costs exist but are unused | Owner cannot see profit before committing | P0 | Recipe → plate cost → quote contribution, with a margin warning |

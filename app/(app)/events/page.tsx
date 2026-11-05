@@ -60,13 +60,21 @@ export default async function EventsPage({
         title="The event is the spine"
         description="Enquiries become events, events carry quotes, and delivered events settle into invoices. Nothing here is typed twice."
         actions={
-          <Link
-            href="#new"
-            className="inline-flex h-11 items-center gap-2 rounded-control bg-forest px-4 text-sm font-medium text-white"
-          >
-            <CalendarPlus className="h-4 w-4" aria-hidden />
-            New event
-          </Link>
+          <>
+            <Link
+              href="/events/calendar"
+              className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink"
+            >
+              Calendar
+            </Link>
+            <Link
+              href="#new"
+              className="inline-flex h-11 items-center gap-2 rounded-control bg-forest px-4 text-sm font-medium text-white"
+            >
+              <CalendarPlus className="h-4 w-4" aria-hidden />
+              New event
+            </Link>
+          </>
         }
       />
 

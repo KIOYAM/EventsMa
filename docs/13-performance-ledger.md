@@ -50,14 +50,13 @@ without a number or a named measurement.
 | Practice | Why it is not done | Threshold that forces it |
 |---|---|---|
 | RUM with percentiles and alerts | The beacon logs a line; there is no store or dashboard | First 100 real page views, or a complaint about slowness |
-| CDN in front of the app | Vercel's edge is the CDN once deployed; nothing is deployed yet | Deployment — no code change needed |
 | Redis / shared cache | Single region, one Postgres; cache invalidation would be the new bug | p95 read latency above ~300 ms with indexes in place |
 | Background queue for notifications and PDFs | Needs a worker and a durable queue; no mail provider is configured | First real client email or a PDF request that times out |
 | OpenTelemetry traces | Needs an exporter endpoint and a collector | Second engineer, or the first incident that cannot be explained by logs |
-| Connection pooling limits | `postgres` client is created per process; Supabase pooler handles the rest | More than ~50 concurrent server instances |
-| Load balancing across regions | Single-region Supabase (Mumbai) by decision | Users outside India becoming material, or a latency SLA |
+| Connection pooling limits | One `postgres` client per process through the Supabase pooler | More than ~50 concurrent server instances |
+| Load balancing across regions | Single-region Supabase (Mumbai) and `regions: ["bom1"]` by decision | Users outside India becoming material, or a latency SLA |
 | Real-device performance testing | No device lab; skeletons and sizes are reasoned, not measured on a Redmi | Before the first paying customer, on one mid-range Android over 4G |
-| Lighthouse budget in CI | No CI pipeline yet | First deployment pipeline |
+| Lighthouse budget in CI | No CI pipeline yet | First pull-request pipeline |
 
 ---
 
@@ -72,22 +71,40 @@ without a number or a named measurement.
 | Workspace list query | ≤ 50 ms at p95, 10k rows | `EXPLAIN ANALYZE` against a seeded database |
 | Quote send | ≤ 90 s end to end for a 20-line quote | Timed walkthrough |
 
-These are targets, not results. Nothing in this build has been measured on a device or
-against a seeded production-sized database, because neither exists yet.
+### Measured on 5 November 2026 (landing page)
+
+| Check | Result | Scope |
+|---|---|---|
+| Production build | Passes; shared First Load JS 103 kB, largest page chunk 126 kB (`/quotes/new`), landing page chunk 1.94 kB | Local build |
+| Lighthouse `/` mobile | Performance 99, Accessibility 100, Best Practices 100, SEO 100; FCP 1.5s, LCP 2.1s, TBT 30ms, CLS 0, SI 1.5s | Throttled mobile, local production server |
+| Lighthouse `/` desktop | Performance 100, Accessibility 100, Best Practices 100, SEO 100; FCP 0.4s, LCP 0.5s, TBT 0ms, CLS 0 | Desktop, local production server |
+| Responsive viewport matrix | No horizontal overflow at 320, 360, 375, 390, 414, 430, 600, 768, 820, 900, 1024, 1280, 1366, 1440, 1600, 1920 and 2560 px | Local production server, CDP device emulation |
+| Lighthouse `/` (previous record) | Accessibility 95, best practices 100, SEO 100 | Desktop, local production server |
+| Lighthouse `/login` | Accessibility 96, best practices 100, SEO 75 (auth pages are `noindex`, so SEO is expected to be low) | Desktop, local production server |
+| Local Web Vitals | LCP ~124 ms, CLS ~0.0025 | Desktop, unthrottled, local production server |
+| Database | 31 tables, all 31 with RLS, 59 policies; migration 0003 applied | Supabase Mumbai |
+| Tenancy | Rolled-back two-tenant test passes: tenant B sees 0 rows of tenant A | `node db/setup.mjs` |
+| Live health | `/api/health` returns `database: ok`, `auth: ok`, `mode: live` | Production |
+
+These are targets, not results. The Lighthouse and Web Vitals numbers are desktop,
+unthrottled and local; they do not replace a mid-range Android over 4G. No field RUM
+percentiles or production-sized query plans have been measured yet.
 
 ---
 
 ## 4. Honest gaps
 
-1. **No measurement has been taken.** The code is written to be fast; there is no
-   before/after number, no Lighthouse run and no device test in this pass.
-2. **No database exists,** so no index has been proven to be used and no query plan has
-   been read. The new tables have no indexes beyond primary and unique keys.
-3. **Demo mode is not representative.** It reads in-memory fixtures, so demo latency
-   says nothing about Postgres latency.
-4. **The vitals endpoint is a log line.** It proves collection works; it is not a
-   monitoring system.
+1. **No real-device measurement.** The Lighthouse and vitals figures are desktop and
+   unthrottled. A mid-range Android over 4G is the gate before the first paying customer.
+2. **No production-sized query plan.** Migration 0003 added trigram and receipt indexes,
+   but no seeded 10k-row database has been run through `EXPLAIN ANALYZE`.
+3. **No field percentiles.** The vitals endpoint is a log line; it proves collection
+   works but has no store, percentile calculation or alert.
+4. **No background queue.** Invitation, enquiry and receipt writes are synchronous, and
+   the notification table has no worker draining it. PDFs are generated on request.
+5. **No OpenTelemetry, Redis or cross-region load balancing.** The app is deliberately
+   single-region (Mumbai) with Vercel's edge and the Supabase pooler.
+6. **No performance budget in CI.** Every check in this ledger is currently run by hand.
 
-Fixing 1–3 requires the P0 infrastructure work in
-[12 §3](12-prototype-page-parity.md): a Supabase project, migrations, and a seeded
-two-tenant database to measure against.
+Fixing 1–3 is the next performance work: a seeded two-tenant database, a throttled
+device run, and a small RUM store. None of them require an architecture change.

@@ -1,16 +1,13 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { appUrl, safeNext } from '@/lib/app-url'
 import { getSupabaseServerClient } from '@/lib/auth/session'
 
 export interface SignupState {
   error: string | null
   /** Set when Supabase requires the email to be confirmed before first sign-in. */
   sentTo: string | null
-}
-
-function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL?.trim() || 'http://localhost:3000').replace(/\/$/, '')
 }
 
 /**
@@ -23,6 +20,7 @@ export async function signUp(_previous: SignupState, formData: FormData): Promis
     .toLowerCase()
   const password = String(formData.get('password') ?? '')
   const confirm = String(formData.get('confirm') ?? '')
+  const next = safeNext(formData.get('next'), '/onboarding')
 
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { error: 'Enter the email your business uses.', sentTo: null }
@@ -40,7 +38,9 @@ export async function signUp(_previous: SignupState, formData: FormData): Promis
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: `${appUrl()}/login` },
+    options: {
+      emailRedirectTo: `${appUrl()}/auth/callback?next=${encodeURIComponent(next)}`,
+    },
   })
 
   if (error) {
@@ -56,5 +56,5 @@ export async function signUp(_previous: SignupState, formData: FormData): Promis
   // Email confirmation on: no session yet, so ask the owner to confirm first.
   if (!data.session) return { error: null, sentTo: email }
 
-  redirect('/onboarding')
+  redirect(next)
 }

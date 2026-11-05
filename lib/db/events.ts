@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, asc, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, ilike, lte, or, sql, type SQL } from 'drizzle-orm'
 import { getDb, isDatabaseConfigured } from './client'
 import {
   clients,
@@ -14,6 +14,7 @@ import {
   quotations,
 } from './schema'
 import type {
+  CalendarEvent,
   EventCrewRow,
   EventDetail,
   EventPage,
@@ -121,6 +122,51 @@ export async function getEventPage(
   }
 }
 
+export async function getEventCalendar(
+  orgId: string,
+  demo: boolean,
+  month: string,
+): Promise<CalendarEvent[]> {
+  const match = /^(\d{4})-(\d{2})$/.exec(month)
+  if (!match) return []
+  const year = Number(match[1])
+  const monthIndex = Number(match[2])
+  if (monthIndex < 1 || monthIndex > 12) return []
+  const lastDay = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate()
+  const start = `${month}-01`
+  const end = `${month}-${String(lastDay).padStart(2, '0')}`
+
+  if (demo || !isDatabaseConfigured()) {
+    return demoEvents
+      .filter((event) => event.eventDate >= start && event.eventDate <= end)
+      .map((event) => ({
+        id: event.id,
+        title: event.title,
+        eventDate: event.eventDate,
+        status: event.status,
+        guests: event.guests,
+        venueName: event.venueName,
+      }))
+  }
+
+  return getDb()
+    .select({
+      id: events.id,
+      title: events.title,
+      eventDate: events.eventDate,
+      status: events.status,
+      guests: events.guests,
+      venueName: events.venueName,
+    })
+    .from(events)
+    .where(
+      and(eq(events.orgId, orgId), gte(events.eventDate, start), lte(events.eventDate, end)),
+    )
+    .orderBy(asc(events.eventDate), asc(events.title))
+    .limit(200)
+    .then((rows) => rows.map((row) => ({ ...row, status: row.status as EventStatus })))
+}
+
 export async function getEventDetail(
   orgId: string,
   demo: boolean,
@@ -136,6 +182,7 @@ export async function getEventDetail(
       title: row.title,
       clientName: row.clientName,
       clientPhone: null,
+      clientId: null,
       eventDate: row.eventDate,
       startTime: null,
       endTime: null,
@@ -159,6 +206,7 @@ export async function getEventDetail(
     .select({
       id: events.id,
       title: events.title,
+      clientId: events.clientId,
       clientName: clients.name,
       clientPhone: clients.phone,
       eventDate: events.eventDate,

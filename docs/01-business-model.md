@@ -134,7 +134,9 @@ Software exports are zero-rated, but our first customers are domestic. Confirm
 treatment with a CA before the first invoice. Do not hard-code tax in the product.
 
 **ASSUMPTION — payments.** Razorpay/PhonePe standard card/UPI fee around 2% plus GST.
-At ₹499, the fee is about ₹10–12. Fine. At ₹99 it would not be.
+At ₹499, the fee is about ₹10–12. Fine. At ₹99 it would not be. This applies only if
+the platform later collects subscriptions online; the MVP records client money manually
+and never calls a gateway.
 
 ---
 

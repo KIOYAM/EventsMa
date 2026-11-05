@@ -97,6 +97,7 @@ export const PAYMENT_MODE_LABEL: Record<PaymentMode, string> = {
 
 export interface EnquiryRow {
   id: string
+  clientId?: string | null
   clientName: string
   phone: string | null
   eventDate: string | null
@@ -115,6 +116,60 @@ export interface EnquiryPage {
   page: number
   pageSize: number
   counts: Record<string, number>
+}
+
+export interface ClientRow {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+  source: string | null
+  enquiries: number
+  events: number
+  lastActivity: string
+}
+
+export interface ClientPage {
+  rows: ClientRow[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export interface ClientDetail extends Omit<ClientRow, 'enquiries' | 'events'> {
+  notes: string | null
+  createdAt: string
+  enquiries: {
+    id: string
+    eventType: string | null
+    eventDate: string | null
+    guests: number
+    status: EnquiryStatus
+    createdAt: string
+  }[]
+  events: {
+    id: string
+    title: string
+    eventDate: string
+    status: EventStatus
+    guests: number
+    venueName: string | null
+  }[]
+  quotes: {
+    id: string
+    number: string
+    status: string
+    eventDate: string
+    totalPaise: number
+  }[]
+  invoices: {
+    id: string
+    number: string
+    status: InvoiceStatus
+    amountPaise: number
+    paidPaise: number
+    dueOn: string | null
+  }[]
 }
 
 export interface EventRow {
@@ -175,6 +230,7 @@ export interface EventDetail {
   title: string
   clientName: string | null
   clientPhone: string | null
+  clientId?: string | null
   eventDate: string
   startTime: string | null
   endTime: string | null
@@ -217,6 +273,7 @@ export interface InvoicePaymentRow {
   id: string
   amountPaise: number
   mode: string
+  reference: string | null
   receivedAt: string | null
   status: string
 }
@@ -275,6 +332,33 @@ export interface ReportData {
   categories: { key: string; label: string; amountPaise: number }[]
 }
 
+export interface AttentionItem {
+  id: string
+  kind: 'quote' | 'event' | 'invoice'
+  title: string
+  detail: string
+  href: string
+  tone: 'mint' | 'gold' | 'accent'
+}
+
+export interface CalendarEvent {
+  id: string
+  title: string
+  eventDate: string
+  status: EventStatus
+  guests: number
+  venueName: string | null
+}
+
+export interface PaymentDetails {
+  instructions: string
+  upiVpa: string
+  bankName: string
+  accountName: string
+  accountNumber: string
+  ifsc: string
+}
+
 export interface PackageRow {
   id: string
   name: string
@@ -305,6 +389,7 @@ export interface SettingsData {
     serviceAreas: string[]
     brandPrimary: string
     brandFont: string
+    payment: PaymentDetails
   }
 }
 

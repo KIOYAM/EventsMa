@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { randomUUID } from 'node:crypto'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Field, Input, Select, Textarea } from '@/components/ui/input'
+import { Field, Input, Select } from '@/components/ui/input'
 import { PrintButton } from '@/components/print-button'
 import { Stat } from '@/components/ui/stat'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
@@ -16,7 +17,7 @@ import {
   type InvoiceStatus,
 } from '@/lib/domain/ops'
 import { shortDate } from '@/lib/utils'
-import { recordPayment, voidInvoice } from '../actions'
+import { markInvoicePaid, recordPayment, voidInvoice } from '../actions'
 
 export const metadata = { title: 'Invoice' }
 
@@ -30,6 +31,7 @@ const TONE: Record<InvoiceStatus, 'success' | 'mint' | 'gold' | 'accent' | 'neut
 const ERROR_COPY: Record<string, string> = {
   payment: 'Enter a positive amount and a valid received date.',
   void: 'A void invoice cannot take a payment.',
+  overpay: 'That amount is more than the balance. Record the balance or a smaller part payment.',
   has_payments: 'Reverse the captured payments before voiding this invoice.',
   demo: 'Demo mode: connect a database before recording a payment.',
 }
@@ -50,6 +52,8 @@ export default async function InvoiceDetailPage({
   const balance = Math.max(0, invoice.amountPaise - invoice.paidPaise)
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
   const today = new Date().toISOString().slice(0, 10)
+  const paymentToken = randomUUID()
+  const paidToken = randomUUID()
 
   return (
     <div className="space-y-6">
@@ -68,14 +72,15 @@ export default async function InvoiceDetailPage({
             {invoice.quotationNumber ? (
               <Badge tone="outline">From {invoice.quotationNumber}</Badge>
             ) : null}
+            <Badge tone="outline">Manual payments</Badge>
           </div>
           <h1 className="font-display text-2xl text-forest sm:text-3xl">{invoice.number}</h1>
           <p className="text-sm text-ink-muted">
-            {invoice.eventTitle} · {invoice.clientName ?? 'No client'}
+            {invoice.eventTitle} - {invoice.clientName ?? 'No client'}
           </p>
           <p className="text-xs text-ink-muted">
             Issued {shortDate(invoice.issuedAt.slice(0, 10))}
-            {invoice.dueOn ? ` · due ${shortDate(invoice.dueOn)}` : ''}
+            {invoice.dueOn ? ` - due ${shortDate(invoice.dueOn)}` : ''}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -96,13 +101,17 @@ export default async function InvoiceDetailPage({
       ) : null}
       {query.saved ? (
         <div className="rounded-card border border-mint bg-mint-subtle px-4 py-3 text-sm text-forest print:hidden">
-          Saved.
+          {query.saved === 'existing'
+            ? 'This quotation already has an invoice. Opened it instead of creating a duplicate.'
+            : query.saved === 'settled'
+              ? 'This invoice is already settled.'
+              : 'Saved.'}
         </div>
       ) : null}
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4 print:hidden">
         <Stat label="Invoice total" value={formatINR(invoice.amountPaise)} hint="Frozen from the quote" />
-        <Stat label="Received" value={formatINR(invoice.paidPaise)} hint="Captured payments" tone="positive" />
+        <Stat label="Received" value={formatINR(invoice.paidPaise)} hint="Manually captured receipts" tone="positive" />
         <Stat label="Balance" value={formatINR(balance)} hint={balance > 0 ? 'Still to collect' : 'Settled'} tone={balance > 0 ? 'warning' : 'positive'} />
         <Stat label="Payments" value={String(invoice.payments.length)} hint="Append-only entries" />
       </section>
@@ -158,16 +167,21 @@ export default async function InvoiceDetailPage({
             <CardContent>
               {invoice.status === 'void' ? (
                 <p className="text-sm text-ink-muted">This invoice is void.</p>
+              ) : balance === 0 ? (
+                <p className="text-sm text-ink-muted">
+                  This invoice is settled. There is no balance to record.
+                </p>
               ) : (
                 <form action={recordPayment} className="space-y-3">
                   <input type="hidden" name="invoiceId" value={invoice.id} />
+                  <input type="hidden" name="paymentToken" value={paymentToken} />
                   <Field label="Amount (₹)" htmlFor="amount">
                     <Input
                       id="amount"
                       name="amount"
                       inputMode="decimal"
                       required
-                      defaultValue={balance > 0 ? (balance / 100).toFixed(2) : ''}
+                      defaultValue={(balance / 100).toFixed(2)}
                     />
                   </Field>
                   <div className="grid grid-cols-2 gap-3">
@@ -184,6 +198,13 @@ export default async function InvoiceDetailPage({
                       <Input id="receivedOn" name="receivedOn" type="date" defaultValue={today} required />
                     </Field>
                   </div>
+                  <Field
+                    label="Reference"
+                    htmlFor="reference"
+                    hint="UPI reference, cheque number or receipt book entry."
+                  >
+                    <Input id="reference" name="reference" maxLength={120} placeholder="Optional" />
+                  </Field>
                   <button
                     type="submit"
                     disabled={!canEdit}
@@ -196,6 +217,23 @@ export default async function InvoiceDetailPage({
             </CardContent>
           </Card>
 
+          {invoice.status !== 'void' && balance > 0 && canEdit ? (
+            <form action={markInvoicePaid}>
+              <input type="hidden" name="invoiceId" value={invoice.id} />
+              <input type="hidden" name="paidToken" value={paidToken} />
+              <button
+                type="submit"
+                className="inline-flex h-10 w-full items-center justify-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink hover:bg-mint-subtle"
+              >
+                Mark balance paid in full
+              </button>
+              <p className="mt-1.5 text-[11px] text-ink-muted">
+                Creates a manual receipt for {formatINR(balance)}. Use the form above for a part
+                payment or a different mode.
+              </p>
+            </form>
+          ) : null}
+
           <Card>
             <CardHeader>
               <CardTitle>Payments</CardTitle>
@@ -207,12 +245,15 @@ export default async function InvoiceDetailPage({
               ) : (
                 invoice.payments.map((payment) => (
                   <div key={payment.id} className="flex items-center justify-between gap-3 text-xs">
-                    <div>
+                    <div className="min-w-0">
                       <p className="tabular text-ink">{formatINR(payment.amountPaise)}</p>
                       <p className="text-ink-muted">
                         {PAYMENT_MODE_LABEL[payment.mode as keyof typeof PAYMENT_MODE_LABEL] ?? payment.mode}
-                        {payment.receivedAt ? ` · ${shortDate(payment.receivedAt.slice(0, 10))}` : ''}
+                        {payment.receivedAt ? ` - ${shortDate(payment.receivedAt.slice(0, 10))}` : ''}
                       </p>
+                      {payment.reference ? (
+                        <p className="truncate text-[11px] text-ink-muted">{payment.reference}</p>
+                      ) : null}
                     </div>
                     <Badge tone={payment.status === 'captured' ? 'success' : 'neutral'}>
                       {payment.status}

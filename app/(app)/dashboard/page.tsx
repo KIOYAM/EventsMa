@@ -3,9 +3,11 @@ import Link from 'next/link'
 import { ArrowUpRight, CalendarDays, FileText, IndianRupee, TrendingUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { AttentionList } from '@/components/dashboard/attention-list'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatSkeleton, TableSkeleton } from '@/components/ui/skeleton'
 import { requireWorkspace, type WorkspaceContext } from '@/lib/auth/session'
+import { getAttentionItems } from '@/lib/db/attention'
 import { getWorkspaceSummary } from '@/lib/db/queries'
 import { formatINR, formatPercentBp } from '@/lib/domain/money'
 import { verticalDescriptor } from '@/lib/domain/verticals'
@@ -63,7 +65,10 @@ export default async function DashboardPage() {
 }
 
 async function DashboardBody({ ctx }: { ctx: WorkspaceContext }) {
-  const data = await getWorkspaceSummary(ctx.orgId, ctx.demo)
+  const [data, attention] = await Promise.all([
+    getWorkspaceSummary(ctx.orgId, ctx.demo),
+    getAttentionItems(ctx.orgId, ctx.demo),
+  ])
   const activeServices = data.services.filter((s) => s.enabled)
 
   return (
@@ -93,6 +98,18 @@ async function DashboardBody({ ctx }: { ctx: WorkspaceContext }) {
           hint="After food, crew and vendor cost"
           icon={<TrendingUp className="h-4 w-4" aria-hidden />}
         />
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Needs attention</h2>
+            <p className="text-xs text-ink-muted">
+              Stale quotes, events inside two weeks and invoices past due.
+            </p>
+          </div>
+        </div>
+        <AttentionList items={attention} />
       </section>
 
       <section className="space-y-3">

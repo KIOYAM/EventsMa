@@ -33,7 +33,14 @@ async function resolveClient(
 ): Promise<string | null> {
   const db = getDb()
   const chosen = field(formData, 'clientId', 64)
-  if (chosen) return chosen
+  if (chosen) {
+    const [owned] = await db
+      .select({ id: clients.id })
+      .from(clients)
+      .where(and(eq(clients.orgId, orgId), eq(clients.id, chosen)))
+      .limit(1)
+    return owned?.id ?? null
+  }
 
   const name = field(formData, 'clientName', 120)
   if (!name) return null
@@ -111,6 +118,59 @@ export async function createEvent(formData: FormData): Promise<void> {
   revalidatePath('/events')
   revalidatePath('/dashboard')
   redirect(`/events/${created.id}`)
+}
+
+export async function updateEvent(formData: FormData): Promise<void> {
+  const ctx = await requireWorkspace()
+  if (!canManageCommercial(ctx.role)) redirect('/events?error=permission')
+  if (ctx.demo || !isDatabaseConfigured()) redirect('/events?error=demo')
+
+  const id = field(formData, 'id', 64)
+  const eventDate = field(formData, 'eventDate', 10)
+  if (!id) redirect('/events?error=missing')
+  if (!DATE.test(eventDate)) redirect(`/events/${id}/edit?error=date`)
+
+  const guests = Math.min(Math.max(Math.round(Number(formData.get('guests') ?? 0)), 0), 100_000)
+  if (!Number.isFinite(guests)) redirect(`/events/${id}/edit?error=guests`)
+
+  const db = getDb()
+  const [existing] = await db
+    .select({ clientId: events.clientId, title: events.title })
+    .from(events)
+    .where(and(eq(events.orgId, ctx.orgId), eq(events.id, id)))
+    .limit(1)
+  if (!existing) redirect('/events?error=missing')
+
+  const chosenClient = field(formData, 'clientId', 64)
+  const newClientName = field(formData, 'clientName', 120)
+  const resolvedClient =
+    chosenClient || newClientName ? await resolveClient(ctx.orgId, formData) : null
+  const clientId = resolvedClient ?? existing.clientId
+
+  const statusRaw = field(formData, 'status', 20)
+  const title = field(formData, 'title', 160) || existing.title
+
+  await db
+    .update(events)
+    .set({
+      clientId,
+      title,
+      eventType: field(formData, 'eventType', 80) || null,
+      eventDate,
+      guests,
+      venueName: field(formData, 'venueName', 160) || null,
+      venueAddress: field(formData, 'venueAddress', 240) || null,
+      startTime: field(formData, 'startTime', 5) || null,
+      endTime: field(formData, 'endTime', 5) || null,
+      status: isEventStatus(statusRaw) ? statusRaw : undefined,
+      notes: field(formData, 'notes', 2000) || null,
+    })
+    .where(and(eq(events.orgId, ctx.orgId), eq(events.id, id)))
+
+  revalidatePath('/events')
+  revalidatePath(`/events/${id}`)
+  revalidatePath('/dashboard')
+  redirect(`/events/${id}?saved=details`)
 }
 
 export async function updateEventStatus(formData: FormData): Promise<void> {

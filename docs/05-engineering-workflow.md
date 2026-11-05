@@ -125,7 +125,7 @@ lib/
   db/                          schema, queries, migrations runner
   domain/                      pricing, tax, margin, dates, money
   auth/                        session helpers, guards
-  integrations/                razorpay, resend, whatsapp, maps
+  integrations/                resend, whatsapp links, maps (no payment gateway)
   validation/                  zod schemas shared by client and server
 db/
   migrations/                  numbered SQL, forward-only with down notes

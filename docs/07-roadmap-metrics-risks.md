@@ -15,8 +15,8 @@ review. Every estimate below assumes that, and doubles if either is part-time.
 | Test the 10-minute demo script on paper | List of steps they cannot follow |
 | Confirm pricing reaction at ₹499 and ₹999 | 3 of 5 say yes or give a reason |
 | Reconcile market-size claims | One defensible sentence for the pitch |
-| Choose payment gateway, confirm GST treatment with a CA | Written answer |
-| Set up accounts: Vercel, Supabase (Mumbai), Resend, Sentry, Razorpay test | Working dev environment |
+| Confirm manual payment flow and GST treatment with a CA | Written answer |
+| Set up accounts: Vercel, Supabase (Mumbai), Resend, Sentry | Working dev environment |
 
 **Exit criteria:** 3 of 5 caterers would pay; the demo script survives contact;
 infrastructure accounts exist at ₹0.
@@ -34,7 +34,7 @@ infrastructure accounts exist at ₹0.
 | 5 | Menu and packages, units, images, activation checklist |
 | 6 | Quote composer, pricing engine with property tests, draft save |
 | 7 | Quote send: numbering, version, token, PDF, WhatsApp share |
-| 8 | Customer quote view, accept with OTP, Razorpay payment link + webhook + receipt |
+| 8 | Customer quote view, acceptance, manual bank/UPI instructions, receipt recording |
 | 9 | Public provider page (ISR, SEO), enquiry delivery, dashboard |
 | 10 | Margin view, export, empty states, mobile polish, performance pass |
 

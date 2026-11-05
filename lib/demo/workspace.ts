@@ -7,6 +7,8 @@
 
 import type {
   AcceptedQuoteOption,
+  ClientDetail,
+  ClientRow,
   EnquiryRow,
   EventDetail,
   EventRow,
@@ -253,7 +255,7 @@ export const demoInvoiceDetails: Record<string, InvoiceDetail> = {
     quotationNumber: 'QT-2026-0040',
     notes: 'Advance 30% received on 26 October. Balance due before setup.',
     payments: [
-      { id: 'p1', amountPaise: 7_464_000, mode: 'bank', receivedAt: '2026-10-26T06:15:00.000Z', status: 'captured' },
+      { id: 'p1', amountPaise: 7_464_000, mode: 'bank', reference: 'NEFT 884201', receivedAt: '2026-10-26T06:15:00.000Z', status: 'captured' },
     ],
   },
   '00000000-0000-4000-8000-0000000000d2': {
@@ -262,11 +264,44 @@ export const demoInvoiceDetails: Record<string, InvoiceDetail> = {
     quotationNumber: null,
     notes: null,
     payments: [
-      { id: 'p2', amountPaise: 1_44_000_00, mode: 'upi', receivedAt: '2026-10-05T09:00:00.000Z', status: 'captured' },
-      { id: 'p3', amountPaise: 3_36_000_00, mode: 'cash', receivedAt: '2026-10-18T13:30:00.000Z', status: 'captured' },
+      { id: 'p2', amountPaise: 1_44_000_00, mode: 'upi', reference: null, receivedAt: '2026-10-05T09:00:00.000Z', status: 'captured' },
+      { id: 'p3', amountPaise: 3_36_000_00, mode: 'cash', reference: null, receivedAt: '2026-10-18T13:30:00.000Z', status: 'captured' },
     ],
   },
 }
+
+export const demoClients: ClientRow[] = [
+  {
+    id: 'demo-client-meera',
+    name: 'Meera & Karthik',
+    phone: '+91 98420 11001',
+    email: 'meera.karthik@example.com',
+    source: 'public_page',
+    enquiries: 2,
+    events: 1,
+    lastActivity: '2026-10-28T09:00:00.000Z',
+  },
+  {
+    id: 'demo-client-ananya',
+    name: 'Ananya & Rohan',
+    phone: '+91 98420 11002',
+    email: 'ananya.rohan@example.com',
+    source: 'whatsapp',
+    enquiries: 1,
+    events: 1,
+    lastActivity: '2026-10-24T11:30:00.000Z',
+  },
+  {
+    id: 'demo-client-pranav',
+    name: 'Pranav Tech',
+    phone: '+91 98420 11003',
+    email: 'events@pranav.example',
+    source: 'manual',
+    enquiries: 1,
+    events: 1,
+    lastActivity: '2026-10-12T06:15:00.000Z',
+  },
+]
 
 export const demoAcceptedQuotes: AcceptedQuoteOption[] = [
   {
@@ -373,6 +408,15 @@ export const demoSettings: SettingsData = {
     serviceAreas: ['Coimbatore', 'Tiruppur', 'Erode', 'Pollachi'],
     brandPrimary: '#1f4d3a',
     brandFont: 'Playfair Display',
+    payment: {
+      instructions:
+        'Pay the advance by UPI or bank transfer, then send the reference to the business on WhatsApp. A receipt is issued from the workspace after the money is received.',
+      upiVpa: 'annapoorna@okicici',
+      bankName: 'Indian Bank',
+      accountName: 'Annapoorna Signature Events',
+      accountNumber: '1234567890',
+      ifsc: 'IDIB000C001',
+    },
   },
 }
 

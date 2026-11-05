@@ -17,7 +17,7 @@ The design is judged on three things: **tenant safety**, **field performance**, 
 | Data | **Supabase Postgres (Mumbai region)** | Real SQL, RLS for tenancy, managed backups, familiar tooling | Neon (good, but auth/storage separate), PlanetScale (no free tier, MySQL) |
 | Auth | **Supabase Auth** (email + password, magic link, Google later) | Session handling, email verification, reset, JWT with RLS | Clerk (better DX, costs early), Auth.js (more code to own) |
 | Files | **Supabase Storage now, Cloudflare R2 at the egress trigger** | 1 GB free is enough for the first ~1,000 businesses if images are compressed; R2 has zero egress fees | S3 (egress cost), UploadThing (another vendor) |
-| Payments | **Razorpay** (UPI + cards) | Indian default, payment links, subscriptions, webhooks | Stripe India (invite-only for new merchants), Cashfree |
+| Payments | **Manual bank/UPI receipts** (no gateway in MVP) | The business shares its own bank/UPI instructions on the quote and records money by hand. No online collection, card data, gateway KYC or webhook to operate | Razorpay/Cashfree only if online collection becomes a proven requirement and gets a new ADR |
 | Email | **Resend or Brevo free tier** | Transactional email with templates; small volume | Postmark (paid), SES (setup cost) |
 | WhatsApp | **`wa.me` deep links first**, Cloud API later | Zero cost, zero approval, uses the owner's own number | Cloud API (per-conversation cost, template approval) |
 | Jobs | **Vercel Cron (daily on Hobby) + Postgres `pg_cron` for in-database jobs** | No extra service; reminders and cleanup are daily-granularity anyway | Inngest, Trigger.dev (add later for multi-step workflows) |
@@ -311,9 +311,10 @@ history. Therefore the paid step is **at the first paying customer**, not at 50 
 The genuine zero-cost window is build + demo + pilot, and it is roughly 8–12 weeks.
 
 **Pre-launch cash prerequisites (not infrastructure):** domain (~₹800/year), a
-registered business entity for Razorpay KYC if not already available, a CA
-consultation on GST, and possibly WhatsApp Business verification later. These are
-₹0/month but not ₹0 total. List them before promising anyone a free launch.
+registered business entity, a CA consultation on GST, and possibly WhatsApp Business
+verification later. There is no payment-gateway KYC in the MVP because the app does not
+collect money online. These are ₹0/month but not ₹0 total. List them before promising
+anyone a free launch.
 
 At 1,000 businesses paying a blended ₹650, revenue is ₹6.5 lakh/month and
 infrastructure is under 3% of it. The model works if churn does.
@@ -341,13 +342,15 @@ in the middle of a release.
 
 - TLS everywhere; HSTS; secure, http-only, same-site cookies.
 - CSRF protection on mutations; origin checks on route handlers.
-- Rate limits per IP and per user on auth, enquiry, quote send and payment creation.
-  Store counters in Postgres at low volume; move to Upstash when it hurts.
+- Rate limits per IP and per user on auth, enquiry, quote acceptance and manual
+  payment recording. Store counters in Postgres at low volume; move to Upstash when it hurts.
 - Password rules and breach-list check at signup; magic link as the default for
   low-friction onboarding.
-- Webhook signature verification (Razorpay) plus idempotency.
+- No payment webhooks in the MVP. Public quote acceptance is token-scoped, checks the
+  status transition in SQL, and writes one immutable audit row.
 - Signed URLs for all private files, 10-minute expiry.
-- PII minimisation: no Aadhaar, no PAN, no card data ever touches us (gateway hosted).
+- PII minimisation: no Aadhaar, no PAN, no card data. No gateway is called, so card data
+  never exists in this system.
 - Audit log for money, permissions, exports, deletion.
 - Data export and deletion workflows (India's DPDP Act 2023 direction; confirm current
   rules with counsel before launch).
@@ -364,7 +367,7 @@ in the middle of a release.
 | Server errors | Sentry Node | Error rate > 1% over 5 min |
 | Web Vitals | Vercel Speed Insights | LCP p75 > 2.8s for 1 hour |
 | Slow queries | Supabase logs + `pg_stat_statements` | p95 > 150 ms |
-| Failed payments | Razorpay webhook log + our `payments.status` | Any failed capture not retried in 10 min |
+| Manual money mismatch | Ledger reconciliation query | Invoice status paid with no matching captured payment row, or payment total over the invoice |
 | Cron failures | Vercel cron logs | Any missed run |
 | Uptime | External ping (free) | 2 consecutive failures |
 | Cost | Provider dashboards, weekly check | 70% of any free-tier limit |

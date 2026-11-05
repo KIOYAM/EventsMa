@@ -39,8 +39,13 @@ mkdir -p .cache/npm .cache/tmp .cache/bun .cache/pip
 ## 3. Stack (decided, see ADR-002)
 
 Next.js App Router + TypeScript, Tailwind + shadcn/ui, Supabase Postgres/Auth/Storage
-(Mumbai), Drizzle ORM + SQL migrations, Razorpay, Resend, Vercel. Full reasoning and the
+(Mumbai), Drizzle ORM + SQL migrations, Resend, Vercel. Full reasoning and the
 cost/scale limits: [docs/04](docs/04-architecture-cost-and-scale.md).
+
+**Payments are manual by product decision.** The app stores each business's bank/UPI
+instructions, shows them on the public quote, and records receipts by hand. There is no
+gateway onboarding, pay-now flow, webhook or online collection in the MVP. Do not add a
+payment-gateway dependency without a new ADR.
 
 Do not add a dependency, service or framework without a line in that document
 explaining its free-tier limit and the trigger that would make it paid.

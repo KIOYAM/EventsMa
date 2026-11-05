@@ -83,18 +83,19 @@ services and a specialist sell one, in the same product.
 
 - Deterministic A4 PDF at `/api/quotes/[id]/pdf`.
 - Immutable revisions: `quotation_versions` N+1, version N never touched.
-- Public profile page at `/p/[slug]` with enquiry intake, phone dedupe and a queued notification.
-- Zero-fee UPI collection on the customer quote (set `BUSINESS_UPI_VPA`).
-- Razorpay webhook: HMAC verification, tenant resolution from notes, idempotent append-only payment rows.
+- Public profile page at `/p/[slug]` with enquiry intake and phone dedupe.
+- Auth: sign-up, email confirmation callback, password reset, and invitation acceptance.
+- Public quote at `/q/[token]` with acceptance and manual payment instructions.
+- Manual money: bank/UPI details per business, append-only receipts, mark-paid in full.
+  No payment gateway, no online collection, no card data.
 
 ## Not built yet (deliberately, in order)
 
-1. Sign-in, workspace bootstrap (`bootstrap_org`) and invitations.
-2. Applying `db/policies.sql` and running the two-tenant suite with a restricted role.
-3. Enquiry inbox and the worker that drains `notifications`.
-4. Payments UI calling `createRazorpayPaymentLink`.
-5. Availability check on save; revisions that edit lines instead of copying them.
-6. ESLint flat config and Playwright e2e.
+1. The background worker that drains `notifications` and sends email.
+2. Applying the policies with a restricted runtime role and exercising them in CI.
+3. Backup import/export and portfolio media.
+4. Availability check on save; revisions that edit lines instead of copying them.
+5. ESLint flat config and Playwright e2e.
 
 ## Verification
 

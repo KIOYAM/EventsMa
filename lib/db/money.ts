@@ -155,6 +155,7 @@ export async function getInvoiceDetail(
       id: payments.id,
       amountPaise: payments.amountPaise,
       mode: payments.mode,
+      reference: payments.gatewayRef,
       receivedAt: payments.receivedAt,
       status: payments.status,
     })

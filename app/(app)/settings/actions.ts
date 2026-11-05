@@ -64,6 +64,15 @@ export async function updateSettings(formData: FormData): Promise<void> {
         quoteValidityDays: clampInt(String(formData.get('quoteValidityDays') ?? ''), 7, 1, 365),
         serviceAreas: areas,
         brand: { ...(existing.brand ?? {}), primary: brandPrimary, font: brandFont },
+        payment: {
+          ...(existing.payment ?? {}),
+          instructions: text(formData, 'paymentInstructions', 600),
+          upiVpa: text(formData, 'upiVpa', 120),
+          bankName: text(formData, 'bankName', 120),
+          accountName: text(formData, 'accountName', 120),
+          accountNumber: text(formData, 'accountNumber', 60),
+          ifsc: text(formData, 'ifsc', 20).toUpperCase(),
+        },
       },
       updatedAt: new Date(),
     })

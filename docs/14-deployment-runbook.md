@@ -244,3 +244,28 @@ policies isolate tenants. Keep it passing.
   confirmation on, the sign-up screen says "confirm your email" and the user must click
   the link before signing in; with it off, they go straight to `/onboarding`.
 - No CI pipeline yet: types and the browser checks are run by hand.
+
+---
+
+## 9. Deployment record
+
+| Date | Deployment | Result |
+|---|---|---|
+| 4 November 2026 | `dpl_4qQMnxFpVseBHcNF8pMVD6ygAL4C` | Production `https://eventsma.vercel.app`; `/api/health` returns `database: ok`, `auth: ok`, `mode: live` |
+| 5 November 2026 | pending | Landing-page rewrite plus `/privacy` and `/terms`, sitemap entries, Open Graph/Twitter images and metadata, WCAG AA contrast fixes |
+
+Verified in that deploy: build, migration 0003, RLS coverage (31/31 tables, 59 policies),
+two-tenant rolled-back test, public landing, login, signup, forgot-password, robots and
+sitemap. Dashboard and other workspace routes redirect to `/login` when signed out as
+expected.
+
+Not verified in that deploy: an authenticated quote → acceptance → invoice → receipt
+walkthrough, because no owner password was available in the deploy environment. Treat
+the money loop as code-complete and locally typed/tested, not production-smoke-tested
+until that walkthrough is done.
+
+The new landing deploy verifies: `npm run typecheck` passes, `npm run test` passes 18/18,
+`npm run build` passes, Lighthouse on `/` scores Performance 99/Accessibility 100/Best
+Practices 100/SEO 100 on mobile and 100 across the board on desktop, no horizontal
+overflow across the full responsive matrix, working `/`, `/privacy`, `/terms`,
+`/api/health` and signed-out `/dashboard` → `/login`, and working footer/legal anchors.

@@ -68,13 +68,21 @@ export default async function ClientsPage({
         title="Every enquiry, and what happened next"
         description="A quote with no enquiry behind it is a guess. This is where a public form submission becomes a client, a follow-up and finally an event."
         actions={
-          <Link
-            href="/events#new"
-            className="inline-flex h-11 items-center gap-2 rounded-control bg-forest px-4 text-sm font-medium text-white"
-          >
-            <CalendarPlus className="h-4 w-4" aria-hidden />
-            New event
-          </Link>
+          <>
+            <Link
+              href="/clients/directory"
+              className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink"
+            >
+              Client directory
+            </Link>
+            <Link
+              href="/events#new"
+              className="inline-flex h-11 items-center gap-2 rounded-control bg-forest px-4 text-sm font-medium text-white"
+            >
+              <CalendarPlus className="h-4 w-4" aria-hidden />
+              New event
+            </Link>
+          </>
         }
       />
 
@@ -144,7 +152,16 @@ export default async function ClientsPage({
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="truncate text-sm font-semibold text-ink">{row.clientName}</h2>
+                    {row.clientId ? (
+                      <Link
+                        href={`/clients/${row.clientId}`}
+                        className="truncate text-sm font-semibold text-ink hover:text-forest hover:underline"
+                      >
+                        {row.clientName}
+                      </Link>
+                    ) : (
+                      <h2 className="truncate text-sm font-semibold text-ink">{row.clientName}</h2>
+                    )}
                     <Badge tone={TONE[row.status]}>{ENQUIRY_STATUS_LABEL[row.status]}</Badge>
                     {row.source ? <Badge tone="outline">{row.source}</Badge> : null}
                   </div>

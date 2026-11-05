@@ -14,6 +14,49 @@ function isStatus(value: string): value is EnquiryStatus {
   return ENQUIRY_STATUSES.some((status) => status === value)
 }
 
+export async function updateClient(formData: FormData): Promise<void> {
+  const ctx = await requireWorkspace()
+  if (!canManageCommercial(ctx.role)) redirect('/clients?error=permission')
+  if (ctx.demo || !isDatabaseConfigured()) redirect('/clients?error=demo')
+
+  const id = String(formData.get('id') ?? '').trim()
+  const name = String(formData.get('name') ?? '').trim().slice(0, 120)
+  const phone = String(formData.get('phone') ?? '').trim().slice(0, 24)
+  const email = String(formData.get('email') ?? '').trim().toLowerCase().slice(0, 200)
+  const source = String(formData.get('source') ?? '').trim().slice(0, 60)
+  const notes = String(formData.get('notes') ?? '').trim().slice(0, 2000)
+  if (!id || !name) redirect(`/clients/${id}?error=name`)
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    redirect(`/clients/${id}?error=email`)
+  }
+
+  const normalized = phone.replace(/\D/g, '').slice(-10)
+
+  try {
+    await getDb()
+      .update(clients)
+      .set({
+        name,
+        phone: phone || null,
+        phoneNormalized: normalized || null,
+        email: email || null,
+        source: source || null,
+        notes: notes || null,
+      })
+      .where(and(eq(clients.orgId, ctx.orgId), eq(clients.id, id)))
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+      redirect(`/clients/${id}?error=phone`)
+    }
+    redirect(`/clients/${id}?error=missing`)
+  }
+
+  revalidatePath('/clients')
+  revalidatePath(`/clients/${id}`)
+  revalidatePath('/dashboard')
+  redirect(`/clients/${id}?saved=details`)
+}
+
 export async function setEnquiryStatus(formData: FormData): Promise<void> {
   const ctx = await requireWorkspace()
   if (!canManageCommercial(ctx.role)) redirect('/clients?error=permission')
