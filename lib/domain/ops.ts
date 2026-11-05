@@ -246,6 +246,13 @@ export interface EventDetail {
   quotes: EventQuoteRow[]
   expensesPaise: number
   paidPaise: number
+  /** Services attached to this event, keyed by vertical. */
+  services: {
+    key: string
+    label: string
+    status: string
+    configSnapshot: Record<string, unknown>
+  }[]
 }
 
 export interface InvoiceRow {

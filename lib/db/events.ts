@@ -13,6 +13,7 @@ import {
   quotationVersions,
   quotations,
 } from './schema'
+import { eventServices } from './schema-services'
 import type {
   CalendarEvent,
   EventCrewRow,
@@ -27,6 +28,7 @@ import type {
 import { EVENT_STATUSES } from '@/lib/domain/ops'
 import { demoEventDetails, demoEvents, demoStaff } from '@/lib/demo/workspace'
 import { PAGE_SIZE, pageOffset } from '@/lib/pagination'
+import { verticalDescriptor } from '@/lib/domain/verticals'
 
 interface EventFilters {
   q?: string
@@ -198,6 +200,7 @@ export async function getEventDetail(
       quotes: [],
       expensesPaise: 0,
       paidPaise: 0,
+      services: [],
     }
   }
 
@@ -226,7 +229,7 @@ export async function getEventDetail(
 
   if (!row) return null
 
-  const [tasks, vendors, crew, quoteRows, expenseRows, paidRows] = await Promise.all([
+  const [tasks, vendors, crew, quoteRows, expenseRows, paidRows, serviceRows] = await Promise.all([
     db
       .select({
         id: eventTasks.id,
@@ -290,6 +293,16 @@ export async function getEventDetail(
           eq(payments.status, 'captured'),
         ),
       ),
+    db
+      .select({
+        id: eventServices.id,
+        serviceKey: eventServices.serviceKey,
+        status: eventServices.status,
+        configSnapshot: eventServices.configSnapshot,
+      })
+      .from(eventServices)
+      .where(and(eq(eventServices.orgId, orgId), eq(eventServices.eventId, eventId)))
+      .orderBy(asc(eventServices.sortOrder)),
   ])
 
   return {
@@ -308,6 +321,12 @@ export async function getEventDetail(
     quotes: quoteRows.map((quote) => ({ ...quote, totalPaise: quote.totalPaise ?? 0 })),
     expensesPaise: expenseRows[0]?.n ?? 0,
     paidPaise: paidRows[0]?.n ?? 0,
+    services: serviceRows.map((s) => ({
+      key: s.serviceKey,
+      label: verticalDescriptor(s.serviceKey).label,
+      status: s.status,
+      configSnapshot: (s.configSnapshot ?? {}) as Record<string, unknown>,
+    })),
   }
 }
 

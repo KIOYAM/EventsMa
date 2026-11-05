@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, ClipboardList, IndianRupee, Users } from 'lucide-react'
+import { ArrowLeft, ClipboardList, IndianRupee, Layers, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, Select } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/page-header'
 import { Stat } from '@/components/ui/stat'
@@ -39,6 +39,7 @@ const TONE: Record<EventStatus, 'success' | 'mint' | 'gold' | 'accent' | 'neutra
 const TABS = [
   { key: 'operations', label: 'Operations', icon: ClipboardList },
   { key: 'crew', label: 'Crew', icon: Users },
+  { key: 'services', label: 'Services', icon: Layers },
   { key: 'money', label: 'Money', icon: IndianRupee },
 ] as const
 
@@ -406,6 +407,62 @@ export default async function EventDetailPage({
                 Employees see this event and their tasks. They never see quote totals, margins or
                 client payment history.
               </p>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+
+      {tab === 'services' ? (
+        <div className="grid gap-5 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Services on this event</CardTitle>
+              <Badge tone="outline">{event.services.length}</Badge>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {event.services.length === 0 ? (
+                <EmptyState
+                  icon={<Layers className="h-6 w-6" aria-hidden />}
+                  title="No services attached"
+                  description="Add catering, decoration, makeup or photography to this event. Each service keeps its own configuration and pricing."
+                />
+              ) : (
+                <div className="divide-y divide-hairline">
+                  {event.services.map((svc) => (
+                    <div key={svc.key} className="flex items-center justify-between gap-3 py-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-ink">{svc.label}</p>
+                        <p className="text-xs text-ink-muted">
+                          {svc.key} · {svc.status}
+                        </p>
+                      </div>
+                      <Badge tone="outline" className="text-[10px] px-2 py-1">
+                        {svc.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Add a service</CardTitle>
+              <CardDescription>
+                Attach an enabled service to this event. Each service gets its own configuration
+                and appears in the consolidated quotation.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-ink-muted">
+                Service-specific configuration pages are available from the workspace sidebar once
+                a service is enabled.
+              </p>
+              <div className="text-xs text-ink-muted">
+                Coming soon: direct service attachment from this page. For now, configure each
+                service from its dedicated workspace page, then link it here.
+              </div>
             </CardContent>
           </Card>
         </div>

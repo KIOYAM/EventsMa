@@ -188,6 +188,7 @@ export const demoEventDetails: Record<string, EventDetail> = {
     ],
     expensesPaise: 2_45_000_00,
     paidPaise: 4_92_984_00,
+    services: [],
   },
   '00000000-0000-4000-8000-0000000000a2': {
     id: '00000000-0000-4000-8000-0000000000a2',
@@ -218,6 +219,7 @@ export const demoEventDetails: Record<string, EventDetail> = {
     ],
     expensesPaise: 3_80_000_00,
     paidPaise: 7_464_000_00,
+    services: [],
   },
 }
 
