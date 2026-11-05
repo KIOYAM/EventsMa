@@ -159,9 +159,7 @@ export const makeupAppointments = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organisations.id, { onDelete: 'cascade' }),
-    eventId: uuid('event_id')
-      .notNull()
-      .references(() => events.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'cascade' }),
     artistId: uuid('artist_id').references(() => makeupArtists.id, { onDelete: 'set null' }),
     clientName: text('client_name').notNull(),
     serviceType: text('service_type').notNull(),
@@ -191,9 +189,7 @@ export const makeupTrials = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organisations.id, { onDelete: 'cascade' }),
-    eventId: uuid('event_id')
-      .notNull()
-      .references(() => events.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'cascade' }),
     artistId: uuid('artist_id').references(() => makeupArtists.id, { onDelete: 'set null' }),
     clientName: text('client_name').notNull(),
     trialDate: date('trial_date').notNull(),

@@ -104,7 +104,7 @@ CREATE TABLE "makeup_artists" (
 CREATE TABLE "makeup_appointments" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"org_id" uuid NOT NULL,
-	"event_id" uuid NOT NULL,
+	"event_id" uuid,
 	"artist_id" uuid,
 	"client_name" text NOT NULL,
 	"service_type" text NOT NULL,
@@ -125,7 +125,7 @@ CREATE TABLE "makeup_appointments" (
 CREATE TABLE "makeup_trials" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"org_id" uuid NOT NULL,
-	"event_id" uuid NOT NULL,
+	"event_id" uuid,
 	"artist_id" uuid,
 	"client_name" text NOT NULL,
 	"trial_date" date NOT NULL,
