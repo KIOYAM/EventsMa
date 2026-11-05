@@ -28,7 +28,7 @@ CREATE TABLE "event_services" (
 CREATE TABLE "decoration_areas" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"org_id" uuid NOT NULL,
-	"event_id" uuid NOT NULL,
+	"event_id" uuid,
 	"name" text NOT NULL,
 	"description" text,
 	"area_type" text NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE "decoration_areas" (
 CREATE TABLE "decoration_setups" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"org_id" uuid NOT NULL,
-	"event_id" uuid NOT NULL,
+	"event_id" uuid,
 	"area_id" uuid,
 	"setup_start" timestamp with time zone,
 	"setup_end" timestamp with time zone,
@@ -73,6 +73,7 @@ CREATE TABLE "decoration_materials" (
 	"quantity_unit" text NOT NULL,
 	"cost_paise_per_unit" integer DEFAULT 0 NOT NULL,
 	"supplier" text,
+	"sort_order" integer DEFAULT 0 NOT NULL,
 	"active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );

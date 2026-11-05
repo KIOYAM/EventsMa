@@ -57,9 +57,7 @@ export const decorationAreas = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organisations.id, { onDelete: 'cascade' }),
-    eventId: uuid('event_id')
-      .notNull()
-      .references(() => events.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     description: text('description'),
     areaType: text('area_type').notNull(),
@@ -85,9 +83,7 @@ export const decorationSetups = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organisations.id, { onDelete: 'cascade' }),
-    eventId: uuid('event_id')
-      .notNull()
-      .references(() => events.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'cascade' }),
     areaId: uuid('area_id').references(() => decorationAreas.id, { onDelete: 'set null' }),
     setupStart: timestamp('setup_start', { withTimezone: true }),
     setupEnd: timestamp('setup_end', { withTimezone: true }),
@@ -122,6 +118,7 @@ export const decorationMaterials = pgTable(
     quantityUnit: text('quantity_unit').notNull(),
     costPaisePerUnit: integer('cost_paise_per_unit').notNull().default(0),
     supplier: text('supplier'),
+    sortOrder: integer('sort_order').notNull().default(0),
     active: boolean('active').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
