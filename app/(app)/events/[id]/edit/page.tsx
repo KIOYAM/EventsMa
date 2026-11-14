@@ -6,15 +6,20 @@ import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getEventDetail, getEventFormOptions } from '@/lib/db/events'
+import { getLocale, translatorFor } from '@/lib/i18n/server'
 import { updateEvent } from '../../actions'
 
-export const metadata = { title: 'Edit event' }
+export async function generateMetadata() {
+  const locale = await getLocale()
+  return { title: translatorFor(locale)('events.edit.title') }
+}
 
-const ERROR_COPY: Record<string, string> = {
-  date: 'Choose a valid event date.',
-  guests: 'Guest count must be a number.',
-  permission: 'Only an owner or manager can edit an event.',
-  demo: 'Demo mode: connect a database before editing.',
+/** `?error=` codes are machine values; the sentence comes from the catalogue. */
+const ERROR_KEYS: Record<string, string> = {
+  date: 'events.errors.date',
+  guests: 'events.errors.guests',
+  permission: 'events.errors.editPermission',
+  demo: 'events.errors.editDemo',
 }
 
 export default async function EditEventPage({
@@ -25,6 +30,8 @@ export default async function EditEventPage({
   searchParams: Promise<{ error?: string }>
 }) {
   const ctx = await requireWorkspace()
+  const locale = await getLocale()
+  const t = translatorFor(locale)
   const { id } = await params
   const query = await searchParams
   const [event, options] = await withWorkspace(ctx, () =>
@@ -36,6 +43,8 @@ export default async function EditEventPage({
 
   if (!event) notFound()
 
+  const errorKey = query.error ? ERROR_KEYS[query.error] : undefined
+
   return (
     <div className="space-y-6">
       <Link
@@ -43,31 +52,32 @@ export default async function EditEventPage({
         className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-        Back to event
+        {t('events.edit.back')}
       </Link>
 
       <PageHeader
         eyebrow={event.title}
-        title="Edit the event"
-        description="Changing the date here updates the run sheet. Quotations already sent keep their own snapshot and are not rewritten."
+        title={t('events.edit.title')}
+        description={t('events.edit.intro')}
       />
 
-      {query.error && ERROR_COPY[query.error] ? (
+      {errorKey ? (
         <div role="alert" className="rounded-card border border-terracotta/30 bg-terracotta-soft px-4 py-3 text-sm text-terracotta">
-          {ERROR_COPY[query.error]}
+          {t(errorKey)}
         </div>
       ) : null}
 
       {!canManageCommercial(ctx.role) || ctx.demo ? (
         <div className="rounded-card border border-hairline bg-paper p-4 text-sm text-ink-muted">
-          This event is read-only for this account.
+          {t('events.edit.readOnly')}
         </div>
       ) : (
         <EventForm
           action={updateEvent}
           clients={options.clients}
-          submitLabel="Save event"
+          submitLabel={t('events.form.save')}
           cancelHref={`/events/${id}`}
+          locale={locale}
           defaults={{
             title: event.title,
             clientId: event.clientId ?? null,

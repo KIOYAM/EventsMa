@@ -3,8 +3,12 @@ import { PageHeader } from '@/components/ui/page-header'
 import { requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getEventCalendar } from '@/lib/db/events'
+import { getLocale, translatorFor } from '@/lib/i18n/server'
 
-export const metadata = { title: 'Event calendar' }
+export async function generateMetadata() {
+  const locale = await getLocale()
+  return { title: translatorFor(locale)('events.calendar.title') }
+}
 
 function currentMonth(): string {
   // en-CA produces YYYY-MM. Use IST explicitly: a UTC month is still the
@@ -22,6 +26,8 @@ export default async function EventCalendarPage({
   searchParams: Promise<{ month?: string }>
 }) {
   const ctx = await requireWorkspace()
+  const locale = await getLocale()
+  const t = translatorFor(locale)
   const params = await searchParams
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(params.month ?? '') ? params.month! : currentMonth()
   const events = await withWorkspace(ctx, () => getEventCalendar(ctx.orgId, ctx.demo, month))
@@ -29,11 +35,11 @@ export default async function EventCalendarPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Delivery"
-        title="Events by month"
-        description="The month grid fetches only the visible range. Click any event to open its run sheet, crew and money."
+        eyebrow={t('events.calendar.eyebrow')}
+        title={t('events.calendar.heading')}
+        description={t('events.calendar.intro')}
       />
-      <EventCalendar month={month} events={events} />
+      <EventCalendar month={month} events={events} locale={locale} />
     </div>
   )
 }

@@ -11,6 +11,7 @@
  */
 import { common } from './ta/common'
 import { dashboard } from './ta/dashboard'
+import { events } from './ta/events'
 import { nav } from './ta/nav'
 import { rule } from './ta/rule'
 import { share } from './ta/share'
@@ -19,6 +20,7 @@ import type { MessagesOverride } from './en'
 export const ta: MessagesOverride = {
   common,
   dashboard,
+  events,
   nav,
   rule,
   share,

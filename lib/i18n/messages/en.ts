@@ -14,6 +14,7 @@
  */
 import { common } from './en/common'
 import { dashboard } from './en/dashboard'
+import { events } from './en/events'
 import { nav } from './en/nav'
 import { rule } from './en/rule'
 import { share } from './en/share'
@@ -21,6 +22,7 @@ import { share } from './en/share'
 export const en = {
   common,
   dashboard,
+  events,
   nav,
   rule,
   share,

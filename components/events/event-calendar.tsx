@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import type { CalendarEvent } from '@/lib/domain/ops'
-import { EVENT_STATUS_LABEL } from '@/lib/domain/ops'
+import { createTranslator } from '@/lib/i18n'
+import { localeMeta, type Locale } from '@/lib/i18n/locales'
+import { eventStatusKey } from '@/lib/i18n/ops-copy'
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+/** Monday-first week. Keys, not letters: the label comes from the catalogue. */
+const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
 function shiftMonth(month: string, delta: number): string {
   const [year, value] = month.split('-').map(Number)
@@ -15,7 +18,16 @@ function dayNumber(date: string): number {
 }
 
 /** Month grid. The query is already scoped to the visible month. */
-export function EventCalendar({ month, events }: { month: string; events: CalendarEvent[] }) {
+export function EventCalendar({
+  month,
+  events,
+  locale,
+}: {
+  month: string
+  events: CalendarEvent[]
+  locale: Locale
+}) {
+  const t = createTranslator(locale)
   const [year, monthIndex] = month.split('-').map(Number)
   const first = new Date(Date.UTC(year!, monthIndex! - 1, 1))
   const daysInMonth = new Date(Date.UTC(year!, monthIndex!, 0)).getUTCDate()
@@ -28,13 +40,20 @@ export function EventCalendar({ month, events }: { month: string; events: Calend
     byDay.set(day, [...(byDay.get(day) ?? []), event])
   }
 
-  const label = first.toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+  // Same month + year shape as before; the month name follows the language.
+  const label = new Intl.DateTimeFormat(localeMeta(locale).intl, {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(first)
 
   return (
     <section className="rounded-card border border-hairline bg-paper">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline p-4">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">Calendar</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+            {t('events.calendar.label')}
+          </p>
           <h2 className="mt-0.5 font-display text-xl text-forest">{label}</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -42,16 +61,16 @@ export function EventCalendar({ month, events }: { month: string; events: Calend
             href={`/events?view=calendar&month=${shiftMonth(month, -1)}`}
             className="inline-flex h-9 items-center rounded-control border border-hairline px-3 text-ink"
           >
-            Previous
+            {t('events.calendar.previous')}
           </Link>
           <Link
             href={`/events?view=calendar&month=${shiftMonth(month, 1)}`}
             className="inline-flex h-9 items-center rounded-control border border-hairline px-3 text-ink"
           >
-            Next
+            {t('events.calendar.next')}
           </Link>
           <Link href="/events" className="text-forest underline underline-offset-4">
-            List view
+            {t('events.calendar.listView')}
           </Link>
         </div>
       </header>
@@ -59,7 +78,7 @@ export function EventCalendar({ month, events }: { month: string; events: Calend
       <div className="grid grid-cols-7 border-b border-hairline bg-canvas/60 text-center text-[11px] font-medium uppercase tracking-wide text-ink-muted">
         {WEEKDAYS.map((day) => (
           <div key={day} className="px-1 py-2">
-            {day}
+            {t(`events.calendar.${day}`)}
           </div>
         ))}
       </div>
@@ -93,13 +112,19 @@ export function EventCalendar({ month, events }: { month: string; events: Calend
                     key={event.id}
                     href={`/events/${event.id}`}
                     className="block truncate rounded bg-mint-subtle px-1.5 py-1 text-[10px] leading-tight text-forest hover:bg-mint"
-                    title={`${event.title} - ${EVENT_STATUS_LABEL[event.status]} - ${event.guests} guests`}
+                    title={t('events.calendar.tooltip', {
+                      title: event.title,
+                      status: t(eventStatusKey(event.status)),
+                      guests: event.guests,
+                    })}
                   >
                     {event.title}
                   </Link>
                 ))}
                 {dayEvents.length > 2 ? (
-                  <p className="px-1 text-[10px] text-ink-muted">+{dayEvents.length - 2} more</p>
+                  <p className="px-1 text-[10px] text-ink-muted">
+                    {t('events.calendar.more', { count: dayEvents.length - 2 })}
+                  </p>
                 ) : null}
               </div>
             </div>

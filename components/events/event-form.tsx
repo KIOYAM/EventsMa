@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import { Field, Input, Select, Textarea } from '@/components/ui/input'
-import { EVENT_STATUSES, EVENT_STATUS_LABEL } from '@/lib/domain/ops'
+import { EVENT_STATUSES } from '@/lib/domain/ops'
+import { createTranslator } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locales'
+import { eventStatusKey } from '@/lib/i18n/ops-copy'
 
 export interface EventFormDefaults {
   title?: string
@@ -27,29 +30,37 @@ export function EventForm({
   clients,
   submitLabel,
   cancelHref,
+  locale,
 }: {
   action: (formData: FormData) => void | Promise<void>
   defaults?: EventFormDefaults
   clients: { id: string; name: string }[]
   submitLabel: string
   cancelHref: string
+  locale: Locale
 }) {
+  const t = createTranslator(locale)
+
   return (
     <form action={action} className="space-y-5">
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Event title" htmlFor="title" className="md:col-span-2">
+        <Field label={t('events.form.eventTitle')} htmlFor="title" className="md:col-span-2">
           <Input
             id="title"
             name="title"
             defaultValue={defaults?.title ?? ''}
             maxLength={160}
-            placeholder="Meera & Karthik - wedding lunch"
+            placeholder={t('events.form.eventTitlePlaceholder')}
           />
         </Field>
 
-        <Field label="Client" htmlFor="clientId" hint="Pick an existing client, or add one below.">
+        <Field
+          label={t('events.form.client')}
+          htmlFor="clientId"
+          hint={t('events.form.clientHint')}
+        >
           <Select id="clientId" name="clientId" defaultValue={defaults?.clientId ?? ''}>
-            <option value="">No existing client</option>
+            <option value="">{t('events.form.noExistingClient')}</option>
             {clients.map((client) => (
               <option key={client.id} value={client.id}>
                 {client.name}
@@ -58,25 +69,33 @@ export function EventForm({
           </Select>
         </Field>
 
-        <Field label="Event type" htmlFor="eventType">
+        <Field label={t('events.form.eventType')} htmlFor="eventType">
           <Input
             id="eventType"
             name="eventType"
             defaultValue={defaults?.eventType ?? ''}
             maxLength={80}
-            placeholder="Wedding, reception, corporate"
+            placeholder={t('events.form.eventTypePlaceholder')}
           />
         </Field>
 
-        <Field label="New client name" htmlFor="clientName" hint="Only used when no client is selected.">
+        <Field
+          label={t('events.form.newClientName')}
+          htmlFor="clientName"
+          hint={t('events.form.newClientHint')}
+        >
           <Input id="clientName" name="clientName" maxLength={120} />
         </Field>
 
-        <Field label="Client phone" htmlFor="clientPhone" hint="Phone is the dedupe key for new clients.">
+        <Field
+          label={t('events.form.clientPhone')}
+          htmlFor="clientPhone"
+          hint={t('events.form.clientPhoneHint')}
+        >
           <Input id="clientPhone" name="clientPhone" maxLength={24} inputMode="tel" />
         </Field>
 
-        <Field label="Event date" htmlFor="eventDate">
+        <Field label={t('events.form.eventDate')} htmlFor="eventDate">
           <Input
             id="eventDate"
             name="eventDate"
@@ -86,7 +105,7 @@ export function EventForm({
           />
         </Field>
 
-        <Field label="Guests" htmlFor="guests">
+        <Field label={t('events.form.guests')} htmlFor="guests">
           <Input
             id="guests"
             name="guests"
@@ -98,19 +117,19 @@ export function EventForm({
           />
         </Field>
 
-        <Field label="Start time" htmlFor="startTime">
+        <Field label={t('events.form.startTime')} htmlFor="startTime">
           <Input id="startTime" name="startTime" type="time" defaultValue={defaults?.startTime ?? ''} />
         </Field>
 
-        <Field label="End time" htmlFor="endTime">
+        <Field label={t('events.form.endTime')} htmlFor="endTime">
           <Input id="endTime" name="endTime" type="time" defaultValue={defaults?.endTime ?? ''} />
         </Field>
 
-        <Field label="Venue" htmlFor="venueName">
+        <Field label={t('events.form.venue')} htmlFor="venueName">
           <Input id="venueName" name="venueName" defaultValue={defaults?.venueName ?? ''} maxLength={160} />
         </Field>
 
-        <Field label="Venue address" htmlFor="venueAddress">
+        <Field label={t('events.form.venueAddress')} htmlFor="venueAddress">
           <Input
             id="venueAddress"
             name="venueAddress"
@@ -119,17 +138,17 @@ export function EventForm({
           />
         </Field>
 
-        <Field label="Status" htmlFor="status">
+        <Field label={t('events.form.status')} htmlFor="status">
           <Select id="status" name="status" defaultValue={defaults?.status ?? 'enquiry'}>
             {EVENT_STATUSES.map((status) => (
               <option key={status} value={status}>
-                {EVENT_STATUS_LABEL[status]}
+                {t(eventStatusKey(status))}
               </option>
             ))}
           </Select>
         </Field>
 
-        <Field label="Notes" htmlFor="notes" className="md:col-span-2">
+        <Field label={t('events.form.notes')} htmlFor="notes" className="md:col-span-2">
           <Textarea id="notes" name="notes" defaultValue={defaults?.notes ?? ''} maxLength={2000} />
         </Field>
       </div>
@@ -145,7 +164,7 @@ export function EventForm({
           href={cancelHref}
           className="inline-flex h-11 items-center justify-center rounded-control border border-hairline px-5 text-sm text-ink"
         >
-          Cancel
+          {t('events.form.cancel')}
         </Link>
       </div>
     </form>
