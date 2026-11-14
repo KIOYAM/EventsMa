@@ -2,22 +2,37 @@
 
 import { useMemo, useRef, useState } from 'react'
 import { Check, Loader2, Send, Sparkles } from 'lucide-react'
-import { formatINR } from '@/lib/domain/money'
 import { basisForUnit } from '@/lib/domain/share-pricing'
 import type { UnitClass } from '@/lib/domain/units'
 import {
+  categoryVerdicts,
   menuTotals,
-  sessionProblems,
   toggleDish,
   type MenuCategory,
   type MenuSelection,
 } from '@/lib/domain/menu-selection'
 import type { SharePortal } from '@/lib/db/share'
+import { createTranslator } from '@/lib/i18n'
+import { formatPaiseLocalised } from '@/lib/i18n/format'
+import type { Locale } from '@/lib/i18n/locales'
+import { verdictMessageLocalised } from '@/lib/i18n/rule-copy'
+import { DetailsForm } from './_components/details-form'
 import { MenuPicker } from './_components/menu-picker'
 import { PlatePreview } from './_components/plate-preview'
 import { ServiceSection } from './_components/service-section'
 
-export function PortalForm({ portal }: { portal: SharePortal }) {
+/** Server failure codes → catalogue keys. The server sends a code, never copy. */
+const FAILURE_KEYS: Record<string, string> = {
+  no_menu: 'share.errorNoMenu',
+  session_gone: 'share.errorSessionGone',
+  dish_gone: 'share.errorDishGone',
+  rule: 'share.errorCheck',
+  empty: 'share.errorChooseItem',
+  items: 'share.errorCheck',
+}
+
+export function PortalForm({ portal, locale }: { portal: SharePortal; locale: Locale }) {
+  const t = createTranslator(locale)
   const guests = portal.event?.guests ?? 0
 
   const [menuSelections, setMenuSelections] = useState<Record<string, MenuSelection>>({})
@@ -44,13 +59,7 @@ export function PortalForm({ portal }: { portal: SharePortal }) {
   const index = useMemo(() => {
     const map = new Map<
       string,
-      {
-        serviceKey: string
-        name: string
-        unitClass: UnitClass
-        pricePaise: number
-        unitLabel: string | null
-      }
+      { serviceKey: string; name: string; unitClass: UnitClass; pricePaise: number; unitLabel: string | null }
     >()
     for (const service of portal.services) {
       for (const category of service.categories) {
@@ -97,14 +106,19 @@ export function PortalForm({ portal }: { portal: SharePortal }) {
     (session) => (menu.sessions.find((row) => row.sessionId === session.id)?.dishCount ?? 0) > 0,
   )
   const problems = touchedSessions.flatMap((session) =>
-    sessionProblems(session, menuSelections[session.id] ?? {}).map(
-      (problem) => `${session.name} · ${problem.name}: ${problem.message}`,
-    ),
+    categoryVerdicts(session, menuSelections[session.id] ?? {})
+      .filter((row) => !row.verdict.ok)
+      .map(
+        (row) =>
+          `${session.name} · ${row.name}: ${verdictMessageLocalised(t, row.verdict, row.rule, row.count)}`,
+      ),
   )
 
   const cataloguePaise = lines.reduce((sum, line) => sum + line.amountPaise, 0)
   const totalPaise = cataloguePaise + menu.paise
   const nothingChosen = lines.length === 0 && menu.dishCount === 0
+  const dishWord = menu.dishCount === 1 ? t('share.dishOne') : t('share.dishMany')
+  const itemWord = lines.length === 1 ? t('share.otherItemOne') : t('share.otherItemMany')
 
   const onToggleDish = (sessionId: string, category: MenuCategory, dishId: string) => {
     const current = selectionsRef.current
@@ -142,15 +156,11 @@ export function PortalForm({ portal }: { portal: SharePortal }) {
     setError(null)
 
     if (nothingChosen) {
-      setError(
-        portal.menu.length > 0
-          ? 'Pick at least one dish before sending your request.'
-          : 'Choose at least one item before submitting.',
-      )
+      setError(portal.menu.length > 0 ? t('share.errorPickDish') : t('share.errorChooseItem'))
       return
     }
     if (problems.length > 0) {
-      setError(problems[0] ?? 'Please check your selections.')
+      setError(problems[0] ?? t('share.errorCheck'))
       return
     }
 
@@ -179,15 +189,21 @@ export function PortalForm({ portal }: { portal: SharePortal }) {
           menuSelections: menuSelectionsPayload,
         }),
       })
-      const payload = (await response.json()) as { ok?: boolean; error?: string }
+      const payload = (await response.json()) as {
+        ok?: boolean
+        error?: string
+        code?: string
+        params?: Record<string, string | number>
+      }
       if (!response.ok || !payload.ok) {
-        setError(payload.error ?? 'We could not submit your request. Please try again.')
+        const key = payload.code ? FAILURE_KEYS[payload.code] : undefined
+        setError(key ? t(key, payload.params) : (payload.error ?? t('share.errorSubmit')))
         setSubmitting(false)
         return
       }
       setDone(true)
     } catch {
-      setError('Network error. Please check your connection and try again.')
+      setError(t('share.errorNetwork'))
       setSubmitting(false)
     }
   }
@@ -198,10 +214,9 @@ export function PortalForm({ portal }: { portal: SharePortal }) {
         <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-forest text-white">
           <Check className="h-7 w-7" aria-hidden />
         </span>
-        <h2 className="font-display text-2xl text-forest">Request received</h2>
+        <h2 className="font-display text-2xl text-forest">{t('share.requestReceived')}</h2>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-ink-muted">
-          Thank you — your host has your menu and your details, and will come back with a
-          confirmed quotation. Nothing is booked or charged from this page.
+          {t('share.receivedBody')}
         </p>
       </div>
     )
@@ -219,6 +234,7 @@ export function PortalForm({ portal }: { portal: SharePortal }) {
               onActive={setActiveSession}
               onToggle={onToggleDish}
               blockedCategoryId={blocked}
+              locale={locale}
             />
           ) : null}
 
@@ -230,15 +246,14 @@ export function PortalForm({ portal }: { portal: SharePortal }) {
               selected={selected}
               onToggle={toggle}
               onQuantity={setQuantity}
+              locale={locale}
             />
           ))}
 
           {portal.services.length === 0 && portal.menu.length === 0 ? (
             <div className="rounded-2xl border border-hairline bg-paper px-5 py-8 text-center">
               <Sparkles className="mx-auto mb-3 h-6 w-6 text-ink-muted" aria-hidden />
-              <p className="text-sm text-ink-muted">
-                The menu for this link is being prepared. Please contact the organiser directly.
-              </p>
+              <p className="text-sm text-ink-muted">{t('share.noMenuYet')}</p>
             </div>
           ) : null}
 
@@ -247,91 +262,49 @@ export function PortalForm({ portal }: { portal: SharePortal }) {
               sessions={portal.menu}
               selections={menuSelections}
               className="lg:hidden"
+              locale={locale}
             />
           ) : null}
 
-          <section className="rounded-2xl border border-hairline bg-paper p-4 sm:p-6">
-            <h2 className="font-display text-xl text-forest">Your details</h2>
-            <p className="mt-1 text-sm text-ink-muted">
-              We only ask for what the organiser needs to prepare your quotation.
-            </p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="block sm:col-span-2">
-                <span className="mb-1.5 block text-sm font-medium text-ink">Name</span>
-                <input
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  required
-                  maxLength={120}
-                  autoComplete="name"
-                  className="h-11 w-full rounded-xl border border-hairline bg-canvas px-3 text-sm text-ink"
-                  placeholder="Your full name"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-ink">Phone</span>
-                <input
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  type="tel"
-                  maxLength={24}
-                  autoComplete="tel"
-                  inputMode="tel"
-                  className="h-11 w-full rounded-xl border border-hairline bg-canvas px-3 text-sm text-ink"
-                  placeholder="+91 98765 43210"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-ink">Email</span>
-                <input
-                  value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  type="email"
-                  maxLength={160}
-                  autoComplete="email"
-                  className="h-11 w-full rounded-xl border border-hairline bg-canvas px-3 text-sm text-ink"
-                  placeholder="you@example.com"
-                />
-              </label>
-              <label className="block sm:col-span-2">
-                <span className="mb-1.5 block text-sm font-medium text-ink">Anything else?</span>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={3}
-                  maxLength={1000}
-                  className="w-full rounded-xl border border-hairline bg-canvas px-3 py-2 text-sm text-ink"
-                  placeholder="Timings, themes, dietary needs, people counts…"
-                />
-              </label>
-            </div>
-          </section>
+          <DetailsForm
+            locale={locale}
+            name={clientName}
+            phone={clientPhone}
+            email={clientEmail}
+            message={message}
+            onName={setClientName}
+            onPhone={setClientPhone}
+            onEmail={setClientEmail}
+            onMessage={setMessage}
+          />
         </div>
 
         <aside className="hidden lg:sticky lg:top-6 lg:block">
           {portal.menu.length > 0 ? (
-            <PlatePreview sessions={portal.menu} selections={menuSelections} />
+            <PlatePreview sessions={portal.menu} selections={menuSelections} locale={locale} />
           ) : null}
           <div className="mt-4 rounded-2xl border border-hairline bg-paper p-4">
             <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
-              Summary
+              {t('share.summary')}
             </p>
             <dl className="mt-2 space-y-1.5 text-xs">
               {menu.dishCount > 0 ? (
                 <div className="flex justify-between gap-2">
-                  <dt className="text-ink-muted">Dishes chosen</dt>
+                  <dt className="text-ink-muted">{t('share.dishesChosen')}</dt>
                   <dd className="tabular text-ink">{menu.dishCount}</dd>
                 </div>
               ) : null}
               {lines.length > 0 ? (
                 <div className="flex justify-between gap-2">
-                  <dt className="text-ink-muted">Other items</dt>
+                  <dt className="text-ink-muted">{t('share.otherItems')}</dt>
                   <dd className="tabular text-ink">{lines.length}</dd>
                 </div>
               ) : null}
               <div className="flex justify-between gap-2 border-t border-hairline pt-1.5">
-                <dt className="font-medium text-ink">Indicative</dt>
-                <dd className="tabular font-medium text-forest">{formatINR(totalPaise)}</dd>
+                <dt className="font-medium text-ink">{t('share.indicative')}</dt>
+                <dd className="tabular font-medium text-forest">
+                  {formatPaiseLocalised(totalPaise, locale)}
+                </dd>
               </div>
             </dl>
             {problems.length > 0 ? (
@@ -345,17 +318,15 @@ export function PortalForm({ portal }: { portal: SharePortal }) {
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-[0.14em] text-white/70">
-              Indicative estimate
+              {t('share.estimate')}
             </p>
             <p className="font-display text-xl leading-tight tabular sm:text-2xl">
-              {formatINR(totalPaise)}
+              {formatPaiseLocalised(totalPaise, locale)}
             </p>
             <p className="truncate text-[10px] text-white/70 sm:text-[11px]">
-              {menu.dishCount > 0
-                ? `${menu.dishCount} dish${menu.dishCount === 1 ? '' : 'es'}`
-                : 'No dishes yet'}
-              {lines.length > 0 ? ` · ${lines.length} other item${lines.length === 1 ? '' : 's'}` : ''}
-              {' · before tax'}
+              {menu.dishCount > 0 ? `${menu.dishCount} ${dishWord}` : t('share.noDishes')}
+              {lines.length > 0 ? ` · ${lines.length} ${itemWord}` : ''}
+              {` · ${t('share.beforeTax')}`}
             </p>
           </div>
           <button
@@ -365,11 +336,11 @@ export function PortalForm({ portal }: { portal: SharePortal }) {
           >
             {submitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Sending
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {t('share.sending')}
               </>
             ) : (
               <>
-                <Send className="h-4 w-4" aria-hidden /> Send request
+                <Send className="h-4 w-4" aria-hidden /> {t('share.sendRequest')}
               </>
             )}
           </button>
@@ -379,8 +350,7 @@ export function PortalForm({ portal }: { portal: SharePortal }) {
           <p className="mt-1.5 text-[11px] leading-snug text-white/80">{problems[0]}</p>
         ) : null}
         <p className="mt-1.5 hidden text-[11px] leading-relaxed text-white/70 sm:block">
-          This estimate uses your host&apos;s published rates for your guest count. The organiser
-          confirms the final quotation.
+          {t('share.estimateHelp')}
         </p>
       </section>
     </form>

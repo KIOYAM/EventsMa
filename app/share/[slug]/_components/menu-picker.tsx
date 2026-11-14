@@ -2,15 +2,17 @@
 
 import { Check, Clock, Users, UtensilsCrossed } from 'lucide-react'
 import { DishThumb } from './dish-thumb'
-import { formatINR } from '@/lib/domain/money'
 import {
   categoryCount,
   categoryVerdicts,
-  ruleLabel,
   type MenuCategory,
   type MenuSelection,
   type MenuSession,
 } from '@/lib/domain/menu-selection'
+import { createTranslator } from '@/lib/i18n'
+import { formatPaiseLocalised } from '@/lib/i18n/format'
+import type { Locale } from '@/lib/i18n/locales'
+import { ruleLabelLocalised, verdictMessageLocalised } from '@/lib/i18n/rule-copy'
 
 /**
  * The customer's menu, session by session.
@@ -26,6 +28,7 @@ export function MenuPicker({
   onActive,
   onToggle,
   blockedCategoryId,
+  locale,
 }: {
   sessions: readonly MenuSession[]
   selections: Readonly<Record<string, MenuSelection>>
@@ -33,7 +36,9 @@ export function MenuPicker({
   onActive: (sessionId: string) => void
   onToggle: (sessionId: string, category: MenuCategory, dishId: string) => void
   blockedCategoryId: string | null
+  locale: Locale
 }) {
+  const t = createTranslator(locale)
   const session = sessions.find((row) => row.id === activeId) ?? sessions[0]
   if (!session) return null
 
@@ -46,17 +51,14 @@ export function MenuPicker({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-muted">
-            Catering menu
+            {t('share.cateringMenu')}
           </p>
-          <h2 className="mt-1 font-display text-2xl text-forest">Choose what you want served</h2>
-          <p className="mt-1 text-sm leading-relaxed text-ink-muted">
-            Your host has set how many dishes you may pick in each section. Tap a dish to add it;
-            tap again to take it off.
-          </p>
+          <h2 className="mt-1 font-display text-2xl text-forest">{t('share.chooseServed')}</h2>
+          <p className="mt-1 text-sm leading-relaxed text-ink-muted">{t('share.pickerHelp')}</p>
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-mint-subtle px-3 py-1 text-xs font-medium text-forest">
           <UtensilsCrossed className="h-3.5 w-3.5" aria-hidden />
-          {chosenHere} chosen
+          {t('share.chosen', { count: chosenHere })}
         </span>
       </div>
 
@@ -64,7 +66,7 @@ export function MenuPicker({
         <div
           className="mt-5 -mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="tablist"
-          aria-label="Meal sessions"
+          aria-label={t('share.mealSessions')}
         >
           {sessions.map((row) => {
             const count = (selections[row.id] ? categoryCountOf(row, selections[row.id]!) : 0) ?? 0
@@ -129,15 +131,15 @@ export function MenuPicker({
             <p className="text-[11px] text-ink-muted">
               {session.startTime
                 ? `${session.startTime}${session.endTime ? `–${session.endTime}` : ''}`
-                : 'Timing to be confirmed'}
+                : t('share.timingToConfirm')}
               {session.serviceStyle ? ` · ${session.serviceStyle}` : ''}
             </p>
           </div>
         </div>
         <p className="mt-2 text-[11px] text-ink-muted sm:mt-0">
           {session.guests > 0
-            ? `Prices below are per guest × ${session.guests} guests`
-            : 'Guest count to be confirmed by your host'}
+            ? t('share.perGuestTimes', { guests: session.guests })
+            : t('share.guestsToConfirm')}
         </p>
       </div>
 
@@ -159,7 +161,7 @@ export function MenuPicker({
                     {category.name}
                     {category.rule.required ? (
                       <span className="rounded-full bg-clay/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-clay">
-                        Required
+                        {t('share.required')}
                       </span>
                     ) : null}
                   </h3>
@@ -176,7 +178,7 @@ export function MenuPicker({
                         : 'bg-canvas text-ink-muted'
                   }`}
                 >
-                  {ruleLabel(category.rule)}
+                  {ruleLabelLocalised(t, category.rule)}
                   <span className="ml-1.5 tabular opacity-70">
                     {count}
                     {max !== null ? `/${max}` : ''}
@@ -227,12 +229,12 @@ export function MenuPicker({
                         ) : null}
                         <span className="mt-1 flex flex-wrap items-center gap-1.5">
                           <span className="text-xs font-medium text-forest tabular">
-                            {formatINR(dish.pricePaise)}
+                            {formatPaiseLocalised(dish.pricePaise, locale)}
                           </span>
                           <span className="text-[10px] text-ink-muted">
                             {dish.unitClass === 'PER_GUEST'
-                              ? 'per guest'
-                              : (dish.unitLabel ?? 'per item')}
+                              ? t('share.perGuest')
+                              : (dish.unitLabel ?? t('share.perItem'))}
                           </span>
                           {dish.dietary ? (
                             <span className="rounded-full border border-hairline px-1.5 py-px text-[9px] uppercase tracking-wide text-ink-muted">
@@ -256,12 +258,12 @@ export function MenuPicker({
               </div>
 
               {short && row && !row.verdict.ok ? (
-                <p className="mt-2 text-[11px] font-medium text-clay">{row.verdict.message}</p>
+                <p className="mt-2 text-[11px] font-medium text-clay">
+                  {verdictMessageLocalised(t, row.verdict, row.rule, row.count)}
+                </p>
               ) : null}
               {flash ? (
-                <p className="mt-2 text-[11px] font-medium text-clay">
-                  That section is full — take one off before adding another.
-                </p>
+                <p className="mt-2 text-[11px] font-medium text-clay">{t('rule.full')}</p>
               ) : null}
             </div>
           )

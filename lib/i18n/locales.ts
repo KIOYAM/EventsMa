@@ -55,6 +55,15 @@ export function resolveLocale(value: string | null | undefined, fallback: Locale
   return fallback
 }
 
+/**
+ * Languages whose catalogue is complete enough to offer.
+ *
+ * Offering a language the app cannot speak is worse than not offering it: the
+ * customer picks தமிழ், half the screen stays English and trust drops. This list
+ * grows only when a surface is fully covered and reviewed.
+ */
+export const SHIPPED_LOCALES: readonly Locale[] = ['en', 'ta']
+
 export function localeMeta(code: Locale): LocaleMeta {
   return LOCALES.find((locale) => locale.code === code) ?? LOCALES[0]
 }

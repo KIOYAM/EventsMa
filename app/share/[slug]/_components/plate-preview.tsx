@@ -1,8 +1,10 @@
 'use client'
 
 import { DishThumb } from './dish-thumb'
-import { formatINR } from '@/lib/domain/money'
 import { menuTotals, type MenuSelection, type MenuSession } from '@/lib/domain/menu-selection'
+import { createTranslator } from '@/lib/i18n'
+import { formatPaiseLocalised } from '@/lib/i18n/format'
+import type { Locale } from '@/lib/i18n/locales'
 
 const MAX_ON_PLATE = 7
 
@@ -24,11 +26,14 @@ export function PlatePreview({
   sessions,
   selections,
   className = '',
+  locale,
 }: {
   sessions: readonly MenuSession[]
   selections: Readonly<Record<string, MenuSelection>>
   className?: string
+  locale: Locale
 }) {
+  const t = createTranslator(locale)
   const totals = menuTotals(sessions, selections)
   const chosen: ChosenDish[] = []
 
@@ -59,9 +64,9 @@ export function PlatePreview({
       aria-live="polite"
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="font-display text-lg text-forest">Your plate</h3>
+        <h3 className="font-display text-lg text-forest">{t('share.yourPlate')}</h3>
         <span className="tabular text-xs text-ink-muted">
-          {totals.dishCount} dish{totals.dishCount === 1 ? '' : 'es'}
+          {totals.dishCount} {totals.dishCount === 1 ? t('share.dishOne') : t('share.dishMany')}
         </span>
       </div>
 
@@ -77,7 +82,7 @@ export function PlatePreview({
               {totals.dishCount}
             </p>
             <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-              {empty ? 'nothing yet' : 'on the plate'}
+              {empty ? t('share.nothingYet') : t('share.onThePlate')}
             </p>
           </div>
         </div>
@@ -107,13 +112,13 @@ export function PlatePreview({
 
       {hidden > 0 ? (
         <p className="mt-2 text-center text-[11px] text-ink-muted">
-          +{hidden} more already on the plate
+          {t('share.moreOnPlate', { count: hidden })}
         </p>
       ) : null}
 
       {empty ? (
         <p className="mt-3 text-center text-xs leading-relaxed text-ink-muted">
-          Pick a few dishes and they will be laid out here, so you can see the whole menu at a glance.
+          {t('share.plateEmpty')}
         </p>
       ) : (
         <ul className="mt-4 space-y-1.5">
@@ -127,11 +132,14 @@ export function PlatePreview({
                 <span className="min-w-0 truncate text-ink">
                   {row.name}
                   {row.guests > 0 ? (
-                    <span className="text-ink-muted"> · {row.guests} guests</span>
+                    <span className="text-ink-muted">
+                      {' · '}
+                      {t('share.guestsCount', { count: row.guests })}
+                    </span>
                   ) : null}
                 </span>
                 <span className="shrink-0 tabular text-ink-muted">
-                  {row.dishCount} · {formatINR(row.paise)}
+                  {row.dishCount} · {formatPaiseLocalised(row.paise, locale)}
                 </span>
               </li>
             ))}

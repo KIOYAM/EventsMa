@@ -2,10 +2,12 @@
 
 import { Check, Minus, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { formatINR } from '@/lib/domain/money'
 import { unitClassLabel, type UnitClass } from '@/lib/domain/units'
 import { basisForUnit } from '@/lib/domain/share-pricing'
 import type { PortalService } from '@/lib/db/share'
+import { createTranslator } from '@/lib/i18n'
+import { formatPaiseLocalised } from '@/lib/i18n/format'
+import type { Locale } from '@/lib/i18n/locales'
 
 /** The non-catering catalogue: decoration, makeup, photography, specialist. */
 export function ServiceSection({
@@ -14,13 +16,16 @@ export function ServiceSection({
   selected,
   onToggle,
   onQuantity,
+  locale,
 }: {
   service: PortalService
   guests: number
   selected: Record<string, number>
   onToggle: (itemId: string, unitClass: UnitClass) => void
   onQuantity: (itemId: string, quantity: number) => void
+  locale: Locale
 }) {
+  const t = createTranslator(locale)
   const chosenCount = service.categories
     .flatMap((category) => category.items)
     .filter((item) => selected[item.id]).length
@@ -33,7 +38,7 @@ export function ServiceSection({
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">{service.description}</p>
         </div>
         <Badge tone={chosenCount > 0 ? 'success' : 'outline'}>
-          {chosenCount > 0 ? `${chosenCount} selected` : 'Optional'}
+          {chosenCount > 0 ? t('share.selected', { count: chosenCount }) : t('share.optional')}
         </Badge>
       </div>
 
@@ -88,10 +93,13 @@ export function ServiceSection({
                         ) : null}
                         <span className="mt-1 flex flex-wrap items-center gap-1.5">
                           <span className="text-xs font-medium text-forest">
-                            {formatINR(item.pricePaise)}
+                            {formatPaiseLocalised(item.pricePaise, locale)}
                           </span>
                           <span className="text-[10px] text-ink-muted">
-                            {item.unitLabel ?? unitClassLabel(item.unitClass)}
+                            {item.unitLabel ??
+                              (item.unitClass === 'PER_GUEST'
+                                ? t('share.perGuest')
+                                : unitClassLabel(item.unitClass))}
                           </span>
                           {item.dietary ? (
                             <Badge tone="outline" className="text-[9px]">
@@ -104,13 +112,13 @@ export function ServiceSection({
 
                     {picked && item.unitClass !== 'PER_GUEST' && item.unitClass !== 'FLAT' ? (
                       <div className="mt-2 flex items-center justify-between border-t border-forest/15 pt-2">
-                        <span className="text-[11px] text-ink-muted">Quantity</span>
+                        <span className="text-[11px] text-ink-muted">{t('share.quantity')}</span>
                         <span className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => onQuantity(item.id, quantity - 1)}
                             className="grid h-7 w-7 place-items-center rounded-md border border-hairline bg-paper"
-                            aria-label={`Fewer ${item.name}`}
+                            aria-label={t('share.fewer', { name: item.name })}
                           >
                             <Minus className="h-3 w-3" aria-hidden />
                           </button>
@@ -119,7 +127,7 @@ export function ServiceSection({
                             type="button"
                             onClick={() => onQuantity(item.id, quantity + 1)}
                             className="grid h-7 w-7 place-items-center rounded-md border border-hairline bg-paper"
-                            aria-label={`More ${item.name}`}
+                            aria-label={t('share.more', { name: item.name })}
                           >
                             <Plus className="h-3 w-3" aria-hidden />
                           </button>
@@ -130,10 +138,10 @@ export function ServiceSection({
                     {picked ? (
                       <p className="mt-2 border-t border-forest/15 pt-2 text-[11px] text-ink-muted">
                         {item.unitClass === 'PER_GUEST'
-                          ? `${Math.max(guests, 0)} guests × ${formatINR(item.pricePaise)} = `
-                          : `${basis} × ${formatINR(item.pricePaise)} = `}
+                          ? `${t('share.guestsCount', { count: Math.max(guests, 0) })} × ${formatPaiseLocalised(item.pricePaise, locale)} = `
+                          : `${basis} × ${formatPaiseLocalised(item.pricePaise, locale)} = `}
                         <span className="font-medium text-forest">
-                          {formatINR(Math.round(item.pricePaise * basis))}
+                          {formatPaiseLocalised(Math.round(item.pricePaise * basis), locale)}
                         </span>
                       </p>
                     ) : null}

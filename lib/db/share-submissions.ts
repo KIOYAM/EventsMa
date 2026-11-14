@@ -39,7 +39,14 @@ export type SubmissionResult =
       orgId: string
       eventId: string | null
     }
-  | { ok: false; error: string; status: number }
+  | {
+      ok: false
+      /** Stable code the translated front end maps to copy; `error` is the fallback. */
+      code?: string
+      params?: Record<string, string | number>
+      error: string
+      status: number
+    }
 
 function normalisePhone(value: string | null | undefined): string | null {
   if (!value) return null
@@ -84,7 +91,12 @@ export async function createShareSubmission(input: SubmissionInput): Promise<Sub
   for (const [itemId, selection] of wanted) {
     const found = catalogue.get(itemId)
     if (!found) {
-      return { ok: false, error: 'One of the selected items is no longer available.', status: 400 }
+      return {
+        ok: false,
+        code: 'items',
+        error: 'One of the selected items is no longer available.',
+        status: 400,
+      }
     }
     if (found.serviceKey !== selection.serviceKey || !serviceKeys.has(selection.serviceKey)) {
       return { ok: false, error: 'One of the selected items does not match its service.', status: 400 }
@@ -131,7 +143,12 @@ export async function createShareSubmission(input: SubmissionInput): Promise<Sub
   const menu = menuPrep.menu
 
   if (prepared.length === 0 && menu.dishCount === 0) {
-    return { ok: false, error: 'Choose at least one item before submitting.', status: 400 }
+    return {
+      ok: false,
+      code: 'empty',
+      error: 'Choose at least one item before submitting.',
+      status: 400,
+    }
   }
 
   const indicativeTotal =

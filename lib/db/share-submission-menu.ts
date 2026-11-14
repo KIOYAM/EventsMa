@@ -34,9 +34,25 @@ export interface PreparedMenu {
   key: string
 }
 
+/**
+ * Machine-readable failures.
+ *
+ * The portal is translated, so the server must not decide what the customer reads:
+ * it returns a code and the numbers the sentence needs, and the client renders it
+ * in the customer's language. `error` stays as a readable English fallback for
+ * logs and for any caller that has not adopted codes yet.
+ */
+export type MenuFailureCode = 'no_menu' | 'session_gone' | 'dish_gone' | 'rule'
+
 export type MenuPreparation =
   | { ok: true; menu: PreparedMenu }
-  | { ok: false; error: string; status: number }
+  | {
+      ok: false
+      code: MenuFailureCode
+      params?: Record<string, string | number>
+      error: string
+      status: number
+    }
 
 const EMPTY: PreparedMenu = { sessions: [], dishCount: 0, paise: 0, key: '' }
 
@@ -54,7 +70,12 @@ export function prepareMenuSelection(
 ): MenuPreparation {
   if (portal.menu.length === 0) {
     return input.length > 0
-      ? { ok: false, error: 'This event has no catering menu to choose from.', status: 400 }
+      ? {
+          ok: false,
+          code: 'no_menu',
+          error: 'This event has no catering menu to choose from.',
+          status: 400,
+        }
       : { ok: true, menu: EMPTY }
   }
 
@@ -65,7 +86,12 @@ export function prepareMenuSelection(
   for (const entry of input) {
     const session = byId.get(entry.sessionId)
     if (!session) {
-      return { ok: false, error: 'One of the meal sessions is no longer available.', status: 400 }
+      return {
+        ok: false,
+        code: 'session_gone',
+        error: 'One of the meal sessions is no longer available.',
+        status: 400,
+      }
     }
 
     const wanted = new Set(entry.dishIds.filter(Boolean))
@@ -89,6 +115,8 @@ export function prepareMenuSelection(
     if (unknown.length > 0) {
       return {
         ok: false,
+        code: 'dish_gone',
+        params: { session: session.name },
         error: `A dish you chose is no longer on the ${session.name} menu. Please refresh and choose again.`,
         status: 400,
       }
@@ -98,6 +126,7 @@ export function prepareMenuSelection(
     if (problems.length > 0) {
       return {
         ok: false,
+        code: 'rule',
         error: `${session.name} · ${problems[0]?.name}: ${problems[0]?.message ?? 'Check the selection.'}`,
         status: 400,
       }

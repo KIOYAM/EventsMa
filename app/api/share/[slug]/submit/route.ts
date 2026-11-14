@@ -64,7 +64,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   })
 
   if (!result.ok) {
-    return NextResponse.json({ ok: false, error: result.error }, { status: result.status })
+    // The portal renders the message in the customer's language, so the code and
+    // its numbers travel with the response; `error` stays for logs and clients
+    // that have not adopted codes.
+    return NextResponse.json(
+      { ok: false, code: result.code, params: result.params, error: result.error },
+      { status: result.status },
+    )
   }
 
   // Notify the owner. Delivery failure never fails the customer's submission:
