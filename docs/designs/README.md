@@ -17,6 +17,13 @@ Required before Phase 1 code starts (from the design review):
 Supporting fixture required: one real, redacted catering quote with 12 lines, tax,
 transport and a deposit, reused by unit, integration and E2E tests.
 
+## Localization (shipped, living documents)
+
+| Design | Covers | Status |
+|---|---|---|
+| [`2026-11-14-localization-engine.md`](2026-11-14-localization-engine.md) | Locale registry, catalogues and fallback, formatting, the measured `<html lang>` trade-off, roadmap to five languages | Foundation shipped; customer link bilingual |
+| [`2026-11-14-localization-rollout-guide.md`](2026-11-14-localization-rollout-guide.md) | How to translate the remaining surfaces, how to add a language, file ownership for parallel agents, the pitfalls we actually hit, verification checklist, ready-to-paste agent prompt | **Read before changing any UI copy** |
+
 ## Template
 
 ```markdown

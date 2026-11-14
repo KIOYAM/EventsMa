@@ -1,0 +1,22 @@
+/** Sidebar and page-title labels. One key per destination, not per screen. */
+export const nav = {
+  home: 'Home',
+  dashboard: 'Dashboard',
+  clients: 'Clients',
+  events: 'Events',
+  submissions: 'Submissions',
+  quotes: 'Quotes',
+  invoices: 'Invoices',
+  catering: 'Catering',
+  decoration: 'Decoration',
+  makeup: 'Makeup',
+  photography: 'Photography',
+  inventory: 'Inventory',
+  finance: 'Money',
+  reports: 'Reports',
+  team: 'Team',
+  services: 'Services',
+  portfolio: 'Portfolio',
+  storefront: 'Storefront',
+  settings: 'Settings',
+} as const

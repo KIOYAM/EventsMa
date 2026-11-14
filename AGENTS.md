@@ -4,12 +4,15 @@ Read this before changing anything. It is short on purpose.
 
 ## 1. Where we are
 
-Design phase. There is **no application code yet**. The HTML file at the repo root is a
-clickable prototype kept for reference only; never edit it to add features and never
-treat it as the codebase.
+The application exists and is live: Next.js in `app/`, Postgres/Supabase, deployed on
+Vercel (`https://eventsma.vercel.app`). This section used to say "design phase, no
+application code yet" — that is no longer true, and acting on it wastes a session.
+The HTML file at the repo root is a clickable prototype kept for reference only; never
+edit it to add features and never treat it as the codebase.
 
 - Design and decisions: [`docs/`](docs/README.md) — start with the index
-- Next step: Phase 0 validation, then MVP-1 (see [docs/07](docs/07-roadmap-metrics-risks.md))
+- Current ranked work: [`docs/designs/next-build-handoff.md`](docs/designs/next-build-handoff.md)
+- Roadmap and risks: [docs/07](docs/07-roadmap-metrics-risks.md)
 
 ## 2. Hard constraint: do not use the C: drive
 
@@ -61,6 +64,12 @@ explaining its free-tier limit and the trigger that would make it paid.
 3. **One vertical slice per PR.** Schema + policy + API + UI + tests together.
 4. **Verify, then claim.** Types, lint, unit, RLS isolation, e2e on preview, and a real
    phone. A build passing is not evidence the feature works.
+5. **Respect the other agents in this checkout.** Several agents work in the same tree at
+the same time. Never run `git checkout -- .`, `git reset`, `git stash`, `git clean` or
+`git add -A`; stage only the files you edited, by path. A file that is already modified
+when you start is someone else's in-flight work — leave it alone, build on top, and never
+"restore" it. Losing another agent's uncommitted work is worse than any bug you were asked
+to fix.
 
 ## 5. Non-negotiables
 
@@ -74,7 +83,29 @@ explaining its free-tier limit and the trigger that would make it paid.
   leads.
 - Small files. Nothing over 400 lines. No 6,000-character lines.
 
-## 6. Skills available in this repo
+## 6. Localization — read before changing any UI copy
+
+Multilingual support (English + Tamil now, Telugu/Kannada/Malayalam planned) is part of
+the product, not a later feature. The engine is in `lib/i18n/`; the customer link is
+complete in both languages; every other screen is still hardcoded English.
+
+Before writing or changing a user-facing string:
+
+- Read [`docs/designs/2026-11-14-localization-rollout-guide.md`](docs/designs/2026-11-14-localization-rollout-guide.md).
+  It carries the recipe, the ownership rules for parallel agents, the pitfalls we actually
+  hit (React rewrites `<html lang>`, a cookie in the root layout de-prerenders the public
+  pages, the 10s browser-evaluation cap) and the verification checklist.
+- New copy goes in `lib/i18n/messages/en/<module>.ts` — never inline. One module per
+  surface, mirrored in `ta/<module>.ts` as a `DeepPartial`.
+- English output must not change. Never translate enum values, API fields, routes,
+  permission keys or money; never rename or delete an existing key.
+- Server-side failures return a `code` plus its numbers; the client renders the sentence.
+- Translations are `SEED — unreviewed` until a native speaker signs them off, and a
+  language is offered in `SHIPPED_LOCALES` only when its catalogues are complete.
+- `npm run i18n:audit` is the translation backlog; it must fall, and the count belongs in
+  your report.
+
+## 7. Skills available in this repo
 
 Installed under `.agents/skills/`:
 
@@ -91,7 +122,7 @@ adding more (project scope only, never `-g`).
 Read the relevant `SKILL.md` before use. Keep their resources next to the skill; do not
 copy chunks into the app.
 
-## 7. Useful commands (once the app exists)
+## 8. Useful commands
 
 ```bash
 npm run dev            # local app
@@ -102,7 +133,7 @@ npm run db:migrate     # forward-only migrations
 npm run lint && npm run typecheck
 ```
 
-## 8. Always-on UI/UX skills (every tool)
+## 9. Always-on UI/UX skills (every tool)
 
 Nine design-system playbooks live project-local under `.agents/skills/` and are committed
 in `skills-lock.json`:
@@ -133,7 +164,7 @@ load `impeccable-ui` + `ui-ux-pro-max` before every UI/front-end prompt:
 Everything these tools generate (caches, assets, configs) must still stay on `D:` —
 `AGENTS.md` §2 wins if a skill wants to write to a home-directory cache.
 
-## 9. Definition of done
+## 10. Definition of done
 
 See [docs/05 §6](docs/05-engineering-workflow.md). Short version: designed, reviewed,
 tested, measured, documented, reversible.
