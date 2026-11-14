@@ -1,6 +1,6 @@
 import 'server-only'
 import { and, desc, eq, gte, sql } from 'drizzle-orm'
-import { getDb, isDatabaseConfigured } from './client'
+import { getDb, getSystemDb, isDatabaseConfigured, type EventsMaDatabase } from './client'
 import {
   businessServices,
   businesses,
@@ -415,7 +415,27 @@ export async function getQuoteDocument(
 ): Promise<QuoteDocument | null> {
   if (demo || !isDatabaseConfigured()) return demoQuoteDocument()
 
-  const db = getDb()
+  return quoteDocumentFrom(getDb(), orgId, quotationId)
+}
+
+/**
+ * The public token page has no member session, so it reads as the system.
+ * The token is the access proof and the returned document contains no margin
+ * or internal notes.
+ */
+export async function getPublicQuoteDocument(
+  orgId: string,
+  quotationId: string,
+): Promise<QuoteDocument | null> {
+  if (!isDatabaseConfigured()) return null
+  return quoteDocumentFrom(getSystemDb(), orgId, quotationId)
+}
+
+async function quoteDocumentFrom(
+  db: EventsMaDatabase,
+  orgId: string,
+  quotationId: string,
+): Promise<QuoteDocument | null> {
   const [row] = await db
     .select({
       id: quotations.id,

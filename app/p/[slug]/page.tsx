@@ -17,10 +17,11 @@ export async function generateStaticParams(): Promise<{ slug: string }[]> {
   if (isDemoEnvironment()) return [{ slug: demoPublicProfile().slug }]
   if (!isDatabaseConfigured()) return []
   try {
-    const { getDb } = await import('@/lib/db/client')
+    // Build-time public listing: there is no request identity to scope.
+    const { getSystemDb } = await import('@/lib/db/client')
     const { businesses, organisations } = await import('@/lib/db/schema')
     const { eq } = await import('drizzle-orm')
-    const rows = await getDb()
+    const rows = await getSystemDb()
       .select({ slug: organisations.slug })
       .from(businesses)
       .innerJoin(organisations, eq(businesses.orgId, organisations.id))

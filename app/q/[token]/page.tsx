@@ -3,10 +3,10 @@ import { eq } from 'drizzle-orm'
 import { AcceptQuoteForm } from '@/components/quote/accept-quote-form'
 import { PaymentInstructions } from '@/components/quote/payment-instructions'
 import { QuoteDocument } from '@/components/quote/quote-document'
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { isDemoEnvironment } from '@/lib/environment'
 import { quotations } from '@/lib/db/schema'
-import { demoQuoteDocument, getQuoteDocument } from '@/lib/db/queries'
+import { demoQuoteDocument, getPublicQuoteDocument } from '@/lib/db/queries'
 import { formatINR } from '@/lib/domain/money'
 
 export const metadata = { title: 'Your quotation', robots: { index: false, follow: false } }
@@ -41,7 +41,8 @@ export default async function PublicQuotePage({
   }
   if (!isDatabaseConfigured()) notFound()
 
-  const [row] = await getDb()
+  // No member session exists on this route; the token is the access proof.
+  const [row] = await getSystemDb()
     .select({ orgId: quotations.orgId, id: quotations.id, expiresAt: quotations.tokenExpiresAt })
     .from(quotations)
     .where(eq(quotations.publicToken, token))
@@ -50,7 +51,7 @@ export default async function PublicQuotePage({
   if (!row) notFound()
 
   const expired = row.expiresAt ? row.expiresAt.getTime() < Date.now() : false
-  const doc = await getQuoteDocument(row.orgId, row.id, false)
+  const doc = await getPublicQuoteDocument(row.orgId, row.id)
   if (!doc) notFound()
 
   return (
