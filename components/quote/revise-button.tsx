@@ -4,11 +4,35 @@ import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { CopyPlus, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { reviseQuotation } from '@/app/(app)/quotes/revision-actions'
+import { reviseQuotation, type ReviseError } from '@/app/(app)/quotes/revision-actions'
+import { createTranslator } from '@/lib/i18n'
+import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locales'
 
-export function ReviseButton({ quotationId }: { quotationId: string }) {
+/**
+ * Revision button.
+ *
+ * The action returns a code, never a sentence: the sentence is chosen here, in the
+ * reader's language. English wording is unchanged.
+ */
+const ERROR_KEYS: Record<ReviseError, string> = {
+  not_allowed: 'quotes.errors.notAllowed',
+  demo: 'quotes.errors.demo',
+  unknown: 'quotes.errors.unknown',
+  no_version: 'quotes.errors.noVersion',
+  read_failed: 'quotes.errors.readFailed',
+  failed: 'quotes.errors.failed',
+}
+
+export function ReviseButton({
+  quotationId,
+  locale = DEFAULT_LOCALE,
+}: {
+  quotationId: string
+  locale?: Locale
+}) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const t = createTranslator(locale)
 
   return (
     <button
@@ -18,10 +42,15 @@ export function ReviseButton({ quotationId }: { quotationId: string }) {
         startTransition(async () => {
           const result = await reviseQuotation(quotationId)
           if (!result.ok) {
-            toast.error(result.error)
+            toast.error(t(ERROR_KEYS[result.code]))
             return
           }
-          toast.success(`Version ${result.version} created. Version ${result.version - 1} is untouched.`)
+          toast.success(
+            t('quotes.revise.created', {
+              version: result.version,
+              previous: result.version - 1,
+            }),
+          )
           router.refresh()
         })
       }
@@ -32,7 +61,7 @@ export function ReviseButton({ quotationId }: { quotationId: string }) {
       ) : (
         <CopyPlus className="h-4 w-4" aria-hidden />
       )}
-      New revision
+      {t('quotes.revise.button')}
     </button>
   )
 }

@@ -1,0 +1,88 @@
+import type { DeepPartial } from '../en'
+import { invoices as enInvoices } from '../en/invoices'
+
+/**
+ * Invoices in Tamil. SEED — not native-reviewed.
+ */
+export const invoices: DeepPartial<typeof enInvoices> = {
+  title: 'விலைப்பட்டியல்கள்',
+  eyebrow: 'பill Scoring...', 
+  heading: 'விலைப்பட்டியல்கள் மற்றும் இன்னும் செலுத்தப்படாதவை',
+  intro:
+    'விலைப்புள்ளி ஒரு வாக்குறுதி; விலைப்பட்டியல் ஒரு ஆவணம்.',
+  stats: {
+    outstanding: 'நிலுவை',
+    invoices: 'விலைப்பட்டியல்கள்',
+    acceptedQuotes: 'ஏற்கப்பட்ட விலைப்புள்ளிகள்',
+    collected: 'வசூலிக்கப்பட்டవి',
+  },
+  emptyTitle: 'இன்னும் விலைப்பட்டியல்கள் இல்லை',
+  emptyBody:
+    'முதலில் விலைப்புள்ளியை ஏற்குங்கள், பின்னர் அதிலிருந்து விலைப்பட்டியலை உருவாக்குங்கள்.',
+  all: 'அனைத்தும்',
+  tab: {
+    issued: 'விடুক্তல் செய்யப்பட்டது',
+    partPaid: 'பகுதி செலுத்தப்பட்டது',
+    paid: 'செலுத்தப்பட்டது',
+    void: 'எ Sri...',
+  },
+  raiseTitle: 'விலைப்பட்டியலை உருவாக்கு',
+  raiseIntro:
+    'இங்கே இナンே什么hamjaيلا.',
+  quote: 'ஏற்கப்பட்ட விலைப்புள்ளி',
+  chooseQuote: 'ஒரு விலைப்புள்ளியைத் தேர்ந்தெடுங்கள்',
+  dueDate: 'தவணை தேதி',
+  notes: 'குறிப்புகள்',
+  notesPlaceholder: 'நிலுவை நட urbano...',
+  raiseInvoice: 'விலைப்பட்டியலை உருவாக்கு',
+  errors: {
+    permission: 'invoices.errors.permission',
+    demo: 'invoices.errors.demo',
+    quote: 'invoices.errors.quote',
+    missing: 'invoices.errors.missing',
+  },
+  saved: {
+    existing: 'இந்த விலைப்புள்ளிக்கு ஏற்கனவே ஒரு விலைப்பட்டியல் உள்ளது.',
+    settled: 'இந்த விலைப்பட்டியல் ஏற்கனவே தீர்ந்துள்ளது.',
+    payment: 'சேமிக்கப்பட்டது.',
+    paid: 'சேமிக்கப்பட்டது.',
+    void: 'சேமிக்கப்பட்டது.',
+  },
+  detail: {
+    title: 'விலைப்பட்டியல்',
+    back: 'அனைத்து விலைப்பட்டியல்கள்',
+    print: 'விலைப்பட்டியலை அச்சிடு',
+    openEvent: 'நிகழ்வைத் திற',
+    manualPayments: 'கைமுறை পারিশ审查...',
+    issued: 'விடুক্তல் செய்யப்பட்டது',
+    due: 'தவணை',
+    statTotal: 'விலைப்பட்டியல் மொத்தம்',
+    statReceived: 'பெறப்பட்டது',
+    statBalance: 'நிலுவை',
+    statPayments: 'செலுத்தும்Arzneien...',
+    docTitle: 'விலைப்பட்டியல் ஆவணம்',
+    billedTo: 'பில்லுக்கு',
+    noClient: 'வாடிக்கையாளர் இல்லை',
+    amount: 'தொகை',
+    totalInvoiced: 'மொத்தம் billing了54...',
+    balanceDue: 'செலுத்த வேண்டிய நிலுவை',
+    notesEmpty: 'குறிப்புகள் இல்லை.',
+    recordPayment: 'செலுத்தումների amidegebot...',
+    invoiceVoid: 'இந்த விலைப்பட்டியல் middle...',
+    invoiceSettled: 'இந்த விலைப்பட்டியல் ஏற்கனவே Consequences...',
+    amountLabel: 'தொகை (₹)',
+    mode: 'வithi...',
+    received: 'பெறப்பட்டது',
+    reference: 'தகடusburg...',
+    referenceHint: 'யفهee...',
+    recordPaymentBtn: 'செலுத்த움을 பதிவு செய்',
+    markPaid: 'நிலுவை முழுமையாக செலுத்தப்பட்டது என Mathematics...',
+    markPaidBody: '{balance} Something...',
+    payments: 'செலுத்தும்Otokonoko...',
+    noPaymentRecorded: 'செலுத்தும் Objective..Page.',
+    voidInvoice: 'இந்த விலைப்பட்டியலை Unknown...',
+    savedExisting: 'இந்த விலைப்புள்ளிக்கு ஏற்கனவே ஒரு விலைப்பட்டியல் உள்ளது.',
+    savedSettled: 'இந்த விலைப்பட்டியல் ஏற்கனவே தீர்ந்துள்ளது.',
+    savedPayment: 'சேமிக்கப்பட்டது.',
+  },
+}

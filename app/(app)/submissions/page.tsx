@@ -3,14 +3,20 @@ import { Inbox, Mail, Phone } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
+import { createTranslator } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locales'
+import { getLocale, translatorFor } from '@/lib/i18n/server'
+import { formatPaiseLocalised } from '@/lib/i18n/format'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getOwnerSubmissions } from '@/lib/db/share'
-import { formatINR } from '@/lib/domain/money'
 import { shortDate } from '@/lib/utils'
 import { setSubmissionStatus } from './actions'
 
-export const metadata = { title: 'Submissions' }
+export async function generateMetadata() {
+  const locale = await getLocale()
+  return { title: translatorFor(locale)('submissions.title') }
+}
 
 const TONE: Record<string, 'mint' | 'gold' | 'success' | 'outline'> = {
   new: 'gold',
@@ -25,57 +31,64 @@ export default async function SubmissionsPage({
   searchParams: Promise<{ saved?: string; error?: string }>
 }) {
   const ctx = await requireWorkspace()
+  const locale = await getLocale()
+  const t = createTranslator(locale)
   const params = await searchParams
   const submissions = await withWorkspace(ctx, () => getOwnerSubmissions(ctx.orgId, ctx.demo))
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
   const openCount = submissions.filter((s) => s.status === 'new').length
 
+  const errorKey = params.error === 'permission' ? 'submissions.errors.permission' : params.error === 'demo' ? 'submissions.errors.demo' : 'submissions.errors.fallback'
+
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Customer requests"
-        title="Submissions from your share links"
-        description="Every request a customer sends through a public link lands here with their details and a service-wise breakdown. Nothing here is a lead promise — it is a request you choose to answer."
+        eyebrow={t('submissions.eyebrow')}
+        title={t('submissions.heading')}
+        description={t('submissions.intro')}
         actions={
           <Link
             href="/events"
             className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink hover:bg-mint-subtle"
           >
-            Events
+            {t('submissions.events')}
           </Link>
         }
       />
 
       {params.error ? (
         <div className="rounded-card border border-clay/40 bg-clay/10 px-4 py-3 text-sm text-ink">
-          {params.error === 'permission'
-            ? 'Only an owner or manager can change a submission.'
-            : params.error === 'demo'
-              ? 'Demo mode is read-only.'
-              : 'That request was not valid.'}
+          {t(errorKey)}
         </div>
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Card>
           <CardContent className="py-4">
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">New</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+              {t('submissions.stats.new')}
+            </p>
             <p className="mt-1 font-display text-2xl text-ink">{openCount}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-4">
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">Total</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+              {t('submissions.stats.total')}
+            </p>
             <p className="mt-1 font-display text-2xl text-ink">{submissions.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-4">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-              Indicative value
+              {t('submissions.stats.indicative')}
             </p>
             <p className="mt-1 font-display text-2xl text-ink">
-              {formatINR(submissions.reduce((sum, s) => sum + s.indicativeTotalPaise, 0))}
+              {formatPaiseLocalised(
+                submissions.reduce((sum, s) => sum + s.indicativeTotalPaise, 0),
+                locale,
+              )}
             </p>
           </CardContent>
         </Card>
@@ -86,8 +99,8 @@ export default async function SubmissionsPage({
           <CardContent className="py-10">
             <EmptyState
               icon={<Inbox className="h-6 w-6" aria-hidden />}
-              title="No submissions yet"
-              description="Open an event, go to its Services tab and create a share link. Customer requests will appear here."
+              title={t('submissions.emptyTitle')}
+              description={t('submissions.emptyBody')}
             />
           </CardContent>
         </Card>
@@ -102,20 +115,27 @@ export default async function SubmissionsPage({
                     <CardDescription>
                       {submission.eventTitle ? (
                         <>
-                          <Link href={`/events/${submission.eventId}`} className="underline underline-offset-2 hover:text-forest">
+                          <Link
+                            href={`/events/${submission.eventId}`}
+                            className="underline underline-offset-2 hover:text-forest"
+                          >
                             {submission.eventTitle}
                           </Link>
                           {submission.eventDate ? ` · ${shortDate(submission.eventDate)}` : ''}
                           {' · '}
                         </>
                       ) : null}
-                      Received {new Date(submission.createdAt).toLocaleString('en-IN')}
+                      {t('submissions.received', {
+                        date: new Date(submission.createdAt).toLocaleString('en-IN'),
+                      })}
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge tone={TONE[submission.status] ?? 'outline'}>{submission.status}</Badge>
+                    <Badge tone={TONE[submission.status] ?? 'outline'}>
+                      {t('submissions.status', { status: submission.status })}
+                    </Badge>
                     <span className="tabular text-sm font-medium text-forest">
-                      {formatINR(submission.indicativeTotalPaise)}
+                      {formatPaiseLocalised(submission.indicativeTotalPaise, locale)}
                     </span>
                   </div>
                 </div>
@@ -132,13 +152,13 @@ export default async function SubmissionsPage({
                       <Mail className="h-3.5 w-3.5" aria-hidden /> {submission.clientEmail}
                     </a>
                   ) : null}
-                  <span>Indicative only · not a confirmed price</span>
+                  <span>{t('submissions.indicativeOnly')}</span>
                 </div>
 
                 {submission.menuSessions.length > 0 ? (
                   <div className="rounded-control border border-hairline bg-paper p-3">
                     <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-                      Catering menu by session
+                      {t('submissions.cateringMenuBySession')}
                     </p>
                     <div className="mt-2 grid gap-2 sm:grid-cols-2">
                       {submission.menuSessions.map((session) => (
@@ -146,15 +166,13 @@ export default async function SubmissionsPage({
                           <div className="flex items-baseline justify-between gap-2">
                             <p className="text-sm font-medium text-ink">{session.name}</p>
                             <span className="tabular text-xs text-ink">
-                              {formatINR(session.indicativePaise)}
+                              {formatPaiseLocalised(session.indicativePaise, locale)}
                             </span>
                           </div>
                           <p className="mt-0.5 text-[11px] text-ink-muted">
-                            {session.guests > 0 ? `${session.guests} guests` : 'Guests to confirm'}
-                            {session.startTime
-                              ? ` · ${session.startTime}${session.endTime ? `–${session.endTime}` : ''}`
-                              : ''}
-                            {` · ${session.dishCount} dish${session.dishCount === 1 ? '' : 'es'}`}
+                            {session.guests > 0 ? t('submissions.guestsCount', { count: session.guests }) : t('submissions.guestsToConfirm')}
+                            {session.startTime ? ` · ${session.startTime}${session.endTime ? `–${session.endTime}` : ''}` : ''}
+                            {` · ${session.dishCount} ${t('submissions.dishesCount', { count: session.dishCount })}`}
                           </p>
                           <ul className="mt-1.5 space-y-0.5 text-[11px] text-ink">
                             {session.dishes.map((dish) => (
@@ -181,28 +199,28 @@ export default async function SubmissionsPage({
                         !(service.key === 'catering' && submission.menuSessions.length > 0),
                     )
                     .map((service) => (
-                    <div key={service.key} className="rounded-control border border-hairline bg-canvas p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-ink">{service.label}</p>
-                        <span className="tabular text-xs text-ink">
-                          {formatINR(service.indicativePaise)}
-                        </span>
+                      <div key={service.key} className="rounded-control border border-hairline bg-canvas p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-ink">{service.label}</p>
+                          <span className="tabular text-xs text-ink">
+                            {formatPaiseLocalised(service.indicativePaise, locale)}
+                          </span>
+                        </div>
+                        <ul className="mt-2 space-y-1 text-xs text-ink-muted">
+                          {service.lines.map((line) => (
+                            <li key={line.id} className="flex justify-between gap-2">
+                              <span className="min-w-0 truncate">
+                                {line.label}
+                                {line.basis > 1 ? ` × ${line.basis}` : ''}
+                              </span>
+                              <span className="tabular shrink-0 text-ink">
+                                {formatPaiseLocalised(line.indicativePaise, locale)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      <ul className="mt-2 space-y-1 text-xs text-ink-muted">
-                        {service.lines.map((line) => (
-                          <li key={line.id} className="flex justify-between gap-2">
-                            <span className="min-w-0 truncate">
-                              {line.label}
-                              {line.basis > 1 ? ` × ${line.basis}` : ''}
-                            </span>
-                            <span className="tabular shrink-0 text-ink">
-                              {formatINR(line.indicativePaise)}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
+                    ))}
                 </div>
 
                 {submission.message ? (
@@ -213,8 +231,6 @@ export default async function SubmissionsPage({
 
                 {canEdit ? (
                   <div className="flex flex-wrap items-center gap-2">
-                    {/* One form per status: a submit button's value is not reliably
-                        serialised by the server-action form, so it is a hidden input. */}
                     {(['reviewed', 'quoted', 'closed'] as const).map((status) => (
                       <form key={status} action={setSubmissionStatus}>
                         <input type="hidden" name="id" value={submission.id} />
@@ -223,7 +239,7 @@ export default async function SubmissionsPage({
                           type="submit"
                           className="inline-flex h-9 items-center rounded-control border border-hairline px-3 text-xs text-ink hover:bg-mint-subtle"
                         >
-                          Mark {status}
+                          {t('submissions.mark', { status })}
                         </button>
                       </form>
                     ))}
@@ -232,7 +248,7 @@ export default async function SubmissionsPage({
                         href="/quotes/new"
                         className="inline-flex h-9 items-center rounded-control bg-forest px-3 text-xs font-medium text-white"
                       >
-                        Prepare quotation
+                        {t('submissions.prepareQuotation')}
                       </Link>
                     ) : null}
                   </div>

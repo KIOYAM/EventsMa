@@ -1,0 +1,90 @@
+/**
+ * Invoices: list, detail and manual payment recording.
+ *
+ * Invoice numbers, client names, payment references and notes are content;
+ * everything else is interface copy. Invoice and payment statuses are stored
+ * values; the labels are translated.
+ */
+export const invoices = {
+  title: 'Invoices',
+  eyebrow: 'Billing',
+  heading: 'Invoices and what is still owed',
+  intro:
+    'A quotation is a promise; an invoice is a document. Raise it from the accepted version, then record cash, UPI or bank transfers against it. Payments are append-only.',
+  stats: {
+    outstanding: 'Outstanding',
+    invoices: 'Invoices',
+    acceptedQuotes: 'Accepted quotes',
+    collected: 'Collected',
+  },
+  emptyTitle: 'No invoices yet',
+  emptyBody:
+    'Accept a quote first, then raise the invoice from it. The amount is taken from the frozen version, never recomputed.',
+  all: 'All',
+  tab: {
+    issued: 'Issued',
+    partPaid: 'Part paid',
+    paid: 'Paid',
+    void: 'Void',
+  },
+  raiseTitle: 'Raise an invoice',
+  raiseIntro:
+    'Nothing to invoice. A quote must be accepted before it becomes a bill.',
+  quote: 'Accepted quote',
+  chooseQuote: 'Choose a quote',
+  dueDate: 'Due date',
+  notes: 'Notes',
+  notesPlaceholder: 'Balance before setup.',
+  raiseInvoice: 'Raise invoice',
+  errors: {
+    permission: 'invoices.errors.permission',
+    demo: 'invoices.errors.demo',
+    quote: 'invoices.errors.quote',
+    missing: 'invoices.errors.missing',
+  },
+  saved: {
+    existing: 'This quotation already has an invoice. Opened it instead of creating a duplicate.',
+    settled: 'This invoice is already settled.',
+    payment: 'Saved.',
+    paid: 'Saved.',
+    void: 'Saved.',
+  },
+  detail: {
+    title: 'Invoice',
+    back: 'All invoices',
+    print: 'Print invoice',
+    openEvent: 'Open event',
+    manualPayments: 'Manual payments',
+    issued: 'Issued',
+    due: 'due',
+    statTotal: 'Invoice total',
+    statReceived: 'Received',
+    statBalance: 'Balance',
+    statPayments: 'Payments',
+    docTitle: 'Invoice document',
+    billedTo: 'Billed to',
+    noClient: 'No client',
+    amount: 'Amount',
+    totalInvoiced: 'Total invoiced',
+    balanceDue: 'Balance due',
+    notesEmpty: 'No notes.',
+    recordPayment: 'Record a payment',
+    invoiceVoid: 'This invoice is void.',
+    invoiceSettled: 'This invoice is settled. There is no balance to record.',
+    amountLabel: 'Amount (₹)',
+    mode: 'Mode',
+    received: 'Received',
+    reference: 'Reference',
+    referenceHint: 'UPI reference, cheque number or receipt book entry.',
+    recordPaymentBtn: 'Record payment',
+    markPaid: 'Mark balance paid in full',
+    markPaidBody:
+      'Creates a manual receipt for {balance}. Use the form above for a part payment or a different mode.',
+    payments: 'Payments',
+    noPaymentRecorded: 'No payment recorded yet.',
+    voidInvoice: 'Void this invoice',
+    savedExisting: 'This quotation already has an invoice. Opened it instead of creating a duplicate.',
+    savedSettled: 'This invoice is already settled.',
+    savedPayment: 'Saved.',
+  },
+} as const

@@ -13,8 +13,11 @@
  *   3. register both here and in `ta.ts`
  */
 import { catering } from './en/catering'
+import { clients } from './en/clients'
 import { common } from './en/common'
+import { quotes } from './en/quotes'
 import { dashboard } from './en/dashboard'
+import { submissions } from './en/submissions'
 import { events } from './en/events'
 import { nav } from './en/nav'
 import { pdf } from './en/pdf'
@@ -23,8 +26,11 @@ import { share } from './en/share'
 
 export const en = {
   catering,
+  clients,
   common,
+  quotes,
   dashboard,
+  submissions,
   events,
   nav,
   pdf,

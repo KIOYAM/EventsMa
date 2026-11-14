@@ -3,28 +3,39 @@ import { eq } from 'drizzle-orm'
 import { AcceptQuoteForm } from '@/components/quote/accept-quote-form'
 import { PaymentInstructions } from '@/components/quote/payment-instructions'
 import { QuoteDocument } from '@/components/quote/quote-document'
+import { LocaleSwitch } from '@/components/locale-switch'
 import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { isDemoEnvironment } from '@/lib/environment'
 import { quotations } from '@/lib/db/schema'
 import { demoQuoteDocument, getPublicQuoteDocument } from '@/lib/db/queries'
-import { formatINR } from '@/lib/domain/money'
+import { createTranslator } from '@/lib/i18n'
+import { formatDateLocalised, formatPaiseLocalised } from '@/lib/i18n/format'
+import { localeMeta } from '@/lib/i18n/locales'
+import { getLocale, translatorFor } from '@/lib/i18n/server'
 
-export const metadata = { title: 'Your quotation', robots: { index: false, follow: false } }
-
-const MESSAGES: Record<string, string> = {
-  confirm: 'Tick the acceptance box before continuing.',
-  email: 'Check the email address, or leave it blank.',
-  expired: 'This quote has expired. Ask the business for an updated version.',
-  closed: 'This quote is no longer open for acceptance.',
-  missing: 'That quote link is no longer valid.',
-  demo: 'Demo mode: acceptance is not recorded.',
+export async function generateMetadata() {
+  const locale = await getLocale()
+  return {
+    title: translatorFor(locale)('quotes.public.metadataTitle'),
+    robots: { index: false, follow: false },
+  }
 }
 
-const SUCCESS = 'Your acceptance has been recorded. The business will confirm the next step.'
+const ERROR_KEYS: Record<string, string> = {
+  confirm: 'quotes.public.errors.confirm',
+  email: 'quotes.public.errors.email',
+  expired: 'quotes.public.errors.expired',
+  closed: 'quotes.public.errors.closed',
+  missing: 'quotes.public.errors.missing',
+  demo: 'quotes.public.errors.demo',
+}
 
 /**
  * Public, token-addressed quote. No session, no margin, no internal notes.
  * The token is unguessable and expires with the quotation.
+ *
+ * The language comes from the same cookie as the rest of the product, so a
+ * customer who reads Tamil on the share link reads Tamil here too.
  */
 export default async function PublicQuotePage({
   params,
@@ -35,9 +46,10 @@ export default async function PublicQuotePage({
 }) {
   const { token } = await params
   const query = await searchParams
+  const locale = await getLocale()
 
   if (isDemoEnvironment()) {
-    return <PublicView doc={demoQuoteDocument()} token={token} demo />
+    return <PublicView doc={demoQuoteDocument()} token={token} locale={locale} demo />
   }
   if (!isDatabaseConfigured()) notFound()
 
@@ -58,6 +70,7 @@ export default async function PublicQuotePage({
     <PublicView
       doc={doc}
       token={token}
+      locale={locale}
       expired={expired}
       accepted={query.accepted === '1'}
       error={query.error}
@@ -68,6 +81,7 @@ export default async function PublicQuotePage({
 function PublicView({
   doc,
   token,
+  locale,
   expired = false,
   accepted = false,
   error,
@@ -75,22 +89,31 @@ function PublicView({
 }: {
   doc: ReturnType<typeof demoQuoteDocument>
   token: string
+  locale: ReturnType<typeof localeMeta>['code']
   expired?: boolean
   accepted?: boolean
   error?: string
   demo?: boolean
 }) {
-  const notice = accepted ? SUCCESS : error && MESSAGES[error] ? MESSAGES[error] : null
+  const t = createTranslator(locale)
+  const errorKey = error ? ERROR_KEYS[error] : undefined
+  const notice = accepted ? t('quotes.public.success') : errorKey ? t(errorKey) : null
   const isError = Boolean(error)
   const alreadyAccepted = doc.status === 'accepted'
   const closed = ['declined', 'cancelled', 'expired'].includes(doc.status)
   const canAccept = !demo && !expired && !alreadyAccepted && !closed
 
   return (
-    <main className="mx-auto min-h-dvh w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
-      <div className="mb-4 flex items-center justify-between">
+    <main
+      lang={localeMeta(locale).intl}
+      className="mx-auto min-h-dvh w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-10"
+    >
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="font-display text-lg text-forest">{doc.businessName}</p>
-        <span className="text-xs text-ink-muted">Prepared with EventsMa</span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-ink-muted">{t('quotes.public.prepared')}</span>
+          <LocaleSwitch locale={locale} label={t('quotes.public.language')} />
+        </div>
       </div>
 
       {notice ? (
@@ -108,39 +131,42 @@ function PublicView({
 
       {expired ? (
         <div className="mb-4 rounded-card border border-terracotta/30 bg-terracotta-soft px-4 py-3 text-sm text-terracotta">
-          This quotation has passed its validity date. Ask the business for an updated quote.
+          {t('quotes.public.expired')}
         </div>
       ) : null}
 
       {alreadyAccepted ? (
         <div className="mb-4 rounded-card border border-mint bg-mint-subtle px-4 py-3 text-sm text-forest">
-          Accepted
           {doc.acceptedAt
-            ? ` on ${new Date(doc.acceptedAt).toLocaleDateString('en-IN')}`
-            : ''}
-          . The business has this confirmation.
+            ? t('quotes.public.acceptedOn', {
+                date: formatDateLocalised(doc.acceptedAt, locale, 'short', 'numeric'),
+              })
+            : t('quotes.detail.acceptedTitle')}
         </div>
       ) : null}
 
       {demo ? (
         <div className="mb-4 rounded-card border border-hairline bg-mint-subtle px-4 py-3 text-sm text-forest">
-          Demo view. This is sample data, not a live quotation.
+          {t('quotes.public.demo')}
         </div>
       ) : null}
 
-      <QuoteDocument doc={doc} />
+      <QuoteDocument doc={doc} locale={locale} />
 
       <div className="mt-5 space-y-5">
         <PaymentInstructions
           payment={doc.payment}
           reference={doc.number}
-          amountLabel={formatINR(doc.totalPaise)}
+          amountLabel={formatPaiseLocalised(doc.totalPaise, locale)}
+          locale={locale}
         />
-        {canAccept ? <AcceptQuoteForm token={token} /> : null}
+        {canAccept ? <AcceptQuoteForm token={token} locale={locale} /> : null}
       </div>
 
       <p className="mt-6 text-center text-xs text-ink-muted">
-        Questions about this quote? Call {doc.businessPhone ?? 'the business directly'}.
+        {doc.businessPhone
+          ? t('quotes.public.questions', { phone: doc.businessPhone })
+          : t('quotes.public.questionsNoPhone')}
       </p>
     </main>
   )

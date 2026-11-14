@@ -225,6 +225,30 @@ change a document a customer already holds.
 a bundled script with a real `QuoteDoc`; `/api/quotes/[id]/pdf` is type-checked and
 builds, but downloading it needs a signed-in session.
 
+## Shipped: quotations, both sides (layer 4)
+
+A quotation is the document a business is paid for, and it exists on two surfaces:
+the owner's screens and a public link with no session. Both are now in Tamil.
+
+| Piece | Decision |
+|---|---|
+| Copy | `messages/{en,ta}/quotes.ts` — list, detail, the document, the builder, the public page, payment instructions, acceptance form |
+| Owner surfaces | `/quotes`, `/quotes/[id]`, `/quotes/new` header, `MarginPanel`, `ReviseButton` |
+| Customer surfaces | `/q/[token]`: document, payment instructions, accept form, own `LocaleSwitch` and `lang` subtree |
+| Failures | `reviseQuotation` returns `not_allowed`/`demo`/`unknown`/`no_version`/`read_failed`/`failed`, not sentences; the button picks the wording |
+| Unknown values | A status, unit class or service key the catalogue has never seen falls back to the stored string, never to a bare key on a customer's document |
+
+The PDF button now carries the language: `/api/quotes/[id]/pdf?lang=ta`.
+
+**A collision worth recording.** Two agents were translating quotations at the same
+time. One had created `messages/{en,ta}/quotes.ts` and rewritten the composer against
+its keys; the other (this work) wrote the same module and replaced it, leaving the
+composer calling keys that no longer existed. The catalogue was rebuilt by reading
+every `t('quotes.*')` call site and recovering each English value from `git show
+HEAD:components/quote/composer.tsx` — the pre-translation strings. Nothing was lost,
+but the lesson is in the guide: **grep the module before creating it**, and never
+assume an untracked catalogue file is yours.
+
 ## What this change does NOT do
 
 It does **not** translate a single screen. Shipping a language selector over an

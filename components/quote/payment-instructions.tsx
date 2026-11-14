@@ -1,4 +1,6 @@
 import type { PaymentDetails } from '@/lib/domain/ops'
+import { createTranslator } from '@/lib/i18n'
+import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locales'
 
 function hasDetails(payment: PaymentDetails): boolean {
   return Boolean(
@@ -20,19 +22,23 @@ export function PaymentInstructions({
   payment,
   reference,
   amountLabel,
+  locale = DEFAULT_LOCALE,
 }: {
   payment: PaymentDetails
   reference: string
   amountLabel: string
+  locale?: Locale
 }) {
+  const t = createTranslator(locale)
+
   return (
     <section className="rounded-card border border-hairline bg-paper p-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-            How to pay
+            {t('quotes.payment.howToPay')}
           </p>
-          <h2 className="mt-1 text-base font-semibold text-ink">Manual payment</h2>
+          <h2 className="mt-1 text-base font-semibold text-ink">{t('quotes.payment.manual')}</h2>
         </div>
         <p className="tabular text-sm font-medium text-forest">{amountLabel}</p>
       </div>
@@ -41,39 +47,37 @@ export function PaymentInstructions({
         <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
           {payment.upiVpa ? (
             <div>
-              <dt className="text-xs text-ink-muted">UPI ID</dt>
+              <dt className="text-xs text-ink-muted">{t('quotes.payment.upi')}</dt>
               <dd className="mt-0.5 font-medium text-ink">{payment.upiVpa}</dd>
             </div>
           ) : null}
           {payment.bankName ? (
             <div>
-              <dt className="text-xs text-ink-muted">Bank</dt>
+              <dt className="text-xs text-ink-muted">{t('quotes.payment.bank')}</dt>
               <dd className="mt-0.5 font-medium text-ink">{payment.bankName}</dd>
             </div>
           ) : null}
           {payment.accountName ? (
             <div>
-              <dt className="text-xs text-ink-muted">Account name</dt>
+              <dt className="text-xs text-ink-muted">{t('quotes.payment.accountName')}</dt>
               <dd className="mt-0.5 font-medium text-ink">{payment.accountName}</dd>
             </div>
           ) : null}
           {payment.accountNumber ? (
             <div>
-              <dt className="text-xs text-ink-muted">Account number</dt>
+              <dt className="text-xs text-ink-muted">{t('quotes.payment.accountNumber')}</dt>
               <dd className="mt-0.5 font-medium text-ink">{payment.accountNumber}</dd>
             </div>
           ) : null}
           {payment.ifsc ? (
             <div>
-              <dt className="text-xs text-ink-muted">IFSC</dt>
+              <dt className="text-xs text-ink-muted">{t('quotes.payment.ifsc')}</dt>
               <dd className="mt-0.5 font-medium text-ink">{payment.ifsc}</dd>
             </div>
           ) : null}
         </dl>
       ) : (
-        <p className="mt-3 text-sm text-ink-muted">
-          The business will share its bank or UPI details directly.
-        </p>
+        <p className="mt-3 text-sm text-ink-muted">{t('quotes.payment.noDetails')}</p>
       )}
 
       {payment.instructions ? (
@@ -83,9 +87,8 @@ export function PaymentInstructions({
       ) : null}
 
       <p className="mt-4 text-xs leading-relaxed text-ink-muted">
-        Quote reference <span className="font-medium text-ink">{reference}</span>. This page does
-        not collect money online. Send the transfer reference to the business; they will record the
-        receipt and issue a balance statement.
+        {t('quotes.payment.refIntro')} <span className="font-medium text-ink">{reference}</span>.{' '}
+        {t('quotes.payment.refBody')}
       </p>
     </section>
   )

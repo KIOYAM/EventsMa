@@ -10,8 +10,11 @@
  * surfaces wired to it so far.
  */
 import { catering } from './ta/catering'
+import { clients } from './ta/clients'
 import { common } from './ta/common'
+import { quotes } from './ta/quotes'
 import { dashboard } from './ta/dashboard'
+import { submissions } from './ta/submissions'
 import { events } from './ta/events'
 import { nav } from './ta/nav'
 import { pdf } from './ta/pdf'
@@ -21,8 +24,11 @@ import type { MessagesOverride } from './en'
 
 export const ta: MessagesOverride = {
   catering,
+  clients,
   common,
+  quotes,
   dashboard,
+  submissions,
   events,
   nav,
   pdf,

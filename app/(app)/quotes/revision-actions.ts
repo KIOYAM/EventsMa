@@ -8,22 +8,37 @@ import { withWorkspace } from '@/lib/db/workspace'
 import { quotationLines, quotationVersions, quotations } from '@/lib/db/schema'
 
 /**
+ * Failure codes, not sentences.
+ *
+ * The action runs on the server and cannot know the reader's language; the client
+ * renders the sentence from `quotes.errors.*`. Returning a code keeps the wording
+ * in one place and stops English leaking back into a Tamil screen.
+ */
+export type ReviseError =
+  | 'not_allowed'
+  | 'demo'
+  | 'unknown'
+  | 'no_version'
+  | 'read_failed'
+  | 'failed'
+
+/**
  * A revision is a new immutable version. Version N is never updated, so a
  * customer holding the old link still sees exactly what was sent to them.
  */
 export async function reviseQuotation(
   quotationId: string,
-): Promise<{ ok: true; version: number } | { ok: false; error: string }> {
+): Promise<{ ok: true; version: number } | { ok: false; code: ReviseError }> {
   const ctx = await requireWorkspace()
   return withWorkspace(ctx, async () => {
     if (!canManageCommercial(ctx.role)) {
-      return { ok: false, error: 'Only an owner or manager can revise a quotation.' }
+      return { ok: false, code: 'not_allowed' }
     }
     if (ctx.demo || !isDatabaseConfigured()) {
-      return { ok: false, error: 'Demo mode: connect a database to create a revision.' }
+      return { ok: false, code: 'demo' }
     }
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(quotationId)) {
-      return { ok: false, error: 'Unknown quotation.' }
+      return { ok: false, code: 'unknown' }
     }
 
     const db = getDb()
@@ -38,7 +53,7 @@ export async function reviseQuotation(
       .limit(1)
 
     if (!current?.currentVersionId) {
-      return { ok: false, error: 'This quotation has no saved version to revise.' }
+      return { ok: false, code: 'no_version' }
     }
 
     const [version] = await db
@@ -59,7 +74,7 @@ export async function reviseQuotation(
       .where(eq(quotationVersions.id, current.currentVersionId))
       .limit(1)
 
-    if (!version) return { ok: false, error: 'The current version could not be read.' }
+    if (!version) return { ok: false, code: 'read_failed' }
 
     const lines = await db
       .select()
@@ -129,7 +144,7 @@ export async function reviseQuotation(
       revalidatePath('/quotes')
       return { ok: true, version: nextNumber }
     } catch {
-      return { ok: false, error: 'The revision could not be created.' }
+      return { ok: false, code: 'failed' }
     }
   })
 }

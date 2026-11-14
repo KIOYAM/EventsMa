@@ -60,6 +60,8 @@ string is how one bad edit breaks four pages.
   applied to the customer link with per-field English fallback.
 - **Tamil quotations**: `GET /api/quotes/[id]/pdf?lang=ta` embeds Noto Sans Tamil
   (`lib/pdf/fonts.ts`). Do not add another PDF font without reading that file.
+- **Quotations in the app**: `/quotes`, `/quotes/[id]`, the builder, and the public
+  `/q/[token]` page (document, payment instructions, acceptance, language switch).
 - `npm run i18n:audit` — counts untranslated strings; the count must fall.
 - i18n tests including "every `share.*`, `rule.*` and `pdf.*` key exists in Tamil".
 
@@ -390,6 +392,23 @@ permission keys, service keys, `data-*` attributes, test ids, or file paths. A t
 enum silently breaks every `WHERE status = …` query.
 
 ---
+
+### 12. Two agents created the same catalogue module
+
+**Symptom:** duplicate identifier errors in `messages/en.ts`, or a component calling
+`t('x.y')` that renders the literal key path.
+
+**Cause:** a module is named after a surface, not a file. Two agents translating
+"quotations" both create `messages/en/quotes.ts`; the second write silently replaces
+the first, and any component already written against the first agent's keys loses its
+copy.
+
+**Fix:** before creating `messages/<locale>/<module>.ts`, run
+`ls lib/i18n/messages/en` and `grep -rn "<module>\." app components`. If the module
+exists, extend it instead of writing a new file. If you have already overwritten one,
+recover the values from the pre-translation code — `git show HEAD:<component>` still
+has every English string — and rebuild the catalogue from the call sites. Then say so
+in the commit: the other agent needs to know.
 
 ## 6. Copy rules
 
