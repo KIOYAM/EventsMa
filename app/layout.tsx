@@ -50,6 +50,13 @@ export const viewport: Viewport = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // `lang` stays static here on purpose. Reading the locale cookie in the root
+  // layout turns every page dynamic: measured, `/`, `/terms`, `/privacy`,
+  // `/forgot-password` and `/_not-found` stopped being prerendered for a tag that
+  // nothing reads yet.
+  // When the translation rollout lands (docs/designs/2026-11-14-localization-engine.md)
+  // the marketing routes move to a route group that keeps `lang="en-IN"`, and the
+  // signed-in and public-link trees read `getLocale()` instead.
   return (
     <html lang="en-IN" className={`${inter.variable} ${playfair.variable}`}>
       <body>

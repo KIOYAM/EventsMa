@@ -28,7 +28,12 @@
   --color-cream: #f6f2e7;
   --color-mint-bright: #c7ead8;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Inter covers Latin only. The Noto families are glyph fallbacks, not downloads:
+     if the device (Android, most Windows installs) has them, Tamil, Telugu, Kannada
+     and Malayalam resolve to a real script font instead of a tofu box. */
+  --font-sans:
+    var(--font-inter), 'Noto Sans Tamil', 'Noto Sans Telugu', 'Noto Sans Kannada',
+    'Noto Sans Malayalam', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: var(--font-playfair), Georgia, 'Times New Roman', serif;
 
   --radius-card: 1rem;
