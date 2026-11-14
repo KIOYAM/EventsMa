@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getQuoteDocument } from '@/lib/db/queries'
 
 export const runtime = 'nodejs'
@@ -10,7 +11,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const ctx = await requireWorkspace()
   const { id } = await params
 
-  const doc = await getQuoteDocument(ctx.orgId, id, ctx.demo)
+  const doc = await withWorkspace(ctx, () => getQuoteDocument(ctx.orgId, id, ctx.demo))
   if (!doc) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 })
   }

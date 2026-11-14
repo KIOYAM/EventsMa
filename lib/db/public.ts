@@ -1,7 +1,7 @@
 import 'server-only'
 import { cache } from 'react'
 import { and, eq, sql } from 'drizzle-orm'
-import { getDb, isDatabaseConfigured } from './client'
+import { getSystemDb, isDatabaseConfigured } from './client'
 import { businessServices, businesses, organisations, serviceItems } from './schema'
 import { isDemoEnvironment } from '@/lib/environment'
 import { demoBusiness, demoItems, demoServices } from '@/lib/demo/data'
@@ -37,7 +37,7 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
   if (isDemoEnvironment()) return demoPublicProfile()
   if (!isDatabaseConfigured()) return null
 
-  const db = getDb()
+  const db = getSystemDb()
   const [row] = await db
     .select({
       orgId: organisations.id,

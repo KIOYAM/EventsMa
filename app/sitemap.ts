@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 import { eq } from 'drizzle-orm'
 import { appUrl } from '@/lib/app-url'
 import { isDemoEnvironment } from '@/lib/environment'
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { businesses, organisations } from '@/lib/db/schema'
 import { demoPublicProfile } from '@/lib/db/public'
 
@@ -43,7 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // revalidation pick the published storefronts up.
   let rows: { slug: string }[] = []
   try {
-    rows = await getDb()
+    rows = await getSystemDb()
       .select({ slug: organisations.slug })
       .from(businesses)
       .innerJoin(organisations, eq(businesses.orgId, organisations.id))

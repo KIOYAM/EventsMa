@@ -1,6 +1,7 @@
 import { EventCalendar } from '@/components/events/event-calendar'
 import { PageHeader } from '@/components/ui/page-header'
 import { requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getEventCalendar } from '@/lib/db/events'
 
 export const metadata = { title: 'Event calendar' }
@@ -23,7 +24,7 @@ export default async function EventCalendarPage({
   const ctx = await requireWorkspace()
   const params = await searchParams
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(params.month ?? '') ? params.month! : currentMonth()
-  const events = await getEventCalendar(ctx.orgId, ctx.demo, month)
+  const events = await withWorkspace(ctx, () => getEventCalendar(ctx.orgId, ctx.demo, month))
 
   return (
     <div className="space-y-6">

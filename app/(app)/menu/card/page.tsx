@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { PrintButton } from '@/components/print-button'
 import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getMenuBoard } from '@/lib/db/menu'
 import { getSettings } from '@/lib/db/settings'
 import { formatINR } from '@/lib/domain/money'
@@ -23,10 +24,9 @@ const UNIT_LABEL: Record<string, string> = {
  */
 export default async function MenuCardPage() {
   const ctx = await requireWorkspace()
-  const [board, settings] = await Promise.all([
-    getMenuBoard(ctx.orgId, ctx.demo),
-    getSettings(ctx.orgId, ctx.demo),
-  ])
+  const [board, settings] = await withWorkspace(ctx, () =>
+    Promise.all([getMenuBoard(ctx.orgId, ctx.demo), getSettings(ctx.orgId, ctx.demo)]),
+  )
   const accent = canManageCommercial(ctx.role) ? settings.settings.brandPrimary : '#1f4d3a'
   const dishCount = board.sections.reduce(
     (total, section) =>

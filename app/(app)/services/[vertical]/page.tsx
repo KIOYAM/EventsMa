@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getEnabledServices } from '@/lib/db/queries'
 import { setServiceConfig, setServiceEnabled } from '../actions'
 import { verticalDescriptor } from '@/lib/domain/verticals'
@@ -26,7 +27,7 @@ export default async function ServiceConfigPage({
     redirect('/services')
   }
 
-  const services = await getEnabledServices(ctx.orgId, ctx.demo)
+  const services = await withWorkspace(ctx, () => getEnabledServices(ctx.orgId, ctx.demo))
   const row = services.find((service) => service.key === vertical)
   const enabled = row?.enabled ?? false
   const config = row?.config ?? {}

@@ -8,6 +8,7 @@ import { Field, Input, Select } from '@/components/ui/input'
 import { PrintButton } from '@/components/print-button'
 import { Stat } from '@/components/ui/stat'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getInvoiceDetail } from '@/lib/db/money'
 import { formatINR } from '@/lib/domain/money'
 import {
@@ -46,7 +47,7 @@ export default async function InvoiceDetailPage({
   const ctx = await requireWorkspace()
   const { id } = await params
   const query = await searchParams
-  const invoice = await getInvoiceDetail(ctx.orgId, ctx.demo, id)
+  const invoice = await withWorkspace(ctx, () => getInvoiceDetail(ctx.orgId, ctx.demo, id))
   if (!invoice) notFound()
 
   const balance = Math.max(0, invoice.amountPaise - invoice.paidPaise)

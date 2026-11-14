@@ -4,7 +4,7 @@ export const revalidate = 0
 import { NextResponse } from 'next/server'
 import { sql } from 'drizzle-orm'
 import { hasSupabaseEnv, isDemoEnvironment } from '@/lib/environment'
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 
 type Check = 'ok' | 'absent' | 'error'
 
@@ -13,7 +13,7 @@ async function databaseCheck(): Promise<Check> {
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     await Promise.race([
-      getDb().execute(sql`select 1`),
+      getSystemDb().execute(sql`select 1`),
       new Promise((_, reject) => {
         timer = setTimeout(() => reject(new Error('timeout')), 2500)
       }),

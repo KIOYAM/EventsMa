@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { EventForm } from '@/components/events/event-form'
 import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getEventDetail, getEventFormOptions } from '@/lib/db/events'
 import { updateEvent } from '../../actions'
 
@@ -26,10 +27,12 @@ export default async function EditEventPage({
   const ctx = await requireWorkspace()
   const { id } = await params
   const query = await searchParams
-  const [event, options] = await Promise.all([
-    getEventDetail(ctx.orgId, ctx.demo, id),
-    getEventFormOptions(ctx.orgId, ctx.demo),
-  ])
+  const [event, options] = await withWorkspace(ctx, () =>
+    Promise.all([
+      getEventDetail(ctx.orgId, ctx.demo, id),
+      getEventFormOptions(ctx.orgId, ctx.demo),
+    ]),
+  )
 
   if (!event) notFound()
 

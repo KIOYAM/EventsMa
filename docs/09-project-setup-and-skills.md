@@ -103,6 +103,20 @@ reason: endless review is procrastination.
 **Open item:** if `edc` meant something specific to you, name the source repository and
 it can be evaluated and installed in one step.
 
+### UI/UX design skills (added later)
+
+| Skill | Path | Always on | Purpose |
+|---|---|---|---|
+| `impeccable-ui` | `.agents/skills/impeccable-ui/` | yes | Strict design vocabulary; `/craft`, `/polish`, `/typeset`, `/arrange`, `/audit`; blocks generic AI anti-patterns |
+| `ui-ux-pro-max` | `.agents/skills/ui-ux-pro-max/` | yes | Design system: style / palette / pairing chosen before any UI code |
+| `ui-skills-collection` | `.agents/skills/ui-skills-collection/` | yes | Hard boundaries: 8px spacing, WCAG AA contrast, 44×44px touch targets |
+| `vercel-ui-verification` | `.agents/skills/vercel-ui-verification/` | yes | Self-audit: keyboard nav, contrast, breakpoints, layout shift — before "done" |
+| `taste-hallmark` | `.agents/skills/taste-hallmark/` | no | Editorial layouts for landing / creative pages |
+| `diagram-design`, `algorithmic-canvas`, `motion-gsap`, `image-generation` | `.agents/skills/<name>/` | no | SVG / generative assets, motion, generated hero visuals — on demand |
+
+All project-local on `D:` and committed in `skills-lock.json`; nothing global and nothing
+on `C:`.
+
 ---
 
 ## 5. Keeping skills current

@@ -70,8 +70,9 @@ export default async function SharePage({ params }: { params: Promise<{ slug: st
             {event?.title ?? `${portal.contact.businessName} services`}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted">
-            Choose the services and items you would like for your event. Nothing is booked or
-            charged here — the organiser reviews your choices and sends a confirmed quotation.
+            {portal.menu.length > 0
+              ? 'Choose the dishes you would like for each meal. Your host reviews your menu and sends a confirmed quotation — nothing is booked or charged here.'
+              : 'Choose the services and items you would like for your event. Nothing is booked or charged here — the organiser reviews your choices and sends a confirmed quotation.'}
           </p>
 
           {event ? (

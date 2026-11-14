@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { and, eq, isNull } from 'drizzle-orm'
 import { AuthShell } from '@/components/auth-shell'
 import { getCurrentUser } from '@/lib/auth/session'
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { invitations, organisations } from '@/lib/db/schema'
 import { acceptInvitation } from './actions'
 
@@ -30,7 +30,7 @@ export default async function InvitePage({
   const query = await searchParams
   if (!isDatabaseConfigured()) notFound()
 
-  const [invite] = await getDb()
+  const [invite] = await getSystemDb()
     .select({
       id: invitations.id,
       email: invitations.email,

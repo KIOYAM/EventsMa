@@ -1,4 +1,15 @@
-import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  date,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core'
 import { enquiries, events, organisations, serviceItems } from './schema'
 
 /**
@@ -89,6 +100,9 @@ export const shareSubmissionLines = pgTable(
       .references(() => shareSubmissionServices.id, { onDelete: 'cascade' }),
     itemId: uuid('item_id').references(() => serviceItems.id, { onDelete: 'set null' }),
     categoryId: uuid('category_id'),
+    /** Which catering session this dish was chosen for; null for catalogue lines. */
+    submissionSessionId: uuid('submission_session_id'),
+    categoryName: text('category_name'),
     label: text('label').notNull(),
     unitClass: text('unit_class').notNull().default('FLAT'),
     quantity: integer('quantity').notNull().default(1),
@@ -102,7 +116,37 @@ export const shareSubmissionLines = pgTable(
   (t) => [index('share_submission_lines_org_service_idx').on(t.orgId, t.submissionServiceId, t.sortOrder)],
 )
 
+/**
+ * One catering session inside a customer submission: the guest count, timings and
+ * amount are frozen here, so tightening a rule or renaming a session later cannot
+ * rewrite what the customer actually asked for.
+ */
+export const shareSubmissionSessions = pgTable(
+  'share_submission_sessions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id').notNull(),
+    submissionId: uuid('submission_id')
+      .notNull()
+      .references(() => shareSubmissions.id, { onDelete: 'cascade' }),
+    eventSessionId: uuid('event_session_id'),
+    name: text('name').notNull(),
+    sessionDate: date('session_date'),
+    startTime: text('start_time'),
+    endTime: text('end_time'),
+    guests: integer('guests').notNull().default(0),
+    dishCount: integer('dish_count').notNull().default(0),
+    indicativePaise: integer('indicative_paise').notNull().default(0),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('share_submission_sessions_org_submission_idx').on(t.orgId, t.submissionId, t.sortOrder),
+  ],
+)
+
 export type ShareLink = typeof shareLinks.$inferSelect
 export type ShareSubmission = typeof shareSubmissions.$inferSelect
 export type ShareSubmissionService = typeof shareSubmissionServices.$inferSelect
 export type ShareSubmissionLine = typeof shareSubmissionLines.$inferSelect
+export type ShareSubmissionSession = typeof shareSubmissionSessions.$inferSelect

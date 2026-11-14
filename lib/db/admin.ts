@@ -1,6 +1,6 @@
 import 'server-only'
 import { desc, eq, sql } from 'drizzle-orm'
-import { getDb, isDatabaseConfigured } from './client'
+import { getSystemDb, isDatabaseConfigured } from './client'
 import { organisations } from './schema'
 import { businessServices } from './schema'
 import { serviceItems } from './schema'
@@ -42,7 +42,7 @@ const DEMO_ORGS: PlatformOrgRow[] = [
 export async function getPlatformOrgs(demo: boolean): Promise<PlatformOrgRow[]> {
   if (demo || !isDatabaseConfigured()) return DEMO_ORGS
 
-  const rows = await getDb()
+  const rows = await getSystemDb()
     .select({
       id: organisations.id,
       name: organisations.name,
@@ -87,7 +87,7 @@ const DEMO_SERVICE_ADOPTION: ServiceAdoptionRow[] = [
 export async function getServiceAdoption(demo: boolean): Promise<ServiceAdoptionRow[]> {
   if (demo || !isDatabaseConfigured()) return DEMO_SERVICE_ADOPTION
 
-  const db = getDb()
+  const db = getSystemDb()
   const totalOrgsRow = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(organisations)
@@ -132,7 +132,7 @@ const DEMO_SERVICE_QUOTES: ServiceQuoteRow[] = [
 export async function getServiceQuotes(demo: boolean): Promise<ServiceQuoteRow[]> {
   if (demo || !isDatabaseConfigured()) return DEMO_SERVICE_QUOTES
 
-  const db = getDb()
+  const db = getSystemDb()
   const rows = await db
     .select({
       verticalKey: quotationLines.serviceKey,
@@ -173,7 +173,7 @@ const DEMO_NOTIFICATIONS: NotificationRow[] = [
 export async function getNotifications(demo: boolean): Promise<NotificationRow[]> {
   if (demo || !isDatabaseConfigured()) return DEMO_NOTIFICATIONS
 
-  const db = getDb()
+  const db = getSystemDb()
   const rows = await db
     .select({
       id: notifications.id,

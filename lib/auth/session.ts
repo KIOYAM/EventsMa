@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { asc, eq } from 'drizzle-orm'
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { hasSupabaseEnv, isDemoEnvironment } from '@/lib/environment'
 import { memberships } from '@/lib/db/schema'
 import { DEMO_ORG_ID } from '@/lib/demo/data'
@@ -80,7 +80,9 @@ export const requireWorkspace = cache(async (): Promise<WorkspaceContext> => {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
 
-  const db = getDb()
+  // Membership lookup happens before an org/claims scope exists, so this is a
+  // deliberate system read: it returns only rows for the signed-in user.
+  const db = getSystemDb()
   const [row] = await db
     .select({ id: memberships.id, orgId: memberships.orgId, role: memberships.role })
     .from(memberships)

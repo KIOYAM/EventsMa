@@ -13,7 +13,9 @@ that document is the page-by-page view, this one is the dependency-ordered build
 | Multi-service | `business_services` + `service_items` with `vertical_key`, `unit_class` (`PER_GUEST`/`PER_PIECE`/`FLAT`/`PER_HOUR`), per-vertical workspaces for decoration, makeup, photography | migrations 0004–0005 |
 | Quote engine | Server-priced composer across any enabled service, immutable sent versions, public `/q/[token]`, manual bank/UPI, append-only receipts, PDF | `components/quote`, `lib/domain/pricing` |
 | Share portal | `share_links` → public `/share/[token]` → `share_submissions` → `/submissions` owner review → status transitions | migration 0006, verified end to end 14 Nov |
-| Database | 56 tables, 56 with RLS, 109 policies, two-tenant isolation test PASS | `node db/setup.mjs` |
+| Catering menu selection | Public link renders the event's real sessions, categories, dishes and min/max rules; selections are validated server-side and stored per session (`share_submission_sessions` + lines with session/category) | migration 0007, `lib/domain/menu-selection.ts`, verified 14 Nov |
+| Database | 57 tables, 57 with RLS, 111 policies, two-tenant isolation test PASS | `node db/setup.mjs` |
+| Runtime tenancy | Authenticated requests run inside `withWorkspace` on a scoped handle, so RLS applies to real traffic; `getSystemDb` is reserved for token/public paths. Integration test: 5/5 green against the live database | `lib/db/tenancy.integration.test.ts`, `TENANCY_LIVE_TEST=1 npx vitest run lib/db/tenancy.integration.test.ts` |
 | Quality gates | `npm run build`, `npx tsc --noEmit`, `npx vitest run` (46 tests) | green on `main` |
 
 ## 2. The gaps, in dependency order
@@ -22,7 +24,7 @@ Order is not taste. Each row's reason column explains why it cannot be shuffled 
 
 | # | Work | Why now, and what "done" means | Size |
 |---|---|---|---|
-| **G1** | **Runtime tenancy (RLS on real traffic)** | The app connects with `DATABASE_URL` as the table owner, so **RLS never applies to requests** — isolation today rests on hand-written `org_id` filters, and the 109 policies are only exercised by the test in `db/setup.mjs`. Every feature below adds tables whose safety would inherit that weakness. Done = requests run under a role/claims where a missing `org_id` filter returns zero rows, with a test that proves a tenant-A request can never read tenant-B rows through the app's own query path. | L |
+| **G1** | **Public-path tenancy proof** | Authenticated traffic is covered: `withWorkspace` scopes the handle and the integration test proves a tenant-A request cannot read tenant-B rows. The **token paths are not covered** — `/share/[token]`, `/q/[token]`, `/p/[slug]` and `/invite/[token]` deliberately use `getSystemDb` because there is no session, so their safety rests on hand-written `org_id` filters with no test. Done = one test per public entry point proving a token minted for tenant A cannot resolve tenant B's event, quote, page or invitation. | M |
 | **G2** | **Submission → quotation** | A share link now ends at a review screen whose "Prepare quotation" drops the owner on an empty composer. Done = the composer opens prefilled with the submission's client, event and selected lines, the created quote records which submission produced it, and `/submissions` shows "quoted" only when a quote links back. | M |
 | **G3** | **Public endpoint abuse control** | `/api/share/[token]/submit` and the `/p/[slug]` enquiry form are unauthenticated writes with no rate limit or bot check. Done = per-IP and per-token limits that return a clean `429`, a honeypot field, and the same dedupe guarantee that exists today. | S |
 | **G4** | **Run-of-show + activity viewer** | Audit rows are written for money and status changes but no screen reads them, and event day has no minute-by-minute sheet. Done = per-event run-of-show (timed rows, owner/crew visible) and an org audit list filterable by entity, both read-only. | M |
@@ -41,8 +43,7 @@ Sizes: S ≤ 1 day, M 2–4 days, L a week or more for one developer.
 
 ## 3. Two rules for whoever picks this up
 
-1. **G1 first.** Adding tables before runtime RLS works is how a tenancy bug becomes
-   data loss. Nothing in G2–G14 is worth doing ahead of it.
+1. **G1 first.** The authenticated path is proven, but the four token paths are the ones an outsider can call. Prove them before adding tables they would also have to defend.
 2. **One vertical slice per change:** schema + policy + server action + UI + test, then
    commit. A green build is not evidence; the evidence is a real row in the real
    database and a screenshot of the screen that reads it.
@@ -76,17 +77,20 @@ ENVIRONMENT:
   Never print, commit or paste a connection string or key.
 
 WHAT IS ALREADY DONE — do not redo:
-  56 tables, RLS on all 56, 109 policies, two-tenant isolation test passing.
-  Migrations 0000–0006 applied on production. Quote engine with immutable sent
+  57 tables, RLS on all 57, 111 policies, two-tenant isolation test passing; runtime
+  tenancy through withWorkspace proven live (5/5).
+  Migrations 0000–0007 applied on production. Quote engine with immutable sent
   versions, public /q/[token], manual bank/UPI, append-only receipts. Share portal
   share_links -> /share/[token] -> share_submissions -> /submissions, verified end
   to end. 47 routes in app/**. Build, tsc and 46 unit tests green.
 
 YOUR QUEUE, in this order. Stop and report after each item; do not batch items.
-  G1 Runtime tenancy: make RLS apply to real request traffic. Today queries run as
-     the table owner. Scope each request to a role plus request.jwt.claims (or a
-     scoped client) inside a transaction wrapper, keep Drizzle, and add a test that
-     an org-A request cannot read org-B rows through the app's own query path.
+      G1 Public-path tenancy: authenticated requests already run inside withWorkspace
+     on a scoped handle and the live integration test proves RLS applies (5/5). The
+     remaining hole is the token paths — /share/[token], /q/[token], /p/[slug] and
+     /invite/[token] — which use getSystemDb because there is no session. Add one
+     test per path proving a token minted for tenant A cannot resolve tenant B's
+     event, quote, page or invitation.
   G2 Submission -> quotation prefill, with the quote recording its source
      submission and /submissions showing "quoted" only when that link exists.
   G3 Rate limit + honeypot on the unauthenticated /api/share/[token]/submit and

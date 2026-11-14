@@ -2,7 +2,12 @@ import 'server-only'
 import { asc, desc, eq, inArray } from 'drizzle-orm'
 import { getDb, isDatabaseConfigured } from './client'
 import { events } from './schema'
-import { shareSubmissionLines, shareSubmissionServices, shareSubmissions } from './schema-share'
+import {
+  shareSubmissionLines,
+  shareSubmissionServices,
+  shareSubmissionSessions,
+  shareSubmissions,
+} from './schema-share'
 import { verticalDescriptor } from '@/lib/domain/verticals'
 
 export interface OwnerSubmissionLine {
@@ -21,6 +26,18 @@ export interface OwnerSubmissionService {
   lines: OwnerSubmissionLine[]
 }
 
+/** One catering session as the customer chose it, snapshotted at submit time. */
+export interface OwnerMenuSession {
+  id: string
+  name: string
+  guests: number
+  startTime: string | null
+  endTime: string | null
+  dishCount: number
+  indicativePaise: number
+  dishes: { id: string; label: string; categoryName: string | null }[]
+}
+
 export interface OwnerSubmission {
   id: string
   clientName: string
@@ -34,6 +51,7 @@ export interface OwnerSubmission {
   eventTitle: string | null
   eventDate: string | null
   services: OwnerSubmissionService[]
+  menuSessions: OwnerMenuSession[]
 }
 
 /**
@@ -108,6 +126,8 @@ export async function getOwnerSubmissions(orgId: string, demo: boolean): Promise
           .select({
             id: shareSubmissionLines.id,
             submissionServiceId: shareSubmissionLines.submissionServiceId,
+            submissionSessionId: shareSubmissionLines.submissionSessionId,
+            categoryName: shareSubmissionLines.categoryName,
             label: shareSubmissionLines.label,
             quantity: shareSubmissionLines.quantity,
             basis: shareSubmissionLines.basis,
@@ -122,6 +142,29 @@ export async function getOwnerSubmissions(orgId: string, demo: boolean): Promise
             ),
           )
           .orderBy(asc(shareSubmissionLines.sortOrder))
+      : []
+
+  const sessionRows =
+    rows.length > 0
+      ? await db
+          .select({
+            id: shareSubmissionSessions.id,
+            submissionId: shareSubmissionSessions.submissionId,
+            name: shareSubmissionSessions.name,
+            guests: shareSubmissionSessions.guests,
+            startTime: shareSubmissionSessions.startTime,
+            endTime: shareSubmissionSessions.endTime,
+            dishCount: shareSubmissionSessions.dishCount,
+            indicativePaise: shareSubmissionSessions.indicativePaise,
+          })
+          .from(shareSubmissionSessions)
+          .where(
+            inArray(
+              shareSubmissionSessions.submissionId,
+              rows.map((row) => row.id),
+            ),
+          )
+          .orderBy(asc(shareSubmissionSessions.sortOrder))
       : []
 
   return rows.map((row) => ({
@@ -151,6 +194,24 @@ export async function getOwnerSubmissions(orgId: string, demo: boolean): Promise
             basis: line.basis,
             unitPricePaise: line.unitPricePaise,
             indicativePaise: line.indicativePaise,
+          })),
+      })),
+    menuSessions: sessionRows
+      .filter((session) => session.submissionId === row.id)
+      .map((session) => ({
+        id: session.id,
+        name: session.name,
+        guests: session.guests,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        dishCount: session.dishCount,
+        indicativePaise: session.indicativePaise,
+        dishes: lineRows
+          .filter((line) => line.submissionSessionId === session.id)
+          .map((line) => ({
+            id: line.id,
+            label: line.label,
+            categoryName: line.categoryName ?? null,
           })),
       })),
   }))

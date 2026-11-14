@@ -7,6 +7,7 @@ import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { withWorkspace } from '@/lib/db/workspace'
 import {
   createDecorationArea,
   createDecorationMaterial,
@@ -32,11 +33,11 @@ export default async function DecorationPage({
   const params = await searchParams
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
 
-  const db = getDb()
-  const [areas, setups, materials] = await Promise.all(
-    ctx.demo || !isDatabaseConfigured()
-      ? [[], [], []]
-      : [
+  const [areas, setups, materials] = await (ctx.demo || !isDatabaseConfigured()
+    ? Promise.resolve([[], [], []] as const)
+    : withWorkspace(ctx, () => {
+        const db = getDb()
+        return Promise.all([
           db
             .select()
             .from(decorationAreas)
@@ -52,8 +53,8 @@ export default async function DecorationPage({
             .from(decorationMaterials)
             .where(and(eq(decorationMaterials.orgId, ctx.orgId), eq(decorationMaterials.active, true)))
             .orderBy(decorationMaterials.sortOrder),
-        ],
-  )
+        ])
+      }))
 
   const saved = params.saved
   const error = params.error

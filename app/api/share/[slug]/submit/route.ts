@@ -11,12 +11,18 @@ const SelectionSchema = z.object({
   quantity: z.number().int().min(1).max(10_000).optional(),
 })
 
+const MenuSelectionSchema = z.object({
+  sessionId: z.string().uuid(),
+  dishIds: z.array(z.string().uuid()).max(60),
+})
+
 const SubmitSchema = z.object({
   clientName: z.string().trim().min(1).max(120),
   clientEmail: z.string().trim().email().max(160).optional().or(z.literal('')),
   clientPhone: z.string().trim().max(24).optional().or(z.literal('')),
   message: z.string().trim().max(1000).optional().or(z.literal('')),
-  selections: z.array(SelectionSchema).min(1).max(200),
+  selections: z.array(SelectionSchema).max(200).default([]),
+  menuSelections: z.array(MenuSelectionSchema).max(24).default([]),
 })
 
 /**
@@ -54,6 +60,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     clientPhone: data.clientPhone || null,
     message: data.message || null,
     selections: data.selections,
+    menuSelections: data.menuSelections,
   })
 
   if (!result.ok) {

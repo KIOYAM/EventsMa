@@ -4,7 +4,7 @@ import { and, eq, gt, isNull } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/session'
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { auditEvents, invitations, memberships } from '@/lib/db/schema'
 
 function field(formData: FormData, key: string, max = 200): string {
@@ -20,7 +20,9 @@ export async function acceptInvitation(formData: FormData): Promise<void> {
   const user = await getCurrentUser()
   if (!user?.email) redirect(`/login?next=${encodeURIComponent(back)}`)
 
-  const db = getDb()
+  // Acceptance happens before the new membership exists, so this is a system
+  // write keyed by the invitation token and the verified signed-in email.
+  const db = getSystemDb()
   const [invite] = await db
     .select({
       id: invitations.id,

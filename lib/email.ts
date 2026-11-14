@@ -1,6 +1,6 @@
 'use server'
 
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { notifications } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 
@@ -66,7 +66,7 @@ export async function sendEmail({
 export async function sendQueuedNotification(notificationId: string): Promise<void> {
   if (!isDatabaseConfigured()) return
 
-  const db = getDb()
+  const db = getSystemDb()
   const [row] = await db
     .select()
     .from(notifications)
@@ -122,7 +122,7 @@ export async function queueNotification({
 }): Promise<void> {
   if (!isDatabaseConfigured()) return
 
-  const db = getDb()
+  const db = getSystemDb()
   await db.insert(notifications).values({
     orgId,
     kind,

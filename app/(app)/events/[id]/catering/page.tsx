@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Field, Input, Select } from '@/components/ui/input'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getEventCatering } from '@/lib/db/catering-events'
 import { formatINR } from '@/lib/domain/money'
 import { formatMilliQuantity } from '@/lib/domain/catering'
@@ -47,7 +48,7 @@ export default async function EventCateringPage({
   const ctx = await requireWorkspace()
   const { id } = await params
   const query = await searchParams
-  const view = await getEventCatering(ctx.orgId, id, ctx.demo)
+  const view = await withWorkspace(ctx, () => getEventCatering(ctx.orgId, id, ctx.demo))
 
   if (!view) notFound()
 

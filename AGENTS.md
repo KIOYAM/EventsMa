@@ -102,7 +102,38 @@ npm run db:migrate     # forward-only migrations
 npm run lint && npm run typecheck
 ```
 
-## 8. Definition of done
+## 8. Always-on UI/UX skills (every tool)
+
+Nine design-system playbooks live project-local under `.agents/skills/` and are committed
+in `skills-lock.json`:
+
+| Skill | Always on | What it forces |
+|---|---|---|
+| `impeccable-ui` | yes | `/craft`, `/polish`, `/typeset`, `/arrange`, `/audit`; tokens before values; blocks generic AI anti-patterns |
+| `ui-ux-pro-max` | yes | Complete design system (style / palette / pairing) chosen before any UI code |
+| `ui-skills-collection` | yes | Hard boundaries: 8px spacing, WCAG AA contrast, 44×44px touch targets |
+| `vercel-ui-verification` | yes | Self-audit: keyboard nav, contrast, breakpoints, layout shift — before any UI task is "done" |
+| `taste-hallmark` | no | Editorial layouts for landing / creative pages only |
+| `diagram-design`, `algorithmic-canvas`, `motion-gsap`, `image-generation` | no | SVG/generative assets, micro-interactions, generated hero visuals — on demand |
+
+**Make them run every time.** Each tool's global config (lives under your user profile on
+`C:` — see the C: constraint in §2, so you paste this yourself, I do not write it) should
+load `impeccable-ui` + `ui-ux-pro-max` before every UI/front-end prompt:
+
+- OpenCode: add a global instruction at `~/.config/opencode/AGENTS.md` telling the agent to
+  always load `impeccable-ui` and `ui-ux-pro-max` before generating UI; install the skill
+  files into `~/.config/opencode/skills/`.
+- Google Antigravity: `npx agentic-awesome-skills --antigravity`; enable auto-discovery in
+  your global `.agent/` rules; skills go in `~/.gemini/config/skills/`.
+- Gemini CLI: place `SKILL.md` folders inside `~/.gemini/skills/` and reference them in your
+  root `GEMINI.md` system prompt.
+- Kiro (IDE & CLI): place skill files under `~/.kiro/skills/` or `~/.kiro/steering/`;
+  Kiro treats those as always-on rulesets for frontend builds.
+
+Everything these tools generate (caches, assets, configs) must still stay on `D:` —
+`AGENTS.md` §2 wins if a skill wants to write to a home-directory cache.
+
+## 9. Definition of done
 
 See [docs/05 §6](docs/05-engineering-workflow.md). Short version: designed, reviewed,
 tested, measured, documented, reversible.

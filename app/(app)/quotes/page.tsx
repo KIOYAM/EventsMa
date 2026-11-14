@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/ui/page-header'
 import { requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getWorkspaceSummary } from '@/lib/db/queries'
 import { formatINR, formatPercentBp } from '@/lib/domain/money'
 import { shortDate } from '@/lib/utils'
@@ -18,7 +19,7 @@ const TONE: Record<string, 'success' | 'mint' | 'gold' | 'neutral' | 'accent'> =
 
 export default async function QuotesPage() {
   const ctx = await requireWorkspace()
-  const data = await getWorkspaceSummary(ctx.orgId, ctx.demo)
+  const data = await withWorkspace(ctx, () => getWorkspaceSummary(ctx.orgId, ctx.demo))
 
   return (
     <div className="space-y-6">

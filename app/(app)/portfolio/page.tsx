@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, Textarea } from '@/components/ui/input'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getPortfolio } from '@/lib/db/settings'
 import { shortDate } from '@/lib/utils'
 import { addPortfolioItem, setPortfolioPublished } from './actions'
@@ -23,7 +24,7 @@ export default async function PortfolioPage({
 }) {
   const ctx = await requireWorkspace()
   const params = await searchParams
-  const items = await getPortfolio(ctx.orgId, ctx.demo)
+  const items = await withWorkspace(ctx, () => getPortfolio(ctx.orgId, ctx.demo))
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
   const publishedCount = items.filter((item) => item.published).length
 

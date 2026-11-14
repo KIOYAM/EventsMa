@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
 import { Stat } from '@/components/ui/stat'
 import { requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getReportData } from '@/lib/db/money'
 import { formatINR, formatPercentBp } from '@/lib/domain/money'
 
@@ -10,7 +11,7 @@ export const metadata = { title: 'Reports' }
 
 export default async function ReportsPage() {
   const ctx = await requireWorkspace()
-  const data = await getReportData(ctx.orgId, ctx.demo)
+  const data = await withWorkspace(ctx, () => getReportData(ctx.orgId, ctx.demo))
   const peak = Math.max(1, ...data.months.map((month) => Math.max(month.revenuePaise, month.expensePaise)))
   const marginBp =
     data.revenuePaise > 0 ? Math.round((data.marginPaise * 10_000) / data.revenuePaise) : 0

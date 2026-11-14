@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Field, Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getCateringConfig } from '@/lib/db/catering'
 import { createDietaryProfile, createMenuCategory, setMenuCategoryActive } from './actions'
 import { adoptCatering, seedCateringConfigAction } from './seed'
@@ -40,7 +41,7 @@ export default async function CateringPage({
 }) {
   const ctx = await requireWorkspace()
   const params = await searchParams
-  const config = await getCateringConfig(ctx.orgId, ctx.demo)
+  const config = await withWorkspace(ctx, () => getCateringConfig(ctx.orgId, ctx.demo))
 
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
   const activeSessions = config.sessions.filter((session) => session.active)

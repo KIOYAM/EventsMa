@@ -7,6 +7,7 @@ import { Field, Input, Select } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/page-header'
 import { Stat } from '@/components/ui/stat'
 import { requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getEventDetail, getEventFormOptions } from '@/lib/db/events'
 import { getEnabledServices } from '@/lib/db/queries'
 import { getShareLink } from '@/lib/db/share'
@@ -57,12 +58,14 @@ export default async function EventDetailPage({
   const ctx = await requireWorkspace()
   const { id } = await params
   const query = await searchParams
-  const [event, options, enabledServices, shareLink] = await Promise.all([
-    getEventDetail(ctx.orgId, ctx.demo, id),
-    getEventFormOptions(ctx.orgId, ctx.demo),
-    getEnabledServices(ctx.orgId, ctx.demo),
-    getShareLink(ctx.orgId, id),
-  ])
+  const [event, options, enabledServices, shareLink] = await withWorkspace(ctx, () =>
+    Promise.all([
+      getEventDetail(ctx.orgId, ctx.demo, id),
+      getEventFormOptions(ctx.orgId, ctx.demo),
+      getEnabledServices(ctx.orgId, ctx.demo),
+      getShareLink(ctx.orgId, id),
+    ]),
+  )
   const attached = new Set(event?.services.map((service) => service.key) ?? [])
   const availableServices = enabledServices.filter(
     (service) => service.enabled && !attached.has(service.key),

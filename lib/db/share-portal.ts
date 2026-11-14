@@ -1,12 +1,14 @@
 import 'server-only'
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
-import { getDb, isDatabaseConfigured } from './client'
+import { getSystemDb, isDatabaseConfigured } from './client'
 import { businesses, businessServices, events, serviceItems } from './schema'
 import { eventCateringSessions } from './schema-catering'
 import { decorationAreas } from './schema-services'
 import { shareLinks } from './schema-share'
+import { loadEventMenu } from './share-portal-menu'
 import { verticalDescriptor } from '@/lib/domain/verticals'
 import { isUnitClass, type UnitClass } from '@/lib/domain/units'
+import type { MenuSession } from '@/lib/domain/menu-selection'
 
 /** One catalogue item a customer can pick. Prices are indicative, not confidential costs. */
 export interface PortalItem {
@@ -61,6 +63,12 @@ export interface SharePortal {
   event: PortalEvent | null
   contact: PortalContact
   services: PortalService[]
+  /**
+   * The event's planned catering menu, session by session. When this is non-empty
+   * the flat `catering` catalogue is withheld from `services`, so the customer
+   * chooses from the owner's real plan instead of every active dish.
+   */
+  menu: MenuSession[]
 }
 
 /**
@@ -70,7 +78,7 @@ export interface SharePortal {
  */
 export async function getSharePortal(token: string): Promise<SharePortal | null> {
   if (!isDatabaseConfigured() || !token) return null
-  const db = getDb()
+  const db = getSystemDb()
 
   // If the share_links migration has not been applied yet, fall back to the
   // legacy event-id behaviour instead of 500-ing every existing link.
@@ -172,7 +180,7 @@ export async function getSharePortal(token: string): Promise<SharePortal | null>
 
   const keys = enabled.map((s) => s.key)
   if (keys.length === 0) {
-    return { token, orgId: event.orgId, event, contact, services: [] }
+    return { token, orgId: event.orgId, event, contact, services: [], menu: [] }
   }
 
   const items = await db
@@ -286,19 +294,26 @@ export async function getSharePortal(token: string): Promise<SharePortal | null>
     }
   })
 
+  const menu = keys.includes('catering') ? await loadEventMenu(event.orgId, event.id) : []
+
+  // A planned menu replaces the flat catering catalogue on the customer link:
+  // the same dishes would otherwise appear twice, with two different rule sets.
+  const visibleServices = menu.length > 0 ? services.filter((s) => s.key !== 'catering') : services
+
   return {
     token,
     orgId: event.orgId,
     event,
     contact,
-    services: services.filter((s) => s.categories.length > 0),
+    services: visibleServices.filter((s) => s.categories.length > 0),
+    menu,
   }
 }
 
 /** Existing share link for an event, so the owner reuses rather than duplicates. */
 export async function getShareLink(orgId: string, eventId: string) {
   if (!isDatabaseConfigured()) return null
-  const db = getDb()
+  const db = getSystemDb()
   try {
     const [row] = await db
       .select({ token: shareLinks.token, expiresAt: shareLinks.expiresAt })

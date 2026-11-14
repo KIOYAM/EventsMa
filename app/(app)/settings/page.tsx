@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getSettings } from '@/lib/db/settings'
 import { setPublished, updateSettings } from './actions'
 
@@ -22,7 +23,7 @@ export default async function SettingsPage({
 }) {
   const ctx = await requireWorkspace()
   const params = await searchParams
-  const data = await getSettings(ctx.orgId, ctx.demo)
+  const data = await withWorkspace(ctx, () => getSettings(ctx.orgId, ctx.demo))
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
 
   return (

@@ -6,6 +6,7 @@ import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { Stat } from '@/components/ui/stat'
 import { Pagination } from '@/components/pagination'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getAcceptedQuoteOptions, getInvoicePage } from '@/lib/db/money'
 import { formatINR } from '@/lib/domain/money'
 import { INVOICE_STATUS_LABEL, type InvoiceStatus } from '@/lib/domain/ops'
@@ -44,10 +45,12 @@ export default async function InvoicesPage({
   const ctx = await requireWorkspace()
   const params = await searchParams
   const page = parsePage(params.page)
-  const [data, quotes] = await Promise.all([
-    getInvoicePage(ctx.orgId, ctx.demo, { status: params.status, page }),
-    getAcceptedQuoteOptions(ctx.orgId, ctx.demo),
-  ])
+  const [data, quotes] = await withWorkspace(ctx, () =>
+    Promise.all([
+      getInvoicePage(ctx.orgId, ctx.demo, { status: params.status, page }),
+      getAcceptedQuoteOptions(ctx.orgId, ctx.demo),
+    ]),
+  )
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
   const available = quotes.filter((quote) => !quote.alreadyInvoiced)
   const dueDefault = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10)

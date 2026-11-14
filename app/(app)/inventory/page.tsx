@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, Select } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
-import { getDb } from '@/lib/db/client'
+import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { withWorkspace } from '@/lib/db/workspace'
 import { inventoryItems, inventoryMovements } from '@/lib/db/schema'
 import { formatINR } from '@/lib/domain/money'
 import { createInventoryItem, recordInventoryMovement } from './actions'
@@ -56,21 +57,23 @@ export default async function InventoryPage({
 
   const rows: StockRow[] = ctx.demo
     ? DEMO_ROWS
-    : await getDb()
-        .select({
-          id: inventoryItems.id,
-          name: inventoryItems.name,
-          unit: inventoryItems.unit,
-          reorderLevelMilli: inventoryItems.reorderLevelMilli,
-          costPaisePerUnit: inventoryItems.costPaisePerUnit,
-          supplier: inventoryItems.supplier,
-          onHandMilli: sql<number>`coalesce(sum(${inventoryMovements.deltaMilli}), 0)::int`,
-        })
-        .from(inventoryItems)
-        .leftJoin(inventoryMovements, eq(inventoryMovements.itemId, inventoryItems.id))
-        .where(and(eq(inventoryItems.orgId, ctx.orgId), eq(inventoryItems.active, true)))
-        .groupBy(inventoryItems.id)
-        .orderBy(asc(inventoryItems.name))
+    : await withWorkspace(ctx, () =>
+        getDb()
+          .select({
+            id: inventoryItems.id,
+            name: inventoryItems.name,
+            unit: inventoryItems.unit,
+            reorderLevelMilli: inventoryItems.reorderLevelMilli,
+            costPaisePerUnit: inventoryItems.costPaisePerUnit,
+            supplier: inventoryItems.supplier,
+            onHandMilli: sql<number>`coalesce(sum(${inventoryMovements.deltaMilli}), 0)::int`,
+          })
+          .from(inventoryItems)
+          .leftJoin(inventoryMovements, eq(inventoryMovements.itemId, inventoryItems.id))
+          .where(and(eq(inventoryItems.orgId, ctx.orgId), eq(inventoryItems.active, true)))
+          .groupBy(inventoryItems.id)
+          .orderBy(asc(inventoryItems.name)),
+      )
 
   const low = rows.filter((row) => row.reorderLevelMilli > 0 && row.onHandMilli <= row.reorderLevelMilli)
   const stockValuePaise = rows.reduce(

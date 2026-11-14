@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getSettings } from '@/lib/db/settings'
 import { setPublished } from '../settings/actions'
 
@@ -15,7 +16,7 @@ export const metadata = { title: 'Storefront' }
  */
 export default async function StorefrontPage() {
   const ctx = await requireWorkspace()
-  const settings = await getSettings(ctx.orgId, ctx.demo)
+  const settings = await withWorkspace(ctx, () => getSettings(ctx.orgId, ctx.demo))
   const canManage = canManageCommercial(ctx.role) && !ctx.demo
   const publicPath = `/p/${settings.slug}`
 

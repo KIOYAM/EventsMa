@@ -7,6 +7,7 @@ import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { withWorkspace } from '@/lib/db/workspace'
 import {
   createCoverage,
   createAssignment,
@@ -34,11 +35,11 @@ export default async function PhotographyPage({
   const params = await searchParams
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
 
-  const db = getDb()
-  const [coverages, assignments, shots, deliverables] = await Promise.all(
-    ctx.demo || !isDatabaseConfigured()
-      ? [[], [], [], []]
-      : [
+  const [coverages, assignments, shots, deliverables] = await (ctx.demo || !isDatabaseConfigured()
+    ? Promise.resolve([[], [], [], []] as const)
+    : withWorkspace(ctx, () => {
+        const db = getDb()
+        return Promise.all([
           db
             .select()
             .from(photographyCoverage)
@@ -59,8 +60,8 @@ export default async function PhotographyPage({
             .from(photographyDeliverables)
             .where(eq(photographyDeliverables.orgId, ctx.orgId))
             .orderBy(photographyDeliverables.createdAt),
-        ],
-  )
+        ])
+      }))
 
   const saved = params.saved
   const error = params.error

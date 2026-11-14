@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, Select } from '@/components/ui/input'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getComposerData } from '@/lib/db/queries'
 import { formatINR, formatPercentBp } from '@/lib/domain/money'
 import { UNIT_CLASSES, unitClassLabel } from '@/lib/domain/units'
@@ -25,7 +26,7 @@ export default async function CataloguePage({
 }) {
   const ctx = await requireWorkspace()
   const params = await searchParams
-  const data = await getComposerData(ctx.orgId, ctx.demo)
+  const data = await withWorkspace(ctx, () => getComposerData(ctx.orgId, ctx.demo))
 
   const activeService = params.vertical ?? data.services[0]?.verticalKey ?? 'catering'
   const descriptor = verticalDescriptor(activeService)

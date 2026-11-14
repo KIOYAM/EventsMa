@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/input'
 import { DebouncedSearch } from '@/components/debounced-search'
 import { Pagination } from '@/components/pagination'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getEnquiryPage } from '@/lib/db/crm'
 import {
   ENQUIRY_STATUSES,
@@ -45,11 +46,13 @@ export default async function ClientsPage({
   const ctx = await requireWorkspace()
   const params = await searchParams
   const page = parsePage(params.page)
-  const data = await getEnquiryPage(ctx.orgId, ctx.demo, {
-    q: params.q,
-    status: params.status,
-    page,
-  })
+  const data = await withWorkspace(ctx, () =>
+    getEnquiryPage(ctx.orgId, ctx.demo, {
+      q: params.q,
+      status: params.status,
+      page,
+    }),
+  )
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
 
   const tabs = [

@@ -6,6 +6,7 @@ import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { DebouncedSearch } from '@/components/debounced-search'
 import { Pagination } from '@/components/pagination'
 import { requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getClientPage } from '@/lib/db/crm'
 import { PAGE_SIZE, parsePage } from '@/lib/pagination'
 import { shortDate } from '@/lib/utils'
@@ -20,7 +21,9 @@ export default async function ClientDirectoryPage({
   const ctx = await requireWorkspace()
   const params = await searchParams
   const page = parsePage(params.page)
-  const data = await getClientPage(ctx.orgId, ctx.demo, { q: params.q, page })
+  const data = await withWorkspace(ctx, () =>
+    getClientPage(ctx.orgId, ctx.demo, { q: params.q, page }),
+  )
 
   return (
     <div className="space-y-6">

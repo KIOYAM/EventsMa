@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { withWorkspace } from '@/lib/db/workspace'
 import { events, serviceItems } from '@/lib/db/schema'
 import {
   cateringSessions,
@@ -44,166 +45,172 @@ async function ownEvent(orgId: string, eventId: string): Promise<boolean> {
 
 export async function addEventSession(formData: FormData): Promise<void> {
   const ctx = await requireWorkspace()
-  const eventId = String(formData.get('eventId') ?? '')
-  const templateId = String(formData.get('templateId') ?? '')
-  const guestCount = Math.max(0, Number.parseInt(String(formData.get('guestCount') ?? '0'), 10) || 0)
-  const sessionDate = String(formData.get('sessionDate') ?? '').trim()
+  return withWorkspace(ctx, async () => {
+    const eventId = String(formData.get('eventId') ?? '')
+    const templateId = String(formData.get('templateId') ?? '')
+    const guestCount = Math.max(0, Number.parseInt(String(formData.get('guestCount') ?? '0'), 10) || 0)
+    const sessionDate = String(formData.get('sessionDate') ?? '').trim()
 
-  if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
-  if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
-  if (!eventId) redirect('/events')
-  if (!(await ownEvent(ctx.orgId, eventId))) redirect(back(eventId, { error: 'event' }))
+    if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
+    if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
+    if (!eventId) redirect('/events')
+    if (!(await ownEvent(ctx.orgId, eventId))) redirect(back(eventId, { error: 'event' }))
 
-  const db = getDb()
+    const db = getDb()
 
-  // A session is copied from a template, then owned by the event: renaming or
-  // deleting the template later must not rewrite this booking.
-  let name = String(formData.get('name') ?? '').trim().slice(0, 80)
-  let startTime: string | null = null
-  let endTime: string | null = null
+    // A session is copied from a template, then owned by the event: renaming or
+    // deleting the template later must not rewrite this booking.
+    let name = String(formData.get('name') ?? '').trim().slice(0, 80)
+    let startTime: string | null = null
+    let endTime: string | null = null
 
-  if (templateId) {
-    const [template] = await db
-      .select({
-        name: cateringSessions.name,
-        startTime: cateringSessions.startTime,
-        endTime: cateringSessions.endTime,
-      })
-      .from(cateringSessions)
-      .where(and(eq(cateringSessions.orgId, ctx.orgId), eq(cateringSessions.id, templateId)))
-      .limit(1)
-    if (!template) redirect(back(eventId, { error: 'template' }))
-    name = template.name
-    startTime = template.startTime
-    endTime = template.endTime
-  }
+    if (templateId) {
+      const [template] = await db
+        .select({
+          name: cateringSessions.name,
+          startTime: cateringSessions.startTime,
+          endTime: cateringSessions.endTime,
+        })
+        .from(cateringSessions)
+        .where(and(eq(cateringSessions.orgId, ctx.orgId), eq(cateringSessions.id, templateId)))
+        .limit(1)
+      if (!template) redirect(back(eventId, { error: 'template' }))
+      name = template.name
+      startTime = template.startTime
+      endTime = template.endTime
+    }
 
-  if (!name) redirect(back(eventId, { error: 'name' }))
+    if (!name) redirect(back(eventId, { error: 'name' }))
 
-  const [count] = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(eventCateringSessions)
-    .where(and(eq(eventCateringSessions.orgId, ctx.orgId), eq(eventCateringSessions.eventId, eventId)))
+    const [count] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(eventCateringSessions)
+      .where(and(eq(eventCateringSessions.orgId, ctx.orgId), eq(eventCateringSessions.eventId, eventId)))
 
-  await db.insert(eventCateringSessions).values({
-    orgId: ctx.orgId,
-    eventId,
-    templateId: templateId || null,
-    name,
-    sessionDate: sessionDate || null,
-    startTime,
-    endTime,
-    guestCount,
-    sortOrder: count?.n ?? 0,
+    await db.insert(eventCateringSessions).values({
+      orgId: ctx.orgId,
+      eventId,
+      templateId: templateId || null,
+      name,
+      sessionDate: sessionDate || null,
+      startTime,
+      endTime,
+      guestCount,
+      sortOrder: count?.n ?? 0,
+    })
+
+    revalidatePath(`/events/${eventId}`)
+    revalidatePath(`/events/${eventId}/catering`)
+    redirect(back(eventId, { saved: 'session' }))
   })
-
-  revalidatePath(`/events/${eventId}`)
-  revalidatePath(`/events/${eventId}/catering`)
-  redirect(back(eventId, { saved: 'session' }))
 }
 
 export async function updateEventSession(formData: FormData): Promise<void> {
   const ctx = await requireWorkspace()
-  const eventId = String(formData.get('eventId') ?? '')
-  const id = String(formData.get('id') ?? '')
-  const guestCount = Math.max(0, Number.parseInt(String(formData.get('guestCount') ?? '0'), 10) || 0)
-  const status = String(formData.get('status') ?? 'planned')
-  const sessionDate = String(formData.get('sessionDate') ?? '').trim()
-  const startTime = String(formData.get('startTime') ?? '').trim()
-  const endTime = String(formData.get('endTime') ?? '').trim()
+  return withWorkspace(ctx, async () => {
+    const eventId = String(formData.get('eventId') ?? '')
+    const id = String(formData.get('id') ?? '')
+    const guestCount = Math.max(0, Number.parseInt(String(formData.get('guestCount') ?? '0'), 10) || 0)
+    const status = String(formData.get('status') ?? 'planned')
+    const sessionDate = String(formData.get('sessionDate') ?? '').trim()
+    const startTime = String(formData.get('startTime') ?? '').trim()
+    const endTime = String(formData.get('endTime') ?? '').trim()
 
-  if (!['planned', 'confirmed', 'served', 'cancelled'].includes(status)) {
-    redirect(back(eventId, { error: 'status' }))
-  }
-  if ((startTime && !TIME.test(startTime)) || (endTime && !TIME.test(endTime))) {
-    redirect(back(eventId, { error: 'time' }))
-  }
-  if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
-  if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
-
-  const db = getDb()
-  const [session] = await db
-    .select({
-      id: eventCateringSessions.id,
-      name: eventCateringSessions.name,
-      guestCount: eventCateringSessions.guestCount,
-    })
-    .from(eventCateringSessions)
-    .where(
-      and(
-        eq(eventCateringSessions.orgId, ctx.orgId),
-        eq(eventCateringSessions.eventId, eventId),
-        eq(eventCateringSessions.id, id),
-      ),
-    )
-    .limit(1)
-
-  if (!session) redirect(back(eventId, { error: 'session' }))
-
-  await db.transaction(async (tx) => {
-    await tx
-      .update(eventCateringSessions)
-      .set({
-        guestCount,
-        status,
-        sessionDate: sessionDate || null,
-        startTime: startTime || null,
-        endTime: endTime || null,
-      })
-      .where(and(eq(eventCateringSessions.orgId, ctx.orgId), eq(eventCateringSessions.id, id)))
-
-    // Confirmation freezes the session as it stands, so a later catalogue edit
-    // cannot silently change what was agreed.
-    if (status === 'confirmed') {
-      const items = await tx
-        .select({
-          name: sessionMenuItems.nameSnapshot,
-          unitClass: sessionMenuItems.unitClassSnapshot,
-          unitPricePaise: sessionMenuItems.unitPricePaise,
-          quantity: sessionMenuItems.quantity,
-        })
-        .from(sessionMenuItems)
-        .where(
-          and(
-            eq(sessionMenuItems.orgId, ctx.orgId),
-            eq(sessionMenuItems.eventSessionId, id),
-          ),
-        )
-
-      await tx.insert(cateringSnapshots).values({
-        orgId: ctx.orgId,
-        eventId,
-        reason: 'confirmed',
-        payload: { session: { id, name: session.name, guestCount }, items },
-      })
+    if (!['planned', 'confirmed', 'served', 'cancelled'].includes(status)) {
+      redirect(back(eventId, { error: 'status' }))
     }
-  })
+    if ((startTime && !TIME.test(startTime)) || (endTime && !TIME.test(endTime))) {
+      redirect(back(eventId, { error: 'time' }))
+    }
+    if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
+    if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
 
-  revalidatePath(`/events/${eventId}/catering`)
-  redirect(back(eventId, { saved: 'session' }))
+    const db = getDb()
+    const [session] = await db
+      .select({
+        id: eventCateringSessions.id,
+        name: eventCateringSessions.name,
+        guestCount: eventCateringSessions.guestCount,
+      })
+      .from(eventCateringSessions)
+      .where(
+        and(
+          eq(eventCateringSessions.orgId, ctx.orgId),
+          eq(eventCateringSessions.eventId, eventId),
+          eq(eventCateringSessions.id, id),
+        ),
+      )
+      .limit(1)
+
+    if (!session) redirect(back(eventId, { error: 'session' }))
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(eventCateringSessions)
+        .set({
+          guestCount,
+          status,
+          sessionDate: sessionDate || null,
+          startTime: startTime || null,
+          endTime: endTime || null,
+        })
+        .where(and(eq(eventCateringSessions.orgId, ctx.orgId), eq(eventCateringSessions.id, id)))
+
+      // Confirmation freezes the session as it stands, so a later catalogue edit
+      // cannot silently change what was agreed.
+      if (status === 'confirmed') {
+        const items = await tx
+          .select({
+            name: sessionMenuItems.nameSnapshot,
+            unitClass: sessionMenuItems.unitClassSnapshot,
+            unitPricePaise: sessionMenuItems.unitPricePaise,
+            quantity: sessionMenuItems.quantity,
+          })
+          .from(sessionMenuItems)
+          .where(
+            and(
+              eq(sessionMenuItems.orgId, ctx.orgId),
+              eq(sessionMenuItems.eventSessionId, id),
+            ),
+          )
+
+        await tx.insert(cateringSnapshots).values({
+          orgId: ctx.orgId,
+          eventId,
+          reason: 'confirmed',
+          payload: { session: { id, name: session.name, guestCount }, items },
+        })
+      }
+    })
+
+    revalidatePath(`/events/${eventId}/catering`)
+    redirect(back(eventId, { saved: 'session' }))
+  })
 }
 
 export async function removeEventSession(formData: FormData): Promise<void> {
   const ctx = await requireWorkspace()
-  const eventId = String(formData.get('eventId') ?? '')
-  const id = String(formData.get('id') ?? '')
+  return withWorkspace(ctx, async () => {
+    const eventId = String(formData.get('eventId') ?? '')
+    const id = String(formData.get('id') ?? '')
 
-  if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
-  if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
+    if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
+    if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
 
-  const db = getDb()
-  await db
-    .delete(eventCateringSessions)
-    .where(
-      and(
-        eq(eventCateringSessions.orgId, ctx.orgId),
-        eq(eventCateringSessions.eventId, eventId),
-        eq(eventCateringSessions.id, id),
-      ),
-    )
+    const db = getDb()
+    await db
+      .delete(eventCateringSessions)
+      .where(
+        and(
+          eq(eventCateringSessions.orgId, ctx.orgId),
+          eq(eventCateringSessions.eventId, eventId),
+          eq(eventCateringSessions.id, id),
+        ),
+      )
 
-  revalidatePath(`/events/${eventId}/catering`)
-  redirect(back(eventId, { saved: 'removed' }))
+    revalidatePath(`/events/${eventId}/catering`)
+    redirect(back(eventId, { saved: 'removed' }))
+  })
 }
 
 /**
@@ -215,154 +222,162 @@ export async function removeEventSession(formData: FormData): Promise<void> {
  */
 export async function addSessionItem(formData: FormData): Promise<void> {
   const ctx = await requireWorkspace()
-  const eventId = String(formData.get('eventId') ?? '')
-  const sessionId = String(formData.get('sessionId') ?? '')
-  const itemId = String(formData.get('itemId') ?? '')
-  const categoryId = String(formData.get('categoryId') ?? '')
+  return withWorkspace(ctx, async () => {
+    const eventId = String(formData.get('eventId') ?? '')
+    const sessionId = String(formData.get('sessionId') ?? '')
+    const itemId = String(formData.get('itemId') ?? '')
+    const categoryId = String(formData.get('categoryId') ?? '')
 
-  if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
-  if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
+    if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
+    if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
 
-  const db = getDb()
+    const db = getDb()
 
-  const [session] = await db
-    .select({
-      id: eventCateringSessions.id,
-      templateId: eventCateringSessions.templateId,
-    })
-    .from(eventCateringSessions)
-    .where(
-      and(
-        eq(eventCateringSessions.orgId, ctx.orgId),
-        eq(eventCateringSessions.eventId, eventId),
-        eq(eventCateringSessions.id, sessionId),
-      ),
-    )
-    .limit(1)
+    const [session] = await db
+      .select({
+        id: eventCateringSessions.id,
+        templateId: eventCateringSessions.templateId,
+      })
+      .from(eventCateringSessions)
+      .where(
+        and(
+          eq(eventCateringSessions.orgId, ctx.orgId),
+          eq(eventCateringSessions.eventId, eventId),
+          eq(eventCateringSessions.id, sessionId),
+        ),
+      )
+      .limit(1)
 
-  if (!session) redirect(back(eventId, { error: 'session' }))
+    if (!session) redirect(back(eventId, { error: 'session' }))
 
-  const [item] = await db
-    .select({
-      id: serviceItems.id,
-      name: serviceItems.name,
-      pricePaise: serviceItems.pricePaise,
-      unitClass: serviceItems.unitClass,
-      unitLabel: serviceItems.unitLabel,
-      dietary: serviceItems.dietary,
-    })
-    .from(serviceItems)
-    .where(and(eq(serviceItems.orgId, ctx.orgId), eq(serviceItems.id, itemId)))
-    .limit(1)
+    const [item] = await db
+      .select({
+        id: serviceItems.id,
+        name: serviceItems.name,
+        pricePaise: serviceItems.pricePaise,
+        unitClass: serviceItems.unitClass,
+        unitLabel: serviceItems.unitLabel,
+        dietary: serviceItems.dietary,
+      })
+      .from(serviceItems)
+      .where(and(eq(serviceItems.orgId, ctx.orgId), eq(serviceItems.id, itemId)))
+      .limit(1)
 
-  const [category] = await db
-    .select({ id: menuCategories.id, name: menuCategories.name })
-    .from(menuCategories)
-    .where(and(eq(menuCategories.orgId, ctx.orgId), eq(menuCategories.id, categoryId)))
-    .limit(1)
+    const [category] = await db
+      .select({ id: menuCategories.id, name: menuCategories.name })
+      .from(menuCategories)
+      .where(and(eq(menuCategories.orgId, ctx.orgId), eq(menuCategories.id, categoryId)))
+      .limit(1)
 
-  if (!item || !category) redirect(back(eventId, { error: 'item' }))
+    if (!item || !category) redirect(back(eventId, { error: 'item' }))
 
-  const rule = await resolveRule(ctx.orgId, session.templateId, categoryId)
-  const [existing] = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(sessionMenuItems)
-    .where(
-      and(
-        eq(sessionMenuItems.orgId, ctx.orgId),
-        eq(sessionMenuItems.eventSessionId, sessionId),
-        eq(sessionMenuItems.categoryId, categoryId),
-      ),
-    )
+    const rule = await resolveRule(ctx.orgId, session.templateId, categoryId)
+    const [existing] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(sessionMenuItems)
+      .where(
+        and(
+          eq(sessionMenuItems.orgId, ctx.orgId),
+          eq(sessionMenuItems.eventSessionId, sessionId),
+          eq(sessionMenuItems.categoryId, categoryId),
+        ),
+      )
 
-  const verdict = validateSelection(rule, (existing?.n ?? 0) + 1)
-  if (!verdict.ok) redirect(back(eventId, { error: 'rule', session: sessionId }))
+    const verdict = validateSelection(rule, (existing?.n ?? 0) + 1)
+    if (!verdict.ok) redirect(back(eventId, { error: 'rule', session: sessionId }))
 
-  await db
-    .insert(sessionMenuItems)
-    .values({
-      orgId: ctx.orgId,
-      eventSessionId: sessionId,
-      itemId: item.id,
-      categoryId: category.id,
-      nameSnapshot: item.name,
-      unitSnapshot: item.unitLabel,
-      unitPricePaise: item.pricePaise,
-      unitClassSnapshot: item.unitClass,
-      dietarySnapshot: item.dietary,
-      quantity: 1,
-    })
-    .onConflictDoNothing()
+    await db
+      .insert(sessionMenuItems)
+      .values({
+        orgId: ctx.orgId,
+        eventSessionId: sessionId,
+        itemId: item.id,
+        categoryId: category.id,
+        nameSnapshot: item.name,
+        unitSnapshot: item.unitLabel,
+        unitPricePaise: item.pricePaise,
+        unitClassSnapshot: item.unitClass,
+        dietarySnapshot: item.dietary,
+        quantity: 1,
+      })
+      .onConflictDoNothing()
 
-  revalidatePath(`/events/${eventId}/catering`)
-  redirect(back(eventId, { saved: 'item', session: sessionId }))
+    revalidatePath(`/events/${eventId}/catering`)
+    redirect(back(eventId, { saved: 'item', session: sessionId }))
+  })
 }
 
 export async function removeSessionItem(formData: FormData): Promise<void> {
   const ctx = await requireWorkspace()
-  const eventId = String(formData.get('eventId') ?? '')
-  const id = String(formData.get('id') ?? '')
-  const sessionId = String(formData.get('sessionId') ?? '')
-  const itemId = String(formData.get('itemId') ?? '')
+  return withWorkspace(ctx, async () => {
+    const eventId = String(formData.get('eventId') ?? '')
+    const id = String(formData.get('id') ?? '')
+    const sessionId = String(formData.get('sessionId') ?? '')
+    const itemId = String(formData.get('itemId') ?? '')
 
-  if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
-  if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
+    if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
+    if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
 
-  const db = getDb()
-  const scope = id
-    ? and(eq(sessionMenuItems.orgId, ctx.orgId), eq(sessionMenuItems.id, id))
-    : and(
-        eq(sessionMenuItems.orgId, ctx.orgId),
-        eq(sessionMenuItems.eventSessionId, sessionId),
-        eq(sessionMenuItems.itemId, itemId),
-      )
-  await db.delete(sessionMenuItems).where(scope)
+    const db = getDb()
+    const scope = id
+      ? and(eq(sessionMenuItems.orgId, ctx.orgId), eq(sessionMenuItems.id, id))
+      : and(
+          eq(sessionMenuItems.orgId, ctx.orgId),
+          eq(sessionMenuItems.eventSessionId, sessionId),
+          eq(sessionMenuItems.itemId, itemId),
+        )
+    await db.delete(sessionMenuItems).where(scope)
 
-  revalidatePath(`/events/${eventId}/catering`)
-  redirect(back(eventId, { saved: 'item' }))
+    revalidatePath(`/events/${eventId}/catering`)
+    redirect(back(eventId, { saved: 'item' }))
+  })
 }
 
 export async function setSessionItemQuantity(formData: FormData): Promise<void> {
   const ctx = await requireWorkspace()
-  const eventId = String(formData.get('eventId') ?? '')
-  const id = String(formData.get('id') ?? '')
-  const quantity = Math.max(1, Number.parseInt(String(formData.get('quantity') ?? '1'), 10) || 1)
+  return withWorkspace(ctx, async () => {
+    const eventId = String(formData.get('eventId') ?? '')
+    const id = String(formData.get('id') ?? '')
+    const quantity = Math.max(1, Number.parseInt(String(formData.get('quantity') ?? '1'), 10) || 1)
 
-  if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
-  if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
+    if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
+    if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
 
-  const db = getDb()
-  await db
-    .update(sessionMenuItems)
-    .set({ quantity })
-    .where(and(eq(sessionMenuItems.orgId, ctx.orgId), eq(sessionMenuItems.id, id)))
+    const db = getDb()
+    await db
+      .update(sessionMenuItems)
+      .set({ quantity })
+      .where(and(eq(sessionMenuItems.orgId, ctx.orgId), eq(sessionMenuItems.id, id)))
 
-  revalidatePath(`/events/${eventId}/catering`)
-  redirect(back(eventId, { saved: 'quantity' }))
+    revalidatePath(`/events/${eventId}/catering`)
+    redirect(back(eventId, { saved: 'quantity' }))
+  })
 }
 
 export async function setSessionDietaryCount(formData: FormData): Promise<void> {
   const ctx = await requireWorkspace()
-  const eventId = String(formData.get('eventId') ?? '')
-  const sessionId = String(formData.get('sessionId') ?? '')
-  const profileKey = String(formData.get('profileKey') ?? '').slice(0, 40)
-  const count = Math.max(0, Number.parseInt(String(formData.get('count') ?? '0'), 10) || 0)
+  return withWorkspace(ctx, async () => {
+    const eventId = String(formData.get('eventId') ?? '')
+    const sessionId = String(formData.get('sessionId') ?? '')
+    const profileKey = String(formData.get('profileKey') ?? '').slice(0, 40)
+    const count = Math.max(0, Number.parseInt(String(formData.get('count') ?? '0'), 10) || 0)
 
-  if (!profileKey) redirect(back(eventId, { error: 'diet' }))
-  if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
-  if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
+    if (!profileKey) redirect(back(eventId, { error: 'diet' }))
+    if (!canManageCommercial(ctx.role)) redirect(back(eventId, { error: 'permission' }))
+    if (ctx.demo || !isDatabaseConfigured()) redirect(back(eventId, { error: 'demo' }))
 
-  const db = getDb()
-  await db
-    .insert(sessionDietaryCounts)
-    .values({ orgId: ctx.orgId, eventSessionId: sessionId, profileKey, count })
-    .onConflictDoUpdate({
-      target: [sessionDietaryCounts.eventSessionId, sessionDietaryCounts.profileKey],
-      set: { count },
-    })
+    const db = getDb()
+    await db
+      .insert(sessionDietaryCounts)
+      .values({ orgId: ctx.orgId, eventSessionId: sessionId, profileKey, count })
+      .onConflictDoUpdate({
+        target: [sessionDietaryCounts.eventSessionId, sessionDietaryCounts.profileKey],
+        set: { count },
+      })
 
-  revalidatePath(`/events/${eventId}/catering`)
-  redirect(back(eventId, { saved: 'diet' }))
+    revalidatePath(`/events/${eventId}/catering`)
+    redirect(back(eventId, { saved: 'diet' }))
+  })
 }
 
 /** A session without a template has no configured limits: unlimited, not zero. */

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Field, Input, Select } from '@/components/ui/input'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getRecipesBoard } from '@/lib/db/catering-recipes'
 import { formatMilliQuantity, INGREDIENT_UNITS, type IngredientUnit } from '@/lib/domain/catering'
 import { formatINR } from '@/lib/domain/money'
@@ -32,7 +33,7 @@ export default async function RecipesPage({
 }) {
   const ctx = await requireWorkspace()
   const query = await searchParams
-  const board = await getRecipesBoard(ctx.orgId, ctx.demo)
+  const board = await withWorkspace(ctx, () => getRecipesBoard(ctx.orgId, ctx.demo))
 
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
   const dish = board.dishes.find((row) => row.id === query.dish) ?? board.dishes[0] ?? null

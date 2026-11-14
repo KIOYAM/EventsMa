@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Field, Input } from '@/components/ui/input'
 import { getCurrentUser, hasSupabaseEnv } from '@/lib/auth/session'
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { memberships } from '@/lib/db/schema'
 import { VERTICAL_CATALOG } from '@/lib/domain/verticals'
 import { createWorkspace } from './actions'
@@ -29,7 +29,7 @@ export default async function OnboardingPage({
   const user = await getCurrentUser()
   if (!user) redirect('/login')
 
-  const [existing] = await getDb()
+  const [existing] = await getSystemDb()
     .select({ id: memberships.id })
     .from(memberships)
     .where(eq(memberships.userId, user.id))

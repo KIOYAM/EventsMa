@@ -3,7 +3,7 @@
 import { eq, inArray } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 import { getCurrentUser, hasSupabaseEnv } from '@/lib/auth/session'
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { businessServices, businesses, memberships, organisations } from '@/lib/db/schema'
 import { isKnownVertical } from '@/lib/domain/verticals'
 
@@ -27,7 +27,7 @@ function slugify(name: string): string {
 
 /** One slug per organisation. A second "Kannan Events" becomes kannan-events-2. */
 async function availableSlug(base: string): Promise<string> {
-  const db = getDb()
+  const db = getSystemDb()
   const candidates = [base, `${base}-2`, `${base}-3`, `${base}-4`, `${base}-5`]
   const taken = await db
     .select({ slug: organisations.slug })
@@ -63,7 +63,7 @@ export async function createWorkspace(formData: FormData): Promise<void> {
   if (name.length < 2) redirect('/onboarding?error=name')
   if (verticals.length === 0) redirect('/onboarding?error=service')
 
-  const db = getDb()
+  const db = getSystemDb()
   const [existing] = await db
     .select({ id: memberships.id })
     .from(memberships)

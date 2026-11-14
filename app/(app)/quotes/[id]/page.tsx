@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { MarginPanel, QuoteDocument } from '@/components/quote/quote-document'
 import { ReviseButton } from '@/components/quote/revise-button'
 import { requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getQuoteDocument } from '@/lib/db/queries'
 import { formatINR } from '@/lib/domain/money'
 import { appUrl } from '@/lib/app-url'
@@ -25,7 +26,7 @@ const STATUS_LABEL: Record<string, string> = {
 export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const ctx = await requireWorkspace()
   const { id } = await params
-  const doc = await getQuoteDocument(ctx.orgId, id, ctx.demo)
+  const doc = await withWorkspace(ctx, () => getQuoteDocument(ctx.orgId, id, ctx.demo))
 
   if (!doc) notFound()
 

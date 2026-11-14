@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getOwnerSubmissions } from '@/lib/db/share'
 import { formatINR } from '@/lib/domain/money'
 import { shortDate } from '@/lib/utils'
@@ -25,7 +26,7 @@ export default async function SubmissionsPage({
 }) {
   const ctx = await requireWorkspace()
   const params = await searchParams
-  const submissions = await getOwnerSubmissions(ctx.orgId, ctx.demo)
+  const submissions = await withWorkspace(ctx, () => getOwnerSubmissions(ctx.orgId, ctx.demo))
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
   const openCount = submissions.filter((s) => s.status === 'new').length
 
@@ -134,8 +135,52 @@ export default async function SubmissionsPage({
                   <span>Indicative only · not a confirmed price</span>
                 </div>
 
+                {submission.menuSessions.length > 0 ? (
+                  <div className="rounded-control border border-hairline bg-paper p-3">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+                      Catering menu by session
+                    </p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {submission.menuSessions.map((session) => (
+                        <div key={session.id} className="rounded-control bg-canvas p-2.5">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="text-sm font-medium text-ink">{session.name}</p>
+                            <span className="tabular text-xs text-ink">
+                              {formatINR(session.indicativePaise)}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-[11px] text-ink-muted">
+                            {session.guests > 0 ? `${session.guests} guests` : 'Guests to confirm'}
+                            {session.startTime
+                              ? ` · ${session.startTime}${session.endTime ? `–${session.endTime}` : ''}`
+                              : ''}
+                            {` · ${session.dishCount} dish${session.dishCount === 1 ? '' : 'es'}`}
+                          </p>
+                          <ul className="mt-1.5 space-y-0.5 text-[11px] text-ink">
+                            {session.dishes.map((dish) => (
+                              <li key={dish.id} className="flex min-w-0 gap-1.5">
+                                <span className="truncate">{dish.label}</span>
+                                {dish.categoryName ? (
+                                  <span className="shrink-0 text-ink-muted">
+                                    · {dish.categoryName}
+                                  </span>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="grid gap-3 md:grid-cols-2">
-                  {submission.services.map((service) => (
+                  {submission.services
+                    .filter(
+                      (service) =>
+                        !(service.key === 'catering' && submission.menuSessions.length > 0),
+                    )
+                    .map((service) => (
                     <div key={service.key} className="rounded-control border border-hairline bg-canvas p-3">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-medium text-ink">{service.label}</p>

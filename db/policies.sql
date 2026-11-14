@@ -271,10 +271,15 @@ create policy portfolio_items_write on public.portfolio_items
   with check (public.has_org_role(org_id, array['owner','manager']));
 
 -- quote counters ---------------------------------------------------------------
--- Internal numbering sequence written only by the server under an advisory
--- lock. RLS is enabled without any policy: no role except the owner sees a row,
--- so an exposed PostgREST route cannot leak another tenant's quote volume.
+-- Internal numbering sequence written inside quote creation. Scoped to the
+-- owning organisation's owner/manager so the insert and update pass under the
+-- authenticated runtime role; no other tenant can read the counter.
 alter table public.quote_counters enable row level security;
+
+drop policy if exists quote_counters_member on public.quote_counters;
+create policy quote_counters_member on public.quote_counters
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
 
 -- catering engine ------------------------------------------------------------
 -- Session templates, categories, dietary labels and selection limits are the
@@ -465,5 +470,14 @@ create policy share_submission_lines_select on public.share_submission_lines
   for select using (public.has_org_role(org_id, array['owner','manager']));
 drop policy if exists share_submission_lines_write on public.share_submission_lines;
 create policy share_submission_lines_write on public.share_submission_lines
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.share_submission_sessions enable row level security;
+drop policy if exists share_submission_sessions_select on public.share_submission_sessions;
+create policy share_submission_sessions_select on public.share_submission_sessions
+  for select using (public.has_org_role(org_id, array['owner','manager']));
+drop policy if exists share_submission_sessions_write on public.share_submission_sessions;
+create policy share_submission_sessions_write on public.share_submission_sessions
   for all using (public.has_org_role(org_id, array['owner','manager']))
   with check (public.has_org_role(org_id, array['owner','manager']));

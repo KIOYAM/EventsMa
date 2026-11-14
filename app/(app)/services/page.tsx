@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
 import { requireWorkspace, canManageCommercial } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getWorkspaceSummary } from '@/lib/db/queries'
 import { GENERIC_VERTICAL, VERTICAL_CATALOG, verticalDescriptor } from '@/lib/domain/verticals'
 import { unitClassLabel } from '@/lib/domain/units'
@@ -12,7 +13,7 @@ export const metadata = { title: 'Services' }
 
 export default async function ServicesPage() {
   const ctx = await requireWorkspace()
-  const data = await getWorkspaceSummary(ctx.orgId, ctx.demo)
+  const data = await withWorkspace(ctx, () => getWorkspaceSummary(ctx.orgId, ctx.demo))
   const enabledKeys = new Set(data.services.filter((s) => s.enabled).map((s) => s.verticalKey))
   const serviceMap = new Map(data.services.map((s) => [s.verticalKey, s]))
 

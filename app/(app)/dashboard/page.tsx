@@ -7,6 +7,7 @@ import { AttentionList } from '@/components/dashboard/attention-list'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatSkeleton, TableSkeleton } from '@/components/ui/skeleton'
 import { requireWorkspace, type WorkspaceContext } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getAttentionItems } from '@/lib/db/attention'
 import { getWorkspaceSummary } from '@/lib/db/queries'
 import { formatINR, formatPercentBp } from '@/lib/domain/money'
@@ -65,10 +66,12 @@ export default async function DashboardPage() {
 }
 
 async function DashboardBody({ ctx }: { ctx: WorkspaceContext }) {
-  const [data, attention] = await Promise.all([
-    getWorkspaceSummary(ctx.orgId, ctx.demo),
-    getAttentionItems(ctx.orgId, ctx.demo),
-  ])
+  const [data, attention] = await withWorkspace(ctx, () =>
+    Promise.all([
+      getWorkspaceSummary(ctx.orgId, ctx.demo),
+      getAttentionItems(ctx.orgId, ctx.demo),
+    ]),
+  )
   const activeServices = data.services.filter((s) => s.enabled)
 
   return (

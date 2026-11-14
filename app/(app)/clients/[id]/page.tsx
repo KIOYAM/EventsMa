@@ -7,6 +7,7 @@ import { Field, Input, Textarea } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/page-header'
 import { Stat } from '@/components/ui/stat'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getClientDetail } from '@/lib/db/crm'
 import { formatINR } from '@/lib/domain/money'
 import { INVOICE_STATUS_LABEL, type InvoiceStatus } from '@/lib/domain/ops'
@@ -41,7 +42,7 @@ export default async function ClientDetailPage({
   const ctx = await requireWorkspace()
   const { id } = await params
   const query = await searchParams
-  const client = await getClientDetail(ctx.orgId, ctx.demo, id)
+  const client = await withWorkspace(ctx, () => getClientDetail(ctx.orgId, ctx.demo, id))
   if (!client) notFound()
 
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo

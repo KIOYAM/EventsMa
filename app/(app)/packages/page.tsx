@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getPackages } from '@/lib/db/packages'
 import { formatINR, formatPercentBp } from '@/lib/domain/money'
 import { UNIT_CLASSES, unitClassLabel } from '@/lib/domain/units'
@@ -24,7 +25,7 @@ export default async function PackagesPage({
 }) {
   const ctx = await requireWorkspace()
   const params = await searchParams
-  const packages = await getPackages(ctx.orgId, ctx.demo)
+  const packages = await withWorkspace(ctx, () => getPackages(ctx.orgId, ctx.demo))
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
 
   return (

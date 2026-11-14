@@ -7,6 +7,7 @@ import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { withWorkspace } from '@/lib/db/workspace'
 import {
   createMakeupAppointment,
   createMakeupArtist,
@@ -32,11 +33,11 @@ export default async function MakeupPage({
   const params = await searchParams
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
 
-  const db = getDb()
-  const [artists, appointments, trials] = await Promise.all(
-    ctx.demo || !isDatabaseConfigured()
-      ? [[], [], []]
-      : [
+  const [artists, appointments, trials] = await (ctx.demo || !isDatabaseConfigured()
+    ? Promise.resolve([[], [], []] as const)
+    : withWorkspace(ctx, () => {
+        const db = getDb()
+        return Promise.all([
           db
             .select()
             .from(makeupArtists)
@@ -52,8 +53,8 @@ export default async function MakeupPage({
             .from(makeupTrials)
             .where(eq(makeupTrials.orgId, ctx.orgId))
             .orderBy(makeupTrials.trialDate),
-        ],
-  )
+        ])
+      }))
 
   const saved = params.saved
   const error = params.error

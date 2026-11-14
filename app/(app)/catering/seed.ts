@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { withWorkspace } from '@/lib/db/workspace'
 import { businessServices } from '@/lib/db/schema'
 import {
   cateringSessions,
@@ -47,34 +48,38 @@ const STARTER_DIETS = [
 /** Idempotent: enables the vertical and fills in whatever is missing. */
 export async function adoptCatering(): Promise<void> {
   const ctx = await requireWorkspace()
-  if (!canManageCommercial(ctx.role)) redirect(back({ error: 'permission' }))
-  if (ctx.demo || !isDatabaseConfigured()) redirect(back({ error: 'demo' }))
+  return withWorkspace(ctx, async () => {
+    if (!canManageCommercial(ctx.role)) redirect(back({ error: 'permission' }))
+    if (ctx.demo || !isDatabaseConfigured()) redirect(back({ error: 'demo' }))
 
-  const db = getDb()
+    const db = getDb()
 
-  await db
-    .insert(businessServices)
-    .values({ orgId: ctx.orgId, verticalKey: CATERING_VERTICAL, enabled: true })
-    .onConflictDoUpdate({
-      target: [businessServices.orgId, businessServices.verticalKey],
-      set: { enabled: true },
-    })
+    await db
+      .insert(businessServices)
+      .values({ orgId: ctx.orgId, verticalKey: CATERING_VERTICAL, enabled: true })
+      .onConflictDoUpdate({
+        target: [businessServices.orgId, businessServices.verticalKey],
+        set: { enabled: true },
+      })
 
-  await seedCateringConfig(ctx.orgId)
+    await seedCateringConfig(ctx.orgId)
 
-  revalidatePath('/catering')
-  revalidatePath('/')
-  redirect(back({ saved: 'adopted' }))
+    revalidatePath('/catering')
+    revalidatePath('/')
+    redirect(back({ saved: 'adopted' }))
+  })
 }
 
 export async function seedCateringConfigAction(): Promise<void> {
   const ctx = await requireWorkspace()
-  if (!canManageCommercial(ctx.role)) redirect(back({ error: 'permission' }))
-  if (ctx.demo || !isDatabaseConfigured()) redirect(back({ error: 'demo' }))
+  return withWorkspace(ctx, async () => {
+    if (!canManageCommercial(ctx.role)) redirect(back({ error: 'permission' }))
+    if (ctx.demo || !isDatabaseConfigured()) redirect(back({ error: 'demo' }))
 
-  await seedCateringConfig(ctx.orgId)
-  revalidatePath('/catering')
-  redirect(back({ saved: 'seeded' }))
+    await seedCateringConfig(ctx.orgId)
+    revalidatePath('/catering')
+    redirect(back({ saved: 'seeded' }))
+  })
 }
 
 /** Transactional so a half-seeded set never reaches the UI. */

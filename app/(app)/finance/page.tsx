@@ -6,6 +6,7 @@ import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { Stat } from '@/components/ui/stat'
 import { Pagination } from '@/components/pagination'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getFinanceData } from '@/lib/db/money'
 import { formatINR } from '@/lib/domain/money'
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABEL } from '@/lib/domain/ops'
@@ -29,7 +30,7 @@ export default async function FinancePage({
   const ctx = await requireWorkspace()
   const params = await searchParams
   const page = parsePage(params.page)
-  const data = await getFinanceData(ctx.orgId, ctx.demo, page)
+  const data = await withWorkspace(ctx, () => getFinanceData(ctx.orgId, ctx.demo, page))
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
   const today = new Date().toISOString().slice(0, 10)
 

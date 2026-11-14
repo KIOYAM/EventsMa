@@ -1,10 +1,15 @@
 import 'server-only'
 import { createHash } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
-import { getDb, isDatabaseConfigured } from './client'
+import { getSystemDb, isDatabaseConfigured } from './client'
 import { businesses, clients, enquiries, notifications } from './schema'
 import { shareLinks, shareSubmissionLines, shareSubmissionServices, shareSubmissions } from './schema-share'
 import { getSharePortal, type PortalItem } from './share-portal'
+import {
+  prepareMenuSelection,
+  writeMenuSelection,
+  type MenuSelectionInput,
+} from './share-submission-menu'
 import { verticalDescriptor } from '@/lib/domain/verticals'
 import { priceSelection } from '@/lib/domain/share-pricing'
 
@@ -21,6 +26,8 @@ export interface SubmissionInput {
   clientPhone?: string | null
   message?: string | null
   selections: SelectionInput[]
+  /** Dish picks per catering session. Validated and priced on the server. */
+  menuSelections?: MenuSelectionInput[]
 }
 
 export type SubmissionResult =
@@ -64,9 +71,6 @@ export async function createShareSubmission(input: SubmissionInput): Promise<Sub
   for (const selection of input.selections ?? []) {
     const quantity = Math.min(Math.max(Math.trunc(selection.quantity ?? 1), 1), 10_000)
     wanted.set(selection.itemId, { ...selection, quantity })
-  }
-  if (wanted.size === 0) {
-    return { ok: false, error: 'Choose at least one item before submitting.', status: 400 }
   }
 
   const serviceKeys = new Set(portal.services.map((s) => s.key))
@@ -122,11 +126,16 @@ export async function createShareSubmission(input: SubmissionInput): Promise<Sub
     }
   }
 
-  if (prepared.length === 0) {
+  const menuPrep = prepareMenuSelection(portal, input.menuSelections ?? [])
+  if (!menuPrep.ok) return menuPrep
+  const menu = menuPrep.menu
+
+  if (prepared.length === 0 && menu.dishCount === 0) {
     return { ok: false, error: 'Choose at least one item before submitting.', status: 400 }
   }
 
-  const indicativeTotal = prepared.reduce((sum, service) => sum + service.indicativePaise, 0)
+  const indicativeTotal =
+    prepared.reduce((sum, service) => sum + service.indicativePaise, 0) + menu.paise
   const dedupeKey = createHash('sha256')
     .update(
       [
@@ -135,11 +144,12 @@ export async function createShareSubmission(input: SubmissionInput): Promise<Sub
           input.clientEmail?.toLowerCase().trim() ??
           clientName.toLowerCase(),
         [...wanted.keys()].sort().join(','),
+        menu.key,
       ].join('|'),
     )
     .digest('hex')
 
-  const db = getDb()
+  const db = getSystemDb()
   const [business] = await db
     .select({ email: businesses.email })
     .from(businesses)
@@ -205,12 +215,18 @@ export async function createShareSubmission(input: SubmissionInput): Promise<Sub
         }
       }
 
-      const summary = prepared
-        .map(
-          (service) =>
-            `${verticalDescriptor(service.serviceKey).label}: ${service.lines.map((l) => l.label).join(', ')}`,
+      const summaryParts = prepared.map(
+        (service) =>
+          `${verticalDescriptor(service.serviceKey).label}: ${service.lines.map((l) => l.label).join(', ')}`,
+      )
+      for (const entry of menu.sessions) {
+        summaryParts.push(
+          `${entry.session.name} (${entry.session.guests} guests): ${entry.lines
+            .map((line) => `${line.categoryName} · ${line.dish.name}`)
+            .join(', ')}`,
         )
-        .join(' | ')
+      }
+      const summary = summaryParts.filter(Boolean).join(' | ')
 
       const [enquiry] = await tx
         .insert(enquiries)
@@ -276,6 +292,27 @@ export async function createShareSubmission(input: SubmissionInput): Promise<Sub
         }
       }
 
+      if (menu.dishCount > 0) {
+        const [menuServiceRow] = await tx
+          .insert(shareSubmissionServices)
+          .values({
+            orgId: portal.orgId,
+            submissionId: submission.id,
+            serviceKey: 'catering',
+            indicativePaise: menu.paise,
+          })
+          .returning({ id: shareSubmissionServices.id })
+
+        if (!menuServiceRow) throw new Error('menu_service_insert_failed')
+
+        await writeMenuSelection(tx, {
+          orgId: portal.orgId,
+          submissionId: submission.id,
+          serviceRowId: menuServiceRow.id,
+          menu,
+        })
+      }
+
       await tx.insert(notifications).values({
         orgId: portal.orgId,
         kind: 'share_submission',
@@ -287,6 +324,8 @@ export async function createShareSubmission(input: SubmissionInput): Promise<Sub
           clientName,
           indicativeTotalPaise: indicativeTotal,
           services: prepared.map((s) => s.serviceKey),
+          menuSessions: menu.sessions.map((entry) => entry.session.name),
+          menuDishCount: menu.dishCount,
         },
       })
 

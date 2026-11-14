@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { Stat } from '@/components/ui/stat'
 import { requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getAssignedEvents } from '@/lib/db/events'
 import { shortDate } from '@/lib/utils'
 
@@ -10,7 +11,9 @@ export const metadata = { title: 'My work' }
 
 export default async function MyWorkPage() {
   const ctx = await requireWorkspace()
-  const assignments = await getAssignedEvents(ctx.orgId, ctx.demo, ctx.membershipId)
+  const assignments = await withWorkspace(ctx, () =>
+    getAssignedEvents(ctx.orgId, ctx.demo, ctx.membershipId),
+  )
   const today = new Date().toISOString().slice(0, 10)
   const upcoming = assignments.filter((event) => event.eventDate >= today)
   const openTasks = assignments.reduce((total, event) => total + event.openTasks, 0)

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { eq } from 'drizzle-orm'
 import { events } from '@/lib/db/schema'
 import { eventServices } from '@/lib/db/schema-services'
@@ -23,7 +23,8 @@ export async function GET(
     )
   }
 
-  const db = getDb()
+  // Public share lookup: the caller has no workspace session.
+  const db = getSystemDb()
 
   // Look up event by ID without org restriction (public share link)
   const [event] = await db

@@ -60,6 +60,60 @@
       "sourceType": "github",
       "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
       "computedHash": "128fac78002d916c8ca908245d398e634f540d8bcf20915b2b2359aeb18eba59"
+    },
+    "impeccable-ui": {
+      "source": "project-local",
+      "sourceType": "file",
+      "skillPath": ".agents/skills/impeccable-ui/SKILL.md",
+      "computedHash": "0579b29de28c8f71b1c52cb29c1ecdd55970b44fe44d2b34598befda8dc2ae0c"
+    },
+    "ui-ux-pro-max": {
+      "source": "project-local",
+      "sourceType": "file",
+      "skillPath": ".agents/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "e8a7f33762c630ec06cbfef53615fe05301fdea4f5fcd9b084e99ace740ffc43"
+    },
+    "ui-skills-collection": {
+      "source": "project-local",
+      "sourceType": "file",
+      "skillPath": ".agents/skills/ui-skills-collection/SKILL.md",
+      "computedHash": "b33f76770a19958e94ebd2623029086f6ec4ec6592d130df5c1e13b8781eff8e"
+    },
+    "taste-hallmark": {
+      "source": "project-local",
+      "sourceType": "file",
+      "skillPath": ".agents/skills/taste-hallmark/SKILL.md",
+      "computedHash": "28a722ffdf73c155b89f1ac32fe3db79427008eac15af35d19d9e665b3893660"
+    },
+    "diagram-design": {
+      "source": "project-local",
+      "sourceType": "file",
+      "skillPath": ".agents/skills/diagram-design/SKILL.md",
+      "computedHash": "7c2cf6b8c7ef79289bccc9874dd575f8ee0aa69f274104f97c12a1640d28a9c7"
+    },
+    "algorithmic-canvas": {
+      "source": "project-local",
+      "sourceType": "file",
+      "skillPath": ".agents/skills/algorithmic-canvas/SKILL.md",
+      "computedHash": "a0514e8fc6f35d9fc8d9fd1adc0c8a4db04e223fc6450a9720a40c1f8b826bb4"
+    },
+    "motion-gsap": {
+      "source": "project-local",
+      "sourceType": "file",
+      "skillPath": ".agents/skills/motion-gsap/SKILL.md",
+      "computedHash": "73972d656f118d261215ec0660f5ca4956cc3bbcdbae3b8f0aad7d9f258f8187"
+    },
+    "image-generation": {
+      "source": "project-local",
+      "sourceType": "file",
+      "skillPath": ".agents/skills/image-generation/SKILL.md",
+      "computedHash": "bea9005ee50c05c8442471dbcdeaa92919464035c03107d94242629a0c18035c"
+    },
+    "vercel-ui-verification": {
+      "source": "project-local",
+      "sourceType": "file",
+      "skillPath": ".agents/skills/vercel-ui-verification/SKILL.md",
+      "computedHash": "507dd05ed96b455bf1d4dc8489a617102cd0736e7f1a2ae3a7c3748f690f5f84"
     }
   }
 }

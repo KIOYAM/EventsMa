@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { and, eq } from 'drizzle-orm'
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { clients, enquiries, notifications, organisations } from '@/lib/db/schema'
 
 function normalisePhone(value: string): string {
@@ -35,7 +35,9 @@ export async function submitEnquiry(formData: FormData): Promise<void> {
     redirect(`${back}?error=demo`)
   }
 
-  const db = getDb()
+  // Public intake runs before any tenant session exists; the slug is the
+  // tenant key and every write carries the resolved org_id explicitly.
+  const db = getSystemDb()
 
   const [org] = await db
     .select({ id: organisations.id })

@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { appUrl } from '@/lib/app-url'
 import { requireWorkspace } from '@/lib/auth/session'
 import { getDb } from '@/lib/db/client'
+import { withWorkspace } from '@/lib/db/workspace'
 import { invitations, memberships } from '@/lib/db/schema'
 import { inviteMember, setMemberActive, updateMemberRole } from './actions'
 
@@ -46,30 +47,34 @@ export default async function TeamPage({
   const demo = ctx.demo
   const members = demo
     ? DEMO_MEMBERS
-    : await getDb()
-        .select({
-          id: memberships.id,
-          displayName: memberships.displayName,
-          email: memberships.email,
-          role: memberships.role,
-          status: memberships.status,
-        })
-        .from(memberships)
-        .where(eq(memberships.orgId, ctx.orgId))
-        .orderBy(asc(memberships.createdAt))
+    : await withWorkspace(ctx, () =>
+        getDb()
+          .select({
+            id: memberships.id,
+            displayName: memberships.displayName,
+            email: memberships.email,
+            role: memberships.role,
+            status: memberships.status,
+          })
+          .from(memberships)
+          .where(eq(memberships.orgId, ctx.orgId))
+          .orderBy(asc(memberships.createdAt)),
+      )
 
   const pending = demo
     ? []
-    : await getDb()
-        .select({ id: invitations.id, email: invitations.email, role: invitations.role, token: invitations.token, expiresAt: invitations.expiresAt })
-        .from(invitations)
-        .where(
-          and(
-            eq(invitations.orgId, ctx.orgId),
-            gt(invitations.expiresAt, new Date()),
-          ),
-        )
-        .orderBy(asc(invitations.createdAt))
+    : await withWorkspace(ctx, () =>
+        getDb()
+          .select({ id: invitations.id, email: invitations.email, role: invitations.role, token: invitations.token, expiresAt: invitations.expiresAt })
+          .from(invitations)
+          .where(
+            and(
+              eq(invitations.orgId, ctx.orgId),
+              gt(invitations.expiresAt, new Date()),
+            ),
+          )
+          .orderBy(asc(invitations.createdAt)),
+      )
 
   const isOwner = ctx.role === 'owner'
   const canEdit = isOwner && !ctx.demo

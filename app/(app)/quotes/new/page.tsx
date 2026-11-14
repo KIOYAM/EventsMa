@@ -1,13 +1,14 @@
 import { PageHeader } from '@/components/ui/page-header'
 import { QuoteComposer } from '@/components/quote/composer'
 import { requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getComposerData } from '@/lib/db/queries'
 
 export const metadata = { title: 'New quote' }
 
 export default async function NewQuotePage() {
   const ctx = await requireWorkspace()
-  const data = await getComposerData(ctx.orgId, ctx.demo)
+  const data = await withWorkspace(ctx, () => getComposerData(ctx.orgId, ctx.demo))
 
   return (
     <div className="space-y-6">

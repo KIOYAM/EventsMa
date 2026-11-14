@@ -3,7 +3,7 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
+import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { auditEvents, quotations } from '@/lib/db/schema'
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
@@ -26,7 +26,8 @@ export async function acceptQuote(formData: FormData): Promise<void> {
   if (email && !EMAIL.test(email)) redirect(`${back}?error=email`)
   if (!isDatabaseConfigured()) redirect(`${back}?error=demo`)
 
-  const db = getDb()
+  // The signed token is the access proof; there is no member session yet.
+  const db = getSystemDb()
   const [quote] = await db
     .select({
       id: quotations.id,

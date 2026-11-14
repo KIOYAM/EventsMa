@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getFullLedger, getReportData, ledgerCsv } from '@/lib/db/money'
 
 export const dynamic = 'force-dynamic'
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const stamp = new Date().toISOString().slice(0, 10)
 
   if (kind === 'monthly') {
-    const report = await getReportData(ctx.orgId, ctx.demo)
+    const report = await withWorkspace(ctx, () => getReportData(ctx.orgId, ctx.demo))
     const lines = [
       'month,revenue_inr,cost_inr,margin_inr',
       ...report.months.map((month) =>
@@ -41,6 +42,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return csvResponse(`eventsma-monthly-${stamp}.csv`, lines.join('\n'))
   }
 
-  const rows = await getFullLedger(ctx.orgId, ctx.demo)
+  const rows = await withWorkspace(ctx, () => getFullLedger(ctx.orgId, ctx.demo))
   return csvResponse(`eventsma-ledger-${stamp}.csv`, ledgerCsv(rows))
 }

@@ -8,6 +8,7 @@ import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import { DebouncedSearch } from '@/components/debounced-search'
 import { Pagination } from '@/components/pagination'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getEventFormOptions, getEventPage } from '@/lib/db/events'
 import {
   EVENT_STATUSES,
@@ -51,10 +52,12 @@ export default async function EventsPage({
   const ctx = await requireWorkspace()
   const params = await searchParams
   const page = parsePage(params.page)
-  const [data, options] = await Promise.all([
-    getEventPage(ctx.orgId, ctx.demo, { q: params.q, status: params.status, page }),
-    getEventFormOptions(ctx.orgId, ctx.demo),
-  ])
+  const [data, options] = await withWorkspace(ctx, () =>
+    Promise.all([
+      getEventPage(ctx.orgId, ctx.demo, { q: params.q, status: params.status, page }),
+      getEventFormOptions(ctx.orgId, ctx.demo),
+    ]),
+  )
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
 
   return (

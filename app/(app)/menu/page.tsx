@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, Select } from '@/components/ui/input'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { withWorkspace } from '@/lib/db/workspace'
 import { getMenuBoard } from '@/lib/db/menu'
 import { DIETARY, MEAL_SUGGESTIONS, itemCount, windowLabel } from '@/lib/domain/menu'
 import { formatINR } from '@/lib/domain/money'
@@ -38,7 +39,7 @@ export default async function MenuPage({
 }) {
   const ctx = await requireWorkspace()
   const params = await searchParams
-  const board = await getMenuBoard(ctx.orgId, ctx.demo)
+  const board = await withWorkspace(ctx, () => getMenuBoard(ctx.orgId, ctx.demo))
 
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
   const view = params.view === 'list' ? 'list' : 'grouped'
