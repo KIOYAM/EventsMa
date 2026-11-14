@@ -8,6 +8,8 @@ import { saveQuotation } from '@/app/(app)/quotes/actions'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, Select } from '@/components/ui/input'
+import { createTranslator } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locales'
 import { computeQuote, groupByService } from '@/lib/domain/pricing'
 import { formatINR, formatPercentBp, parseRupees } from '@/lib/domain/money'
 import { unitClassLabel, type UnitClass } from '@/lib/domain/units'
@@ -45,14 +47,17 @@ export function QuoteComposer({
   services,
   items,
   clients,
+  locale,
 }: {
   demo: boolean
   services: { verticalKey: string; config: Record<string, string> }[]
   items: CatalogueItem[]
   clients: { id: string; name: string }[]
+  locale: Locale
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const t = createTranslator(locale)
 
   const [title, setTitle] = useState('')
   const [eventDate, setEventDate] = useState(todayISO())
@@ -116,11 +121,11 @@ export function QuoteComposer({
 
   function onSave() {
     if (!title.trim()) {
-      toast.error('Give the quote a title, for example “Meera & Karthik — wedding lunch”.')
+      toast.error(t('quotes.composer.needTitle'))
       return
     }
     if (lines.length === 0) {
-      toast.error('Add at least one line from your catalogue.')
+      toast.error(t('quotes.composer.needLine'))
       return
     }
 
@@ -148,10 +153,10 @@ export function QuoteComposer({
       })
 
       if (!result.ok) {
-        toast.error(result.error)
+        toast.error(t('quotes.errors.missing'))
         return
       }
-      toast.success(`Quotation ${result.number} created`)
+      toast.success(t('quotes.composer.saved', { number: result.number }))
       router.push(`/quotes/${result.quotationId}`)
     })
   }
@@ -161,22 +166,22 @@ export function QuoteComposer({
       <div className="space-y-5">
         <Card>
           <CardHeader>
-            <CardTitle>Event</CardTitle>
-            <Badge tone="outline">{demo ? 'Demo' : 'Server-verified'}</Badge>
+            <CardTitle>{t('quotes.composer.event')}</CardTitle>
+            <Badge tone="outline">{demo ? t('quotes.composer.demo') : t('quotes.composer.verified')}</Badge>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Field label="Quote title" htmlFor="title">
+            <Field label={t('quotes.composer.quoteTitle')} htmlFor="title">
               <Input
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Meera & Karthik — wedding lunch"
+                placeholder={t('quotes.composer.quoteTitlePlaceholder')}
                 maxLength={160}
               />
             </Field>
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Event date" htmlFor="eventDate">
+              <Field label={t('quotes.composer.eventDate')} htmlFor="eventDate">
                 <Input
                   id="eventDate"
                   type="date"
@@ -184,7 +189,7 @@ export function QuoteComposer({
                   onChange={(e) => setEventDate(e.target.value)}
                 />
               </Field>
-              <Field label="Guests" htmlFor="guests">
+              <Field label={t('quotes.composer.guests')} htmlFor="guests">
                 <Input
                   id="guests"
                   type="number"
@@ -198,9 +203,9 @@ export function QuoteComposer({
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Client" htmlFor="client">
+              <Field label={t('quotes.composer.client')} htmlFor="client">
                 <Select id="client" value={clientId} onChange={(e) => setClientId(e.target.value)}>
-                  <option value="">No client linked</option>
+                  <option value="">{t('quotes.composer.noClientLinked')}</option>
                   {clients.map((client) => (
                     <option key={client.id} value={client.id}>
                       {client.name}
@@ -208,12 +213,12 @@ export function QuoteComposer({
                   ))}
                 </Select>
               </Field>
-              <Field label="Venue" htmlFor="venue">
+              <Field label={t('quotes.composer.venue')} htmlFor="venue">
                 <Input
                   id="venue"
                   value={venueName}
                   onChange={(e) => setVenueName(e.target.value)}
-                  placeholder="Sree Lakshmi Mahal"
+                  placeholder={t('quotes.composer.venuePlaceholder')}
                 />
               </Field>
             </div>
@@ -222,7 +227,7 @@ export function QuoteComposer({
 
         <Card>
           <CardHeader>
-            <CardTitle>Add from your services</CardTitle>
+            <CardTitle>{t('quotes.composer.addFromServices')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -249,7 +254,7 @@ export function QuoteComposer({
 
             {serviceItems.length === 0 ? (
               <p className="rounded-control bg-mint-subtle px-3 py-2 text-sm text-forest">
-                Nothing in this service&apos;s catalogue yet. Add an item under Catalogue first.
+                {t('quotes.composer.nothingCatalogue')}
               </p>
             ) : (
               <div className="grid gap-2 sm:grid-cols-2">
@@ -279,14 +284,12 @@ export function QuoteComposer({
 
         <Card>
           <CardHeader>
-            <CardTitle>Lines</CardTitle>
+            <CardTitle>{t('quotes.composer.lines')}</CardTitle>
             <Badge tone="neutral">{lines.length}</Badge>
           </CardHeader>
           <CardContent className="space-y-3">
             {lines.length === 0 ? (
-              <p className="text-sm text-ink-muted">
-                No lines yet. Pick an item above; each one keeps its own unit and tax rate.
-              </p>
+              <p className="text-sm text-ink-muted">{t('quotes.composer.noLines')}</p>
             ) : (
               lines.map((line) => {
                 const basis =
@@ -312,7 +315,7 @@ export function QuoteComposer({
                         type="button"
                         onClick={() => removeLine(line.key)}
                         className="rounded-control p-1.5 text-ink-muted hover:bg-terracotta-soft hover:text-terracotta"
-                        aria-label={`Remove ${line.label}`}
+                        aria-label={t('quotes.composer.removeLine', { label: line.label })}
                       >
                         <Trash2 className="h-4 w-4" aria-hidden />
                       </button>
@@ -320,7 +323,7 @@ export function QuoteComposer({
 
                     <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
                       <label className="text-xs text-ink-muted">
-                        Rate (₹)
+                        {t('quotes.composer.rate')}
                         <Input
                           className="mt-1 h-9"
                           inputMode="decimal"
@@ -332,7 +335,7 @@ export function QuoteComposer({
                         />
                       </label>
                       <label className="text-xs text-ink-muted">
-                        {line.unitClass === 'PER_GUEST' ? 'Guests' : 'Qty'}
+                        {line.unitClass === 'PER_GUEST' ? t('quotes.composer.guestsField') : t('quotes.composer.qty')}
                         <Input
                           className="mt-1 h-9"
                           inputMode="numeric"
@@ -344,7 +347,7 @@ export function QuoteComposer({
                         />
                       </label>
                       <label className="text-xs text-ink-muted">
-                        Tax %
+                        {t('quotes.composer.taxPercent')}
                         <Input
                           className="mt-1 h-9"
                           inputMode="decimal"
@@ -357,7 +360,7 @@ export function QuoteComposer({
                         />
                       </label>
                       <div className="text-xs text-ink-muted">
-                        Amount
+                        {t('quotes.composer.amount')}
                         <p className="tabular mt-2 text-sm font-medium text-ink">
                           {formatINR(line.unitRatePaise * basis)}
                         </p>
@@ -374,30 +377,30 @@ export function QuoteComposer({
       <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
         <Card>
           <CardHeader>
-            <CardTitle>Preview</CardTitle>
-            <Badge tone="outline">Server re-checks</Badge>
+            <CardTitle>{t('quotes.composer.preview')}</CardTitle>
+            <Badge tone="outline">{t('quotes.composer.serverRechecks')}</Badge>
           </CardHeader>
           <CardContent className="space-y-4">
             <dl className="space-y-1.5 text-sm">
               <div className="flex justify-between text-ink-muted">
-                <dt>Subtotal</dt>
+                <dt>{t('quotes.composer.subtotal')}</dt>
                 <dd className="tabular">{formatINR(computed.subtotalPaise)}</dd>
               </div>
               <div className="flex justify-between text-ink-muted">
-                <dt>Tax</dt>
+                <dt>{t('quotes.composer.tax')}</dt>
                 <dd className="tabular">{formatINR(computed.taxPaise)}</dd>
               </div>
               <div className="flex justify-between text-ink-muted">
-                <dt>Round-off</dt>
+                <dt>{t('quotes.composer.roundOff')}</dt>
                 <dd className="tabular">{formatINR(computed.roundOffPaise)}</dd>
               </div>
               <div className="flex justify-between border-t border-hairline pt-2 text-base font-semibold text-forest">
-                <dt>Total</dt>
+                <dt>{t('quotes.composer.total')}</dt>
                 <dd className="tabular">{formatINR(computed.totalPaise)}</dd>
               </div>
             </dl>
 
-            <Field label="Discount %" htmlFor="discount">
+            <Field label={t('quotes.composer.discountPercent')} htmlFor="discount">
               <Input
                 id="discount"
                 inputMode="decimal"
@@ -409,18 +412,32 @@ export function QuoteComposer({
             </Field>
             {computed.discountClamped ? (
               <p className="text-xs text-warning">
-                Discount was larger than the subtotal and was capped. Nothing is hidden from you.
+                {t('quotes.composer.discountCapped')}
               </p>
             ) : null}
 
             <div className="rounded-control bg-mint-subtle px-3 py-2">
-              <p className="text-xs text-ink-muted">Margin at the current cost</p>
+              <p className="text-xs text-ink-muted">{t('quotes.composer.marginTitle')}</p>
               <p className="tabular text-lg font-semibold text-forest">
                 {formatPercentBp(computed.marginBp)}
               </p>
               <p className="tabular text-xs text-ink-muted">
-                {formatINR(computed.marginPaise)} contribution
+                {t('quotes.composer.marginContribution', {
+                  total: formatINR(computed.totalPaise),
+                })}
               </p>
+              <p
+                className={
+                  computed.marginBp >= 2500
+                    ? 'mt-3 rounded-control bg-[#e6f4ea] px-3 py-2 text-xs text-positive'
+                    : 'mt-3 rounded-control bg-[#fdf0e2] px-3 py-2 text-xs text-warning'
+                }
+              >
+                {computed.marginBp >= 2500
+                  ? t('quotes.composer.marginFloor')
+                  : t('quotes.composer.marginWarning')}
+              </p>
+              <p className="mt-3 text-[11px] text-ink-muted">{t('quotes.composer.neverShown')}</p>
             </div>
 
             <div className="space-y-1">
@@ -442,7 +459,7 @@ export function QuoteComposer({
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-60"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-              {pending ? 'Saving…' : 'Save and share'}
+              {pending ? t('common.saving') : t('quotes.composer.saveAndShare')}
             </button>
             <p className="text-[11px] leading-relaxed text-ink-muted">
               Saved as version 1 and frozen. Editing later creates version 2; the sent copy never
