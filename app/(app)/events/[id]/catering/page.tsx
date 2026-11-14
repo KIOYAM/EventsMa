@@ -9,33 +9,39 @@ import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getEventCatering } from '@/lib/db/catering-events'
-import { formatINR } from '@/lib/domain/money'
 import { formatMilliQuantity } from '@/lib/domain/catering'
+import { createTranslator } from '@/lib/i18n'
+import { formatPaiseLocalised } from '@/lib/i18n/format'
+import { getLocale, translatorFor } from '@/lib/i18n/server'
 import { addEventSession } from './actions'
 import { SessionCard } from './session-card'
 
-export const metadata = { title: 'Event catering' }
-
-const ERROR_COPY: Record<string, string> = {
-  rule: 'That dish would break the selection rule for its category. Remove one first.',
-  session: 'That session no longer exists.',
-  template: 'That session template no longer exists.',
-  item: 'That dish no longer exists.',
-  name: 'Choose a session or type a name.',
-  time: 'Times must be written as 07:00 or 19:30.',
-  status: 'That status is not allowed.',
-  diet: 'Choose a dietary label.',
-  event: 'That event no longer exists.',
-  permission: 'Only an owner or manager can plan catering.',
-  demo: 'Demo mode: connect a database before planning catering.',
+export async function generateMetadata() {
+  const locale = await getLocale()
+  return { title: translatorFor(locale)('catering.event.title') }
 }
 
-const SAVED_COPY: Record<string, string> = {
-  session: 'Session saved.',
-  item: 'Menu updated.',
-  quantity: 'Quantity saved.',
-  diet: 'Dietary counts saved.',
-  removed: 'Session removed.',
+/** `?error=` and `?saved=` values are machine codes; the sentences live here. */
+const ERROR_KEYS: Record<string, string> = {
+  rule: 'catering.errors.eventRule',
+  session: 'catering.errors.session',
+  template: 'catering.errors.template',
+  item: 'catering.errors.item',
+  name: 'catering.errors.sessionName',
+  time: 'catering.errors.time',
+  status: 'catering.errors.status',
+  diet: 'catering.errors.diet',
+  event: 'catering.errors.event',
+  permission: 'catering.errors.eventPermission',
+  demo: 'catering.errors.eventDemo',
+}
+
+const SAVED_KEYS: Record<string, string> = {
+  session: 'catering.saved.session',
+  item: 'catering.saved.item',
+  quantity: 'catering.saved.quantity',
+  diet: 'catering.saved.dietCount',
+  removed: 'catering.saved.removed',
 }
 
 export default async function EventCateringPage({
@@ -46,6 +52,8 @@ export default async function EventCateringPage({
   searchParams: Promise<{ error?: string; saved?: string }>
 }) {
   const ctx = await requireWorkspace()
+  const locale = await getLocale()
+  const t = createTranslator(locale)
   const { id } = await params
   const query = await searchParams
   const view = await withWorkspace(ctx, () => getEventCatering(ctx.orgId, id, ctx.demo))
@@ -53,8 +61,21 @@ export default async function EventCateringPage({
   if (!view) notFound()
 
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
-  const banner = query.error ? ERROR_COPY[query.error] ?? 'That change was not saved.' : null
-  const saved = query.saved ? SAVED_COPY[query.saved] ?? 'Saved.' : null
+  const banner = query.error ? t(ERROR_KEYS[query.error] ?? 'catering.errorFallback') : null
+  const saved = query.saved ? t(SAVED_KEYS[query.saved] ?? 'catering.savedFallback') : null
+
+  const [templatesBefore, templatesAfter = ''] = t('catering.event.noTemplates').split('{link}')
+  const [emptyBefore, emptyAfter = ''] = t('catering.event.productionEmpty').split('{link}')
+
+  const stats = [
+    { label: t('catering.event.stats.sessions'), value: String(view.totals.sessionCount) },
+    { label: t('catering.event.stats.guests'), value: String(view.totals.guests) },
+    {
+      label: t('catering.event.stats.subtotal'),
+      value: formatPaiseLocalised(view.totals.subtotalPaise, locale),
+    },
+    { label: t('catering.event.stats.lines'), value: String(view.production.length) },
+  ]
 
   return (
     <div className="space-y-6">
@@ -62,13 +83,13 @@ export default async function EventCateringPage({
         href={`/events/${id}`}
         className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-forest"
       >
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to the event
+        <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> {t('catering.event.back')}
       </Link>
 
       <PageHeader
-        eyebrow="Catering plan"
+        eyebrow={t('catering.event.eyebrow')}
         title={view.event.title}
-        description="Each session carries its own guest count and its own menu. A wedding can serve 500 at lunch and 300 at dinner without the bill counting 500 twice."
+        description={t('catering.event.intro')}
       />
 
       {banner ? (
@@ -83,18 +104,13 @@ export default async function EventCateringPage({
       ) : null}
 
       <section className="grid gap-3 sm:grid-cols-4">
-        {[
-          ['Sessions', String(view.totals.sessionCount)],
-          ['Guests across sessions', String(view.totals.guests)],
-          ['Menu subtotal', formatINR(view.totals.subtotalPaise)],
-          ['Production lines', String(view.production.length)],
-        ].map(([label, value]) => (
-          <Card key={label}>
+        {stats.map((stat) => (
+          <Card key={stat.label}>
             <CardContent className="py-4">
               <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-                {label}
+                {stat.label}
               </p>
-              <p className="mt-1 font-display text-xl text-ink">{value}</p>
+              <p className="mt-1 font-display text-xl text-ink">{stat.value}</p>
             </CardContent>
           </Card>
         ))}
@@ -103,26 +119,24 @@ export default async function EventCateringPage({
       {canEdit ? (
         <Card>
           <CardHeader>
-            <CardTitle>Add a session</CardTitle>
-            <CardDescription>
-              Copy one of your configured sessions, or add a one-off with no template rules.
-            </CardDescription>
+            <CardTitle>{t('catering.event.addTitle')}</CardTitle>
+            <CardDescription>{t('catering.event.addIntro')}</CardDescription>
           </CardHeader>
           <CardContent>
             {view.templates.length === 0 ? (
               <p className="mb-3 text-xs text-ink-muted">
-                No sessions configured yet. Add them on the{' '}
+                {templatesBefore}
                 <Link href="/catering" className="text-forest underline-offset-2 hover:underline">
-                  Catering page
+                  {t('catering.event.cateringPageLink')}
                 </Link>
-                , or type a name below.
+                {templatesAfter}
               </p>
             ) : null}
             <form action={addEventSession} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <input type="hidden" name="eventId" value={id} />
-              <Field label="From a session">
+              <Field label={t('catering.event.fromTemplate')}>
                 <Select name="templateId" defaultValue="">
-                  <option value="">— none —</option>
+                  <option value="">{t('catering.event.noneOption')}</option>
                   {view.templates.map((template) => (
                     <option key={template.id} value={template.id}>
                       {template.name}
@@ -130,13 +144,17 @@ export default async function EventCateringPage({
                   ))}
                 </Select>
               </Field>
-              <Field label="Or a name">
-                <Input name="name" maxLength={80} placeholder="Reception dinner" />
+              <Field label={t('catering.event.orName')}>
+                <Input
+                  name="name"
+                  maxLength={80}
+                  placeholder={t('catering.event.namePlaceholder')}
+                />
               </Field>
-              <Field label="Date">
+              <Field label={t('catering.event.date')}>
                 <Input type="date" name="sessionDate" defaultValue={view.event.eventDate ?? ''} />
               </Field>
-              <Field label="Guests">
+              <Field label={t('catering.event.guests')}>
                 <Input
                   name="guestCount"
                   inputMode="numeric"
@@ -145,7 +163,7 @@ export default async function EventCateringPage({
               </Field>
               <div className="flex items-end">
                 <Button type="submit" variant="primary">
-                  Add session
+                  {t('catering.event.add')}
                 </Button>
               </div>
             </form>
@@ -155,43 +173,53 @@ export default async function EventCateringPage({
 
       {view.sessions.length === 0 ? (
         <EmptyState
-          title="No catering sessions yet"
-          description="Add breakfast, lunch or dinner above; each one is priced on its own guest count."
+          title={t('catering.event.emptyTitle')}
+          description={t('catering.event.emptyBody')}
         />
       ) : (
         view.sessions.map((session) => (
-          <SessionCard key={session.id} eventId={id} session={session} view={view} canEdit={canEdit} />
+          <SessionCard
+            key={session.id}
+            eventId={id}
+            session={session}
+            view={view}
+            canEdit={canEdit}
+            locale={locale}
+          />
         ))
       )}
 
       <Card>
         <CardHeader className="flex-row items-start justify-between gap-3">
           <div>
-            <CardTitle>Kitchen production sheet</CardTitle>
-            <CardDescription>
-              Recipes multiplied by each session&apos;s own guest count, with wastage shown separately.
-            </CardDescription>
+            <CardTitle>{t('catering.event.productionTitle')}</CardTitle>
+            <CardDescription>{t('catering.event.productionIntro')}</CardDescription>
           </div>
-          <Badge tone="mint">{view.production.length} lines</Badge>
+          <Badge tone="mint">
+            {t('catering.event.lines', { count: view.production.length })}
+          </Badge>
         </CardHeader>
         <CardContent>
           {view.production.length === 0 ? (
             <p className="text-sm text-ink-muted">
-              No recipes yet. Enter ingredient quantities against a dish on the{' '}
-              <Link href="/catering/recipes" className="text-forest underline-offset-2 hover:underline">
-                recipes page
-              </Link>{' '}
-              and this sheet fills itself.
+              {emptyBefore}
+              <Link
+                href="/catering/recipes"
+                className="text-forest underline-offset-2 hover:underline"
+              >
+                {t('catering.event.recipesPageLink')}
+              </Link>
+              {emptyAfter}
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[520px] text-sm">
                 <thead>
                   <tr className="border-b border-hairline text-left text-[11px] uppercase tracking-[0.12em] text-ink-muted">
-                    <th className="py-2 pr-3 font-medium">Ingredient</th>
-                    <th className="py-2 pr-3 font-medium">Required</th>
-                    <th className="py-2 pr-3 font-medium">Wastage</th>
-                    <th className="py-2 font-medium">Buy</th>
+                    <th className="py-2 pr-3 font-medium">{t('catering.event.ingredient')}</th>
+                    <th className="py-2 pr-3 font-medium">{t('catering.event.required')}</th>
+                    <th className="py-2 pr-3 font-medium">{t('catering.event.wastage')}</th>
+                    <th className="py-2 font-medium">{t('catering.event.buy')}</th>
                   </tr>
                 </thead>
                 <tbody>

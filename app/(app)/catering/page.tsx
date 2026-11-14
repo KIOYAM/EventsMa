@@ -8,30 +8,36 @@ import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getCateringConfig } from '@/lib/db/catering'
+import { createTranslator } from '@/lib/i18n'
+import { getLocale, translatorFor } from '@/lib/i18n/server'
 import { createDietaryProfile, createMenuCategory, setMenuCategoryActive } from './actions'
 import { adoptCatering, seedCateringConfigAction } from './seed'
 import { RulesCard } from './rules-card'
 import { SessionsCard } from './sessions-card'
 
-export const metadata = { title: 'Catering' }
-
-const ERROR_COPY: Record<string, string> = {
-  name: 'A name is required.',
-  duplicate: 'That name is already used in this business.',
-  time: 'Times must be written as 07:00 or 19:30.',
-  guests: 'The maximum guest count cannot be below the minimum.',
-  rule: 'A rule needs a minimum of 0 or more, and a maximum that is not below the minimum.',
-  permission: 'Only an owner or manager can change catering configuration.',
-  demo: 'Demo mode: connect a database before changing configuration.',
+export async function generateMetadata() {
+  const locale = await getLocale()
+  return { title: translatorFor(locale)('catering.title') }
 }
 
-const SAVED_COPY: Record<string, string> = {
-  adopted: 'Catering is on. The starter sessions, categories and rules are ready to edit.',
-  seeded: 'Starter configuration added.',
-  session: 'Session saved.',
-  category: 'Category saved.',
-  rule: 'Selection rule saved.',
-  diet: 'Dietary label saved.',
+/** `?error=` codes are machine values; the sentence comes from the catalogue. */
+const ERROR_KEYS: Record<string, string> = {
+  name: 'catering.errors.name',
+  duplicate: 'catering.errors.duplicate',
+  time: 'catering.errors.time',
+  guests: 'catering.errors.guests',
+  rule: 'catering.errors.rule',
+  permission: 'catering.errors.permission',
+  demo: 'catering.errors.demo',
+}
+
+const SAVED_KEYS: Record<string, string> = {
+  adopted: 'catering.saved.adopted',
+  seeded: 'catering.saved.seeded',
+  session: 'catering.saved.session',
+  category: 'catering.saved.category',
+  rule: 'catering.saved.rule',
+  diet: 'catering.saved.diet',
 }
 
 export default async function CateringPage({
@@ -40,6 +46,8 @@ export default async function CateringPage({
   searchParams: Promise<{ session?: string; saved?: string; error?: string }>
 }) {
   const ctx = await requireWorkspace()
+  const locale = await getLocale()
+  const t = createTranslator(locale)
   const params = await searchParams
   const config = await withWorkspace(ctx, () => getCateringConfig(ctx.orgId, ctx.demo))
 
@@ -49,21 +57,36 @@ export default async function CateringPage({
     activeSessions.find((session) => session.id === params.session) ?? activeSessions[0] ?? null
   const activeCategories = config.categories.filter((category) => category.active)
 
-  const banner = params.error ? ERROR_COPY[params.error] ?? 'That change was not saved.' : null
-  const saved = params.saved ? SAVED_COPY[params.saved] ?? 'Saved.' : null
+  const banner = params.error
+    ? t(ERROR_KEYS[params.error] ?? 'catering.errorFallback')
+    : null
+  const saved = params.saved ? t(SAVED_KEYS[params.saved] ?? 'catering.savedFallback') : null
+
+  const stats = [
+    t('catering.stats.sessions'),
+    t('catering.stats.categories'),
+    t('catering.stats.rules'),
+    t('catering.stats.diets'),
+  ]
+  const values = [
+    config.sessions.length,
+    config.categories.length,
+    config.rules.length,
+    config.diets.length,
+  ]
 
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Catering engine"
-        title="Your sessions, your categories, your rules"
-        description="Nothing on this page is a fixed list. Breakfast, lunch and dinner are starter rows you can rename, reorder or switch off; the selection limits are yours to set."
+        eyebrow={t('catering.eyebrow')}
+        title={t('catering.heading')}
+        description={t('catering.intro')}
         actions={
           <Link
             href="/catering/recipes"
             className="inline-flex h-9 items-center rounded-control border border-hairline bg-paper px-3 text-sm font-medium text-ink hover:bg-mint-subtle"
           >
-            Dishes, categories and recipes
+            {t('catering.recipesLink')}
           </Link>
         }
       />
@@ -83,24 +106,18 @@ export default async function CateringPage({
       {!config.enabled ? (
         <Card>
           <CardHeader>
-            <CardTitle>Turn on catering</CardTitle>
-            <CardDescription>
-              This workspace does not offer catering yet. Turning it on unlocks the menu sections in
-              the sidebar and seeds four sessions, seven categories and the dietary labels for you to
-              edit — not a fixed list you are stuck with.
-            </CardDescription>
+            <CardTitle>{t('catering.enable.title')}</CardTitle>
+            <CardDescription>{t('catering.enable.body')}</CardDescription>
           </CardHeader>
           <CardContent>
             {canEdit ? (
               <form action={adoptCatering}>
                 <Button type="submit" variant="primary">
-                  <Sparkles className="mr-1.5 h-4 w-4" aria-hidden /> Turn on catering
+                  <Sparkles className="mr-1.5 h-4 w-4" aria-hidden /> {t('catering.enable.action')}
                 </Button>
               </form>
             ) : (
-              <p className="text-sm text-ink-muted">
-                An owner or manager can turn this on. Demo mode cannot write configuration.
-              </p>
+              <p className="text-sm text-ink-muted">{t('catering.enable.locked')}</p>
             )}
           </CardContent>
         </Card>
@@ -109,16 +126,13 @@ export default async function CateringPage({
       {config.enabled && config.sessions.length === 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Start from the starter set</CardTitle>
-            <CardDescription>
-              Catering is on but there is no configuration yet. Add four sessions, seven categories
-              and the default selection limits, then rename anything that does not fit.
-            </CardDescription>
+            <CardTitle>{t('catering.seed.title')}</CardTitle>
+            <CardDescription>{t('catering.seed.body')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={seedCateringConfigAction}>
               <Button type="submit" variant="primary" disabled={!canEdit}>
-                Add starter configuration
+                {t('catering.seed.action')}
               </Button>
             </form>
           </CardContent>
@@ -128,36 +142,29 @@ export default async function CateringPage({
       {config.enabled ? (
         <>
           <section className="grid gap-3 sm:grid-cols-4">
-            {[
-              ['Sessions', config.sessions.length],
-              ['Categories', config.categories.length],
-              ['Selection rules', config.rules.length],
-              ['Dietary labels', config.diets.length],
-            ].map(([label, value]) => (
-              <Card key={String(label)}>
+            {stats.map((label, index) => (
+              <Card key={label}>
                 <CardContent className="py-4">
                   <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
                     {label}
                   </p>
-                  <p className="mt-1 font-display text-2xl text-ink">{value}</p>
+                  <p className="mt-1 font-display text-2xl text-ink">{values[index]}</p>
                 </CardContent>
               </Card>
             ))}
           </section>
 
-          <SessionsCard sessions={config.sessions} canEdit={canEdit} />
+          <SessionsCard sessions={config.sessions} canEdit={canEdit} locale={locale} />
 
           <Card>
             <CardHeader>
-              <CardTitle>Food categories</CardTitle>
-              <CardDescription>
-                The headings a guest chooses from. Two businesses can have entirely different lists.
-              </CardDescription>
+              <CardTitle>{t('catering.categories.title')}</CardTitle>
+              <CardDescription>{t('catering.categories.intro')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 {config.categories.length === 0 ? (
-                  <p className="text-sm text-ink-muted">No categories yet.</p>
+                  <p className="text-sm text-ink-muted">{t('catering.categories.empty')}</p>
                 ) : (
                   config.categories.map((category) => (
                     <span
@@ -165,7 +172,9 @@ export default async function CateringPage({
                       className="inline-flex items-center gap-2 rounded-full border border-hairline bg-paper px-3 py-1 text-xs text-ink"
                     >
                       {category.name}
-                      {!category.active ? <span className="text-ink-muted">(off)</span> : null}
+                      {!category.active ? (
+                        <span className="text-ink-muted">{t('catering.categories.off')}</span>
+                      ) : null}
                       {canEdit ? (
                         <form action={setMenuCategoryActive}>
                           <input type="hidden" name="id" value={category.id} />
@@ -174,7 +183,9 @@ export default async function CateringPage({
                             type="submit"
                             className="text-ink-muted underline-offset-2 hover:text-forest hover:underline"
                           >
-                            {category.active ? 'hide' : 'show'}
+                            {category.active
+                              ? t('catering.categories.hide')
+                              : t('catering.categories.show')}
                           </button>
                         </form>
                       ) : null}
@@ -185,19 +196,24 @@ export default async function CateringPage({
 
               {canEdit ? (
                 <form action={createMenuCategory} className="grid gap-3 sm:grid-cols-[2fr_3fr_auto]">
-                  <Field label="Category name">
-                    <Input name="name" required maxLength={80} placeholder="Live counters" />
+                  <Field label={t('catering.categories.name')}>
+                    <Input
+                      name="name"
+                      required
+                      maxLength={80}
+                      placeholder={t('catering.categories.namePlaceholder')}
+                    />
                   </Field>
-                  <Field label="Description (optional)">
+                  <Field label={t('catering.categories.description')}>
                     <Input
                       name="description"
                       maxLength={240}
-                      placeholder="Made to order at the venue"
+                      placeholder={t('catering.categories.descriptionPlaceholder')}
                     />
                   </Field>
                   <div className="flex items-end">
                     <Button type="submit" variant="secondary">
-                      Add category
+                      {t('catering.categories.add')}
                     </Button>
                   </div>
                 </form>
@@ -211,15 +227,13 @@ export default async function CateringPage({
             rules={config.rules}
             selectedSession={selectedSession}
             canEdit={canEdit}
+            locale={locale}
           />
 
           <Card>
             <CardHeader>
-              <CardTitle>Dietary and allergen labels</CardTitle>
-              <CardDescription>
-                Preferences your guest counts are recorded against. Allergens are kept separate from
-                preferences because one is a safety fact.
-              </CardDescription>
+              <CardTitle>{t('catering.diets.title')}</CardTitle>
+              <CardDescription>{t('catering.diets.intro')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
@@ -229,30 +243,31 @@ export default async function CateringPage({
                   </Badge>
                 ))}
                 {config.diets.length === 0 ? (
-                  <p className="text-sm text-ink-muted">No labels yet.</p>
+                  <p className="text-sm text-ink-muted">{t('catering.diets.empty')}</p>
                 ) : null}
               </div>
               {canEdit ? (
                 <form action={createDietaryProfile} className="flex flex-wrap items-end gap-3">
-                  <Field label="New label">
-                    <Input name="label" required maxLength={60} placeholder="No dairy" />
+                  <Field label={t('catering.diets.newLabel')}>
+                    <Input
+                      name="label"
+                      required
+                      maxLength={60}
+                      placeholder={t('catering.diets.newLabelPlaceholder')}
+                    />
                   </Field>
                   <label className="flex items-center gap-2 pb-2 text-xs text-ink-muted">
-                    <input type="checkbox" name="isAllergen" /> This is an allergen
+                    <input type="checkbox" name="isAllergen" /> {t('catering.diets.allergen')}
                   </label>
                   <Button type="submit" variant="secondary">
-                    Add label
+                    {t('catering.diets.add')}
                   </Button>
                 </form>
               ) : null}
             </CardContent>
           </Card>
 
-          <p className="text-xs text-ink-muted">
-            Next step for this engine: an event can be given several of these sessions, each with its
-            own guest count, and dishes are chosen inside the limits above. Recipes entered against a
-            dish will then produce the kitchen&apos;s ingredient demand.
-          </p>
+          <p className="text-xs text-ink-muted">{t('catering.nextStep')}</p>
         </>
       ) : null}
     </div>

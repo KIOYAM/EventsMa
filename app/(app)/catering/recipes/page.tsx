@@ -9,7 +9,13 @@ import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getRecipesBoard } from '@/lib/db/catering-recipes'
 import { formatMilliQuantity, INGREDIENT_UNITS, type IngredientUnit } from '@/lib/domain/catering'
-import { formatINR } from '@/lib/domain/money'
+import { createTranslator } from '@/lib/i18n'
+import { formatPaiseLocalised } from '@/lib/i18n/format'
+import { getLocale, translatorFor } from '@/lib/i18n/server'
+import {
+  ingredientUnitLabel,
+  unitClassLabelLocalised,
+} from '@/lib/i18n/ops-copy'
 import {
   addRecipeIngredient,
   assignDishCategory,
@@ -17,13 +23,17 @@ import {
   unassignDishCategory,
 } from '../recipes-actions'
 
-export const metadata = { title: 'Recipes' }
+export async function generateMetadata() {
+  const locale = await getLocale()
+  return { title: translatorFor(locale)('catering.recipes.title') }
+}
 
-const ERROR_COPY: Record<string, string> = {
-  recipe: 'A recipe row needs a name and a quantity above zero.',
-  assign: 'Choose a dish and a category.',
-  permission: 'Only an owner or manager can edit recipes.',
-  demo: 'Demo mode: connect a database first.',
+/** `?error=` codes are machine values; the sentence comes from the catalogue. */
+const ERROR_KEYS: Record<string, string> = {
+  recipe: 'catering.errors.recipe',
+  assign: 'catering.errors.assign',
+  permission: 'catering.errors.recipePermission',
+  demo: 'catering.errors.recipeDemo',
 }
 
 export default async function RecipesPage({
@@ -32,12 +42,14 @@ export default async function RecipesPage({
   searchParams: Promise<{ dish?: string; saved?: string; error?: string }>
 }) {
   const ctx = await requireWorkspace()
+  const locale = await getLocale()
+  const t = createTranslator(locale)
   const query = await searchParams
   const board = await withWorkspace(ctx, () => getRecipesBoard(ctx.orgId, ctx.demo))
 
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
   const dish = board.dishes.find((row) => row.id === query.dish) ?? board.dishes[0] ?? null
-  const banner = query.error ? ERROR_COPY[query.error] ?? 'That change was not saved.' : null
+  const banner = query.error ? t(ERROR_KEYS[query.error] ?? 'catering.errorFallback') : null
 
   return (
     <div className="space-y-6">
@@ -45,13 +57,13 @@ export default async function RecipesPage({
         href="/catering"
         className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-forest"
       >
-        <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to catering
+        <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> {t('catering.recipes.back')}
       </Link>
 
       <PageHeader
-        eyebrow="Recipes"
-        title="What one portion consumes"
-        description="A recipe row turns a dish into an ingredient demand: quantity per serving, the unit, and the trim loss you allow. The event sheet multiplies it by each session's own guest count."
+        eyebrow={t('catering.recipes.eyebrow')}
+        title={t('catering.recipes.heading')}
+        description={t('catering.recipes.intro')}
       />
 
       {banner ? (
@@ -61,22 +73,22 @@ export default async function RecipesPage({
       ) : null}
       {query.saved ? (
         <div className="rounded-card border border-forest/30 bg-mint-subtle px-4 py-3 text-sm text-forest">
-          Saved.
+          {t('catering.recipes.saved')}
         </div>
       ) : null}
 
       {board.dishes.length === 0 ? (
         <EmptyState
-          title="No dishes yet"
-          description="Add dishes on the Menu page first; recipes hang off them."
+          title={t('catering.recipes.emptyTitle')}
+          description={t('catering.recipes.emptyBody')}
         />
       ) : (
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Pick a dish</CardTitle>
+              <CardTitle>{t('catering.recipes.pickDish')}</CardTitle>
               <CardDescription>
-                {board.dishes.length} dishes in the catalogue. Use the menu below to switch.
+                {t('catering.recipes.dishCount', { count: board.dishes.length })}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -105,21 +117,26 @@ export default async function RecipesPage({
                   <div>
                     <CardTitle>{dish.name}</CardTitle>
                     <CardDescription>
-                      {formatINR(dish.pricePaise)} · {dish.unitClass.replace('_', ' ').toLowerCase()}
+                      {t('catering.recipes.priceLine', {
+                        price: formatPaiseLocalised(dish.pricePaise, locale),
+                        unit: unitClassLabelLocalised(t, dish.unitClass),
+                      })}
                     </CardDescription>
                   </div>
-                  <Badge tone="mint">{dish.ingredients.length} ingredients</Badge>
+                  <Badge tone="mint">
+                    {t('catering.recipes.ingredientsCount', { count: dish.ingredients.length })}
+                  </Badge>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {dish.ingredients.length === 0 ? (
-                    <p className="text-sm text-ink-muted">No recipe rows yet.</p>
+                    <p className="text-sm text-ink-muted">{t('catering.recipes.noRows')}</p>
                   ) : (
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-hairline text-left text-[11px] uppercase tracking-[0.12em] text-ink-muted">
-                          <th className="py-2 pr-3 font-medium">Ingredient</th>
-                          <th className="py-2 pr-3 font-medium">Per serving</th>
-                          <th className="py-2 pr-3 font-medium">Wastage</th>
+                          <th className="py-2 pr-3 font-medium">{t('catering.recipes.ingredient')}</th>
+                          <th className="py-2 pr-3 font-medium">{t('catering.recipes.perServing')}</th>
+                          <th className="py-2 pr-3 font-medium">{t('catering.recipes.wastage')}</th>
                           <th className="py-2 font-medium" />
                         </tr>
                       </thead>
@@ -139,7 +156,7 @@ export default async function RecipesPage({
                                     type="submit"
                                     variant="ghost"
                                     size="sm"
-                                    aria-label={`Remove ${row.name}`}
+                                    aria-label={t('catering.recipes.removeIngredient', { name: row.name })}
                                   >
                                     <Trash2 className="h-3.5 w-3.5" aria-hidden />
                                   </Button>
@@ -158,27 +175,37 @@ export default async function RecipesPage({
                       className="grid gap-3 rounded-card border border-hairline bg-canvas p-3 sm:grid-cols-2 lg:grid-cols-5"
                     >
                       <input type="hidden" name="itemId" value={dish.id} />
-                      <Field label="Ingredient" className="lg:col-span-2">
-                        <Input name="name" required maxLength={120} placeholder="Sona masoori rice" />
+                      <Field label={t('catering.recipes.ingredient')} className="lg:col-span-2">
+                        <Input
+                          name="name"
+                          required
+                          maxLength={120}
+                          placeholder={t('catering.recipes.ingredientPlaceholder')}
+                        />
                       </Field>
-                      <Field label="Per serving">
-                        <Input name="perServing" inputMode="decimal" required placeholder="180" />
+                      <Field label={t('catering.recipes.perServing')}>
+                        <Input
+                          name="perServing"
+                          inputMode="decimal"
+                          required
+                          placeholder={t('catering.recipes.perServingPlaceholder')}
+                        />
                       </Field>
-                      <Field label="Unit">
+                      <Field label={t('catering.recipes.unit')}>
                         <Select name="unit" defaultValue="g">
                           {INGREDIENT_UNITS.map((unit) => (
                             <option key={unit.key} value={unit.key}>
-                              {unit.label}
+                              {ingredientUnitLabel(t, unit.key)}
                             </option>
                           ))}
                         </Select>
                       </Field>
-                      <Field label="Wastage %">
+                      <Field label={t('catering.recipes.wastagePct')}>
                         <Input name="wastagePct" inputMode="decimal" defaultValue="5" />
                       </Field>
                       <div className="sm:col-span-2 lg:col-span-5">
                         <Button type="submit" variant="secondary">
-                          Add ingredient
+                          {t('catering.recipes.addIngredient')}
                         </Button>
                       </div>
                     </form>
@@ -188,11 +215,8 @@ export default async function RecipesPage({
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Categories</CardTitle>
-                  <CardDescription>
-                    A dish can sit in more than one category. Only assigned dishes appear when
-                    choosing a menu for an event.
-                  </CardDescription>
+                  <CardTitle>{t('catering.recipes.categories')}</CardTitle>
+                  <CardDescription>{t('catering.recipes.categoriesIntro')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex flex-wrap gap-2">
@@ -216,7 +240,9 @@ export default async function RecipesPage({
                                 type="submit"
                                 className="text-ink-muted underline-offset-2 hover:text-forest hover:underline"
                               >
-                                {assigned ? 'remove' : 'add'}
+                                {assigned
+                                  ? t('catering.recipes.removeFromCategory')
+                                  : t('catering.recipes.addToCategory')}
                               </button>
                             </form>
                           ) : null}

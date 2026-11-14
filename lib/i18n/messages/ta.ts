@@ -9,6 +9,7 @@
  * The customer link, the signed-in shell, the dashboard and events are the
  * surfaces wired to it so far.
  */
+import { catering } from './ta/catering'
 import { common } from './ta/common'
 import { dashboard } from './ta/dashboard'
 import { events } from './ta/events'
@@ -18,6 +19,7 @@ import { share } from './ta/share'
 import type { MessagesOverride } from './en'
 
 export const ta: MessagesOverride = {
+  catering,
   common,
   dashboard,
   events,

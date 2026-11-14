@@ -3,7 +3,16 @@ import { createTranslator, translationCoverage } from './index'
 import { formatDateLocalised, relativeDaysLocalised } from './format'
 import { relativeDays } from '@/lib/utils'
 import { EVENT_STATUSES, TASK_STATUSES, EVENT_TYPE_MASTERS } from '@/lib/domain/ops'
-import { eventStatusKey, occasionKey, taskStatusKey } from './ops-copy'
+import { describeRule, validateSelection } from '@/lib/domain/catering'
+import {
+  eventStatusKey,
+  occasionKey,
+  pricingModeLabel,
+  selectionSummaryLabel,
+  taskStatusKey,
+  unitClassLabelLocalised,
+} from './ops-copy'
+import { verdictMessageLocalised } from './rule-copy'
 import { en } from './messages/en'
 import { ta } from './messages/ta'
 
@@ -29,7 +38,7 @@ function varsFor(message: string): Record<string, string> {
 }
 
 const missing = translationCoverage('ta').missing
-const modules = ['events', 'dashboard', 'nav'] as const
+const modules = ['catering', 'events', 'dashboard', 'nav'] as const
 
 describe('workspace surfaces are complete in Tamil', () => {
   for (const module of modules) {
@@ -67,6 +76,7 @@ describe('workspace surfaces are complete in Tamil', () => {
 
 describe('placeholders survive translation', () => {
   const keys = [
+    ...flatten(en.catering as unknown as Record<string, unknown>, 'catering'),
     ...flatten(en.events as unknown as Record<string, unknown>, 'events'),
     ...flatten(en.dashboard as unknown as Record<string, unknown>, 'dashboard'),
     ...flatten(en.common as unknown as Record<string, unknown>, 'common'),
@@ -85,6 +95,45 @@ describe('placeholders survive translation', () => {
   it('translates every key with interpolated data', () => {
     const interpolated = keys.filter((key) => placeholders(enT(key)).length > 0)
     expect(interpolated.length).toBeGreaterThan(5)
+  })
+})
+
+describe('derived rule copy keeps English identical', () => {
+  const rules = [
+    { minSelections: 0, maxSelections: null, required: false },
+    { minSelections: 2, maxSelections: null, required: false },
+    { minSelections: 3, maxSelections: 3, required: true },
+    { minSelections: 2, maxSelections: 4, required: true },
+  ]
+
+  it('prints the same summary the domain helper did', () => {
+    for (const rule of rules) {
+      expect(selectionSummaryLabel(enT, rule)).toBe(describeRule(rule))
+    }
+  })
+
+  it('builds verdicts from the reason code, not the English sentence', () => {
+    const cases = [
+      { rule: rules[3]!, count: 5 },
+      { rule: rules[3]!, count: 1 },
+      { rule: { minSelections: 0, maxSelections: null, required: true }, count: 0 },
+    ]
+    for (const { rule, count } of cases) {
+      const verdict = validateSelection(rule, count)
+      expect(verdict.ok).toBe(false)
+      if (verdict.ok) continue
+      expect(verdictMessageLocalised(enT, verdict, rule, count)).toBe(verdict.message)
+      expect(verdictMessageLocalised(taT, verdict, rule, count)).not.toBe(verdict.message)
+    }
+  })
+
+  it('renders stored pricing and unit keys the way the screens used to', () => {
+    expect(pricingModeLabel(enT, 'per_guest')).toBe('per guest')
+    expect(pricingModeLabel(enT, 'per_unit')).toBe('per unit')
+    expect(pricingModeLabel(enT, 'flat')).toBe('flat')
+    expect(pricingModeLabel(enT, 'custom_mode')).toBe('custom mode')
+    expect(unitClassLabelLocalised(enT, 'PER_UNIT')).toBe('per unit')
+    expect(unitClassLabelLocalised(enT, 'FLAT')).toBe('flat')
   })
 })
 
