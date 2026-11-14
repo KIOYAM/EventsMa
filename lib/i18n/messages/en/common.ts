@@ -18,4 +18,17 @@ export const common = {
   saved: 'Saved.',
   confirm: 'Confirm',
   somethingWentWrong: 'Something went wrong. Please try again.',
+
+  // Lists and pagination, shared by every table.
+  previous: 'Previous',
+  next: 'Next',
+  pagination: 'Pagination',
+  pageSummary: 'Page {page} of {pages} · {count} total',
+
+  // Relative days, built from a date rather than stored as copy.
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+  yesterday: 'Yesterday',
+  inDays: 'in {count} days',
+  daysAgo: '{count} days ago',
 } as const

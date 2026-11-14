@@ -69,7 +69,9 @@ describe('coverage', () => {
   it('reports the untranslated keys instead of pretending', () => {
     const ta = translationCoverage('ta')
     expect(ta.percent).toBeGreaterThan(0)
-    expect(ta.percent).toBeLessThan(100)
+    // Count keys, not the rounded percentage: one gap in a complete catalogue
+    // still rounds to 100%, and that is exactly the gap this test must catch.
+    expect(ta.translated).toBeLessThan(ta.total)
     expect(ta.missing).toContain('common.confirm')
   })
 

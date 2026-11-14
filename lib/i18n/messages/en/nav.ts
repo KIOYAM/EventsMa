@@ -19,4 +19,27 @@ export const nav = {
   portfolio: 'Portfolio',
   storefront: 'Storefront',
   settings: 'Settings',
+
+  // Destinations resolved from a vertical descriptor rather than the fixed list.
+  recipes: 'Recipes & ingredients',
+  specialist: 'Specialist services',
+  myWork: 'My work',
+
+  // Sidebar section headings.
+  groupSell: 'Sell',
+  groupCatalogue: 'Catalogue',
+  groupBusiness: 'Business',
+
+  /** Language switch label: the word for "language", not the language name. */
+  language: 'Language',
+
+  /** The signed-in shell: rail, mobile header and business card. */
+  shell: {
+    workspace: 'Workspace',
+    business: 'Business',
+    demoData: 'Demo data',
+    liveWorkspace: 'Live workspace',
+    signOut: 'Sign out',
+    primary: 'Primary',
+  },
 } as const

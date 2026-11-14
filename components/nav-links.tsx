@@ -23,6 +23,8 @@ import {
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { createTranslator } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locales'
 import { cn } from '@/lib/utils'
 
 interface NavEntry {
@@ -58,12 +60,40 @@ function iconFor(name: string): LucideIcon {
   return ICON_MAP[name] ?? Package
 }
 
+/**
+ * Route → catalogue key.
+ *
+ * The label on a nav entry comes from a vertical descriptor (data). This map is
+ * the translation layer for the routes the platform owns; an unknown route keeps
+ * its descriptor label instead of showing a key.
+ */
+const LABEL_KEYS: Record<string, string> = {
+  '/clients': 'nav.clients',
+  '/events': 'nav.events',
+  '/submissions': 'nav.submissions',
+  '/quotes': 'nav.quotes',
+  '/invoices': 'nav.invoices',
+  '/catering': 'nav.catering',
+  '/catering/recipes': 'nav.recipes',
+  '/photography': 'nav.photography',
+  '/decoration': 'nav.decoration',
+  '/makeup': 'nav.makeup',
+  '/services/specialist': 'nav.specialist',
+  '/finance': 'nav.finance',
+  '/reports': 'nav.reports',
+  '/team': 'nav.team',
+  '/services': 'nav.services',
+  '/portfolio': 'nav.portfolio',
+  '/storefront': 'nav.storefront',
+  '/settings': 'nav.settings',
+}
+
 /** Four tabs, because a fifth target is a miss on a phone held one-handed. */
-const MOBILE: NavEntry[] = [
-  { key: 'dashboard', path: '/dashboard', label: 'Home', icon: 'LayoutGrid', group: 'sell' },
-  { key: 'clients', path: '/clients', label: 'Clients', icon: 'Inbox', group: 'sell' },
-  { key: 'events', path: '/events', label: 'Events', icon: 'CalendarDays', group: 'sell' },
-  { key: 'invoices', path: '/invoices', label: 'Invoices', icon: 'Receipt', group: 'sell' },
+const MOBILE = [
+  { key: 'dashboard', path: '/dashboard', labelKey: 'nav.home', icon: 'LayoutGrid' },
+  { key: 'clients', path: '/clients', labelKey: 'nav.clients', icon: 'Inbox' },
+  { key: 'events', path: '/events', labelKey: 'nav.events', icon: 'CalendarDays' },
+  { key: 'invoices', path: '/invoices', labelKey: 'nav.invoices', icon: 'Receipt' },
 ] as const
 
 function isActive(pathname: string, href: string): boolean {
@@ -73,23 +103,25 @@ function isActive(pathname: string, href: string): boolean {
 interface NavLinksProps {
   variant: 'rail' | 'mobile'
   entries?: readonly NavEntry[]
+  locale: Locale
 }
 
-export function NavLinks({ variant, entries = [] }: NavLinksProps) {
+export function NavLinks({ variant, entries = [], locale }: NavLinksProps) {
   const pathname = usePathname()
+  const t = createTranslator(locale)
 
   // Group entries by their declared group, preserving declaration order.
   const groups: { label: string; items: NavEntry[] }[] = []
   const groupOrder: ('sell' | 'catalogue' | 'business')[] = ['sell', 'catalogue', 'business']
-  const groupLabels: Record<'sell' | 'catalogue' | 'business', string> = {
-    sell: 'Sell',
-    catalogue: 'Catalogue',
-    business: 'Business',
+  const groupKeys: Record<'sell' | 'catalogue' | 'business', string> = {
+    sell: 'nav.groupSell',
+    catalogue: 'nav.groupCatalogue',
+    business: 'nav.groupBusiness',
   }
 
   for (const g of groupOrder) {
     const items = entries.filter((e) => e.group === g)
-    if (items.length) groups.push({ label: groupLabels[g], items })
+    if (items.length) groups.push({ label: t(groupKeys[g]), items })
   }
 
   if (variant === 'mobile') {
@@ -109,7 +141,7 @@ export function NavLinks({ variant, entries = [] }: NavLinksProps) {
               )}
             >
               <Icon className={cn('h-5 w-5', active && 'stroke-[2.25]')} aria-hidden />
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           )
         })}
@@ -118,7 +150,10 @@ export function NavLinks({ variant, entries = [] }: NavLinksProps) {
   }
 
   return (
-    <nav className="no-scrollbar mt-2 flex-1 space-y-4 overflow-y-auto pb-4" aria-label="Workspace">
+    <nav
+      className="no-scrollbar mt-2 flex-1 space-y-4 overflow-y-auto pb-4"
+      aria-label={t('nav.shell.workspace')}
+    >
       <Link
         href="/dashboard"
         aria-current={pathname === '/dashboard' ? 'page' : undefined}
@@ -130,7 +165,7 @@ export function NavLinks({ variant, entries = [] }: NavLinksProps) {
         )}
       >
         <LayoutGrid className="h-4 w-4" aria-hidden />
-        Dashboard
+        {t('nav.dashboard')}
       </Link>
 
       {groups.map((group) => (
@@ -142,6 +177,7 @@ export function NavLinks({ variant, entries = [] }: NavLinksProps) {
             {group.items.map((item) => {
               const Icon = iconFor(item.icon)
               const active = isActive(pathname, item.path)
+              const labelKey = LABEL_KEYS[item.path]
               return (
                 <Link
                   key={item.key}
@@ -155,7 +191,7 @@ export function NavLinks({ variant, entries = [] }: NavLinksProps) {
                   )}
                 >
                   <Icon className="h-4 w-4" aria-hidden />
-                  {item.label}
+                  {labelKey ? t(labelKey) : item.label}
                 </Link>
               )
             })}
@@ -175,7 +211,7 @@ export function NavLinks({ variant, entries = [] }: NavLinksProps) {
           )}
         >
           <Users className="h-4 w-4" aria-hidden />
-          My work
+          {t('nav.myWork')}
         </Link>
       </div>
     </nav>

@@ -20,4 +20,15 @@ export const common: DeepPartial<typeof enCommon> = {
   tryAgain: 'மீண்டும் முயற்சி செய்',
   saved: 'சேமிக்கப்பட்டது.',
   somethingWentWrong: 'ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்.',
+
+  previous: 'முந்தையது',
+  next: 'அடுத்தது',
+  pagination: 'பக்க வழிசெலுத்தல்',
+  pageSummary: 'பக்கம் {page} / {pages} · மொத்தம் {count}',
+
+  today: 'இன்று',
+  tomorrow: 'நாளை',
+  yesterday: 'நேற்று',
+  inDays: '{count} நாட்களில்',
+  daysAgo: '{count} நாட்களுக்கு முன்',
 }

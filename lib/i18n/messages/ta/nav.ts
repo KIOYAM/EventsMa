@@ -22,4 +22,23 @@ export const nav: DeepPartial<typeof enNav> = {
   portfolio: 'படைப்புகள்',
   storefront: 'கடை',
   settings: 'அமைப்புகள்',
+
+  recipes: 'சமையல் குறிப்புகள் & மூலப்பொருட்கள்',
+  specialist: 'சிறப்பு சேவைகள்',
+  myWork: 'எனது வேலை',
+
+  groupSell: 'விற்பனை',
+  groupCatalogue: 'பட்டியல்',
+  groupBusiness: 'வணிகம்',
+
+  language: 'மொழி',
+
+  shell: {
+    workspace: 'பணியிடம்',
+    business: 'வணிகம்',
+    demoData: 'டெமோ தரவு',
+    liveWorkspace: 'நேரடி பணியிடம்',
+    signOut: 'வெளியேறு',
+    primary: 'முதன்மை',
+  },
 }
