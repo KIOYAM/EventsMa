@@ -1,124 +1,92 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getDb, isDatabaseConfigured } from '@/lib/db/client'
-import { eq } from 'drizzle-orm'
-import { events, enquiries, clients } from '@/lib/db/schema'
+import { createShareSubmission } from '@/lib/db/share'
+import { sendEmail } from '@/lib/email'
 
 export const revalidate = 0
 
-const SubmitSchema = z.object({
-  eventId: z.string().uuid(),
-  clientName: z.string().min(1).max(120),
-  clientEmail: z.string().email().optional().or(z.literal('')),
-  clientPhone: z.string().max(24).optional(),
-  selections: z.record(z.string(), z.any()),
-  message: z.string().max(1000).optional(),
+const SelectionSchema = z.object({
+  serviceKey: z.string().min(1).max(64),
+  itemId: z.string().uuid(),
+  quantity: z.number().int().min(1).max(10_000).optional(),
 })
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<Record<string, string>> }
-) {
+const SubmitSchema = z.object({
+  clientName: z.string().trim().min(1).max(120),
+  clientEmail: z.string().trim().email().max(160).optional().or(z.literal('')),
+  clientPhone: z.string().trim().max(24).optional().or(z.literal('')),
+  message: z.string().trim().max(1000).optional().or(z.literal('')),
+  selections: z.array(SelectionSchema).min(1).max(200),
+})
+
+/**
+ * Public submission endpoint.
+ *
+ * Authorisation is the share token in the path, not a session. The token is
+ * re-resolved server-side, the service must still be enabled, and every item is
+ * re-checked against the organisation's own catalogue. All writes are one
+ * transaction inside createShareSubmission.
+ */
+export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  if (!slug) {
-    return NextResponse.json({ error: 'Missing slug' }, { status: 400 })
+  if (!slug) return NextResponse.json({ ok: false, error: 'Missing link' }, { status: 400 })
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Invalid request' }, { status: 400 })
   }
 
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json(
-      { error: 'Database not configured' },
-      { status: 503 }
-    )
-  }
-
-  const body = await request.json()
   const parsed = SubmitSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json(
-      { error: 'Invalid submission' },
-      { status: 400 }
+      { ok: false, error: 'Please check your details and choose at least one item.' },
+      { status: 400 },
     )
   }
 
-  const { eventId, clientName, clientEmail, clientPhone, selections, message } = parsed.data
-  const db = getDb()
+  const data = parsed.data
+  const result = await createShareSubmission({
+    token: slug,
+    clientName: data.clientName,
+    clientEmail: data.clientEmail || null,
+    clientPhone: data.clientPhone || null,
+    message: data.message || null,
+    selections: data.selections,
+  })
 
-  // Verify the event exists and matches the slug
-  const [event] = await db
-    .select({ id: events.id, orgId: events.orgId })
-    .from(events)
-    .where(eq(events.id, slug))
-    .limit(1)
-
-  if (!event) {
-    return NextResponse.json({ error: 'Event not found' }, { status: 404 })
+  if (!result.ok) {
+    return NextResponse.json({ ok: false, error: result.error }, { status: result.status })
   }
 
-  // Create or find client
-  let clientId: string | null = null
-  if (clientPhone || clientEmail) {
-    const [existing] = await db
-      .select({ id: clients.id })
-      .from(clients)
-      .where(
-        eq(clients.orgId, event.orgId)
-      )
-      .limit(1)
-    // Simple lookup by phone or email
-    if (clientPhone) {
-      const [byPhone] = await db
-        .select({ id: clients.id })
-        .from(clients)
-        .where(eq(clients.phone, clientPhone))
-        .limit(1)
-      if (byPhone) clientId = byPhone.id
-    }
-    if (!clientId && clientEmail) {
-      const [byEmail] = await db
-        .select({ id: clients.id })
-        .from(clients)
-        .where(eq(clients.email, clientEmail))
-        .limit(1)
-      if (byEmail) clientId = byEmail.id
-    }
-  }
-
-  // Create client if not found
-  if (!clientId) {
-    const [newClient] = await db
-      .insert(clients)
-      .values({
-        orgId: event.orgId,
-        name: clientName,
-        phone: clientPhone ?? null,
-        email: clientEmail ?? null,
-        source: 'public_share',
+  // Notify the owner. Delivery failure never fails the customer's submission:
+  // the row and the in-app notification already exist.
+  if (result.businessEmail && !result.duplicate) {
+    try {
+      await sendEmail({
+        to: result.businessEmail,
+        subject: `New event enquiry from ${data.clientName}`,
+        text: [
+          `${data.clientName} submitted a request through your share link.`,
+          data.clientPhone ? `Phone: ${data.clientPhone}` : '',
+          data.clientEmail ? `Email: ${data.clientEmail}` : '',
+          data.message ? `Note: ${data.message}` : '',
+          'Open EventsMa → Submissions to review and prepare a quotation.',
+        ]
+          .filter(Boolean)
+          .join('\n'),
       })
-      .returning({ id: clients.id })
-    clientId = newClient!.id
+    } catch {
+      // Swallowed on purpose; the queued notification row is the durable record.
+    }
   }
-
-  // Create enquiry
-  const [enquiry] = await db
-    .insert(enquiries)
-    .values({
-      orgId: event.orgId,
-      clientId: clientId ?? undefined,
-      eventId: event.id,
-      eventDate: null,
-      guests: 0,
-      eventType: null,
-      message: message ?? null,
-      status: 'new',
-      source: 'public_share',
-    } as any)
-    .returning({ id: enquiries.id })
-
-  const enquiryId = enquiry?.id
 
   return NextResponse.json({
     ok: true,
-    enquiryId,
-    message: 'Your selections have been submitted. The event owner will review and contact you with a quotation.',
+    submissionId: result.submissionId,
+    duplicate: result.duplicate,
+    message:
+      'Thank you for sharing your event requirements. Our team has received your request and will contact you shortly with a customized quotation.',
   })
 }

@@ -2,9 +2,11 @@ import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as core from './schema'
 import * as catering from './schema-catering'
+import * as services from './schema-services'
+import * as share from './schema-share'
 
-/** Core and catering tables share one Drizzle instance and one query builder. */
-const schema = { ...core, ...catering }
+/** Every table shares one Drizzle instance and one query builder. */
+const schema = { ...core, ...catering, ...services, ...share }
 
 type EventsMaDatabase = PostgresJsDatabase<typeof schema>
 

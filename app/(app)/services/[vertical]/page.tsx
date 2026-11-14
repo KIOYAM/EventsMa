@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
+import { getEnabledServices } from '@/lib/db/queries'
 import { setServiceConfig, setServiceEnabled } from '../actions'
-import { descriptorFor, serviceConfigSchema } from '@/lib/domain/service-registry'
 import { verticalDescriptor } from '@/lib/domain/verticals'
 
 export const metadata = { title: 'Service configuration' }
@@ -26,23 +26,22 @@ export default async function ServiceConfigPage({
     redirect('/services')
   }
 
-  const schema = serviceConfigSchema({
-    key: vertical,
-    label: descriptor.label,
-    enabled: false,
-    sortOrder: 0,
-    config: {},
-    descriptor,
-  })
+  const services = await getEnabledServices(ctx.orgId, ctx.demo)
+  const row = services.find((service) => service.key === vertical)
+  const enabled = row?.enabled ?? false
+  const config = row?.config ?? {}
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Service configuration"
         title={descriptor.label}
-        description={`Configure how ${descriptor.label.toLowerCase()} works for this business. Each field is stored per organisation and applied to every quote and event.`}
+        description={`Configure how ${descriptor.label.toLowerCase()} works for this business. Every field is stored per organisation and applied to the customer-facing catalogue and event workspace.`}
         actions={
-          <Link href="/services" className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink hover:bg-mint-subtle">
+          <Link
+            href="/services"
+            className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink hover:bg-mint-subtle"
+          >
             ← Back to services
           </Link>
         }
@@ -58,19 +57,29 @@ export default async function ServiceConfigPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Enable service</CardTitle>
-          <CardDescription>
-            Turn this service on or off for your workspace. Disabled services cannot be
-            added to new events or shown to customers.
-          </CardDescription>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <CardTitle>Availability</CardTitle>
+              <CardDescription>
+                A disabled service disappears from navigation and cannot be attached to new
+                events. Services already on a confirmed event keep their snapshot.
+              </CardDescription>
+            </div>
+            <Badge tone={enabled ? 'success' : 'outline'}>{enabled ? 'Enabled' : 'Off'}</Badge>
+          </div>
         </CardHeader>
-        <CardContent className="mt-4 space-y-4">
-          <form action={setServiceEnabled} className="flex items-center gap-3">
+        <CardContent>
+          <form action={setServiceEnabled} className="flex flex-wrap items-center gap-3">
             <input type="hidden" name="verticalKey" value={vertical} />
-            <input type="hidden" name="enable" value="1" />
-            <Button type="submit" variant="primary" disabled={!canEdit}>
-              Enable {descriptor.label}
+            <input type="hidden" name="enable" value={enabled ? '0' : '1'} />
+            <Button type="submit" variant={enabled ? 'secondary' : 'primary'} disabled={!canEdit}>
+              {enabled ? `Turn off ${descriptor.label}` : `Enable ${descriptor.label}`}
             </Button>
+            <p className="text-xs text-ink-muted">
+              {enabled
+                ? 'Turning it off keeps every existing event and quote intact.'
+                : 'Enabling adds this service to the sidebar and to the event composer.'}
+            </p>
           </form>
         </CardContent>
       </Card>
@@ -79,97 +88,106 @@ export default async function ServiceConfigPage({
         <CardHeader>
           <CardTitle>Configuration</CardTitle>
           <CardDescription>
-            Set the default configuration for {descriptor.label}. These values appear on
-            quotes and guide the customer-facing selection experience.
+            Each field saves on its own, so a long form cannot silently drop earlier values.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {schema.length === 0 ? (
+          {descriptor.configFields.length === 0 ? (
             <p className="text-sm text-ink-muted">
               No configurable fields for {descriptor.label}. The service uses defaults.
             </p>
           ) : (
-            <form action={setServiceConfig} className="space-y-4">
-              <input type="hidden" name="verticalKey" value={vertical} />
-              {schema.map((field) => (
-                <Field key={field.key} label={field.label} htmlFor={`config-${field.key}`} hint={field.hint}>
-                  {field.kind === 'textarea' ? (
-                    <Textarea
-                      id={`config-${field.key}`}
-                      name="value"
-                      defaultValue={field.value ?? ''}
-                      maxLength={1000}
-                    />
-                  ) : field.kind === 'select' ? (
-                    <Select id={`config-${field.key}`} name="value" defaultValue={field.value ?? ''}>
-                      {field.options?.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </Select>
-                  ) : (
-                    <Input
-                      id={`config-${field.key}`}
-                      name="value"
-                      type={field.kind === 'number' ? 'number' : 'text'}
-                      inputMode={field.kind === 'number' ? 'numeric' : undefined}
-                      defaultValue={field.value ?? ''}
-                      maxLength={1000}
-                    />
-                  )}
-                </Field>
-              ))}
-              <Button type="submit" disabled={!canEdit}>
-                Save configuration
-              </Button>
-            </form>
+            descriptor.configFields.map((field) => {
+              const current = config[field.key] ?? ''
+              const inputId = `config-${vertical}-${field.key}`
+              return (
+                <form
+                  key={field.key}
+                  action={setServiceConfig}
+                  className="grid gap-3 rounded-control border border-hairline bg-canvas/60 p-3 sm:grid-cols-[1fr_auto]"
+                >
+                  <input type="hidden" name="verticalKey" value={vertical} />
+                  <input type="hidden" name="key" value={field.key} />
+                  <Field label={field.label} htmlFor={inputId} hint={field.hint}>
+                    {field.kind === 'textarea' ? (
+                      <Textarea
+                        id={inputId}
+                        name="value"
+                        defaultValue={current}
+                        maxLength={1000}
+                        disabled={!canEdit}
+                      />
+                    ) : field.kind === 'select' ? (
+                      <Select id={inputId} name="value" defaultValue={current} disabled={!canEdit}>
+                        <option value="">Not set</option>
+                        {field.options?.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </Select>
+                    ) : (
+                      <Input
+                        id={inputId}
+                        name="value"
+                        type={field.kind === 'number' ? 'number' : 'text'}
+                        inputMode={field.kind === 'number' ? 'numeric' : undefined}
+                        defaultValue={current}
+                        maxLength={1000}
+                        disabled={!canEdit}
+                      />
+                    )}
+                  </Field>
+                  <div className="flex items-end">
+                    <Button type="submit" variant="secondary" disabled={!canEdit}>
+                      Save
+                    </Button>
+                  </div>
+                </form>
+              )
+            })
           )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Capabilities</CardTitle>
-          <CardDescription>
-            What this service can do in EventsMa.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-ink-muted">
-            Enabled capabilities
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {descriptor.capabilities.map((cap) => (
-              <Badge key={cap} tone="outline" className="text-[10px] px-2 py-1">
-                {cap}
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Capabilities</CardTitle>
+            <CardDescription>What this service can do in EventsMa.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {descriptor.capabilities.map((capability) => (
+                <Badge key={capability} tone="outline" className="text-[10px] px-2 py-1">
+                  {capability}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Routes</CardTitle>
-          <CardDescription>
-            Owner-facing pages for this service.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-ink-muted">
-            Workspace navigation
-          </p>
-          <div className="space-y-1.5">
+        <Card>
+          <CardHeader>
+            <CardTitle>Workspace routes</CardTitle>
+            <CardDescription>
+              Added to the sidebar automatically while the service is enabled.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
             {descriptor.routes.map((route) => (
-              <div key={route.path} className="flex items-center justify-between gap-3 p-2 rounded-control border border-hairline bg-paper/50">
-                <span className="text-sm text-ink">{route.label}</span>
+              <Link
+                key={route.path}
+                href={route.path}
+                className="flex items-center justify-between gap-3 rounded-control border border-hairline bg-paper/50 p-2 text-sm text-ink hover:bg-mint-subtle"
+              >
+                <span>{route.label}</span>
                 <span className="text-[10px] text-ink-muted">{route.group}</span>
-              </div>
+              </Link>
             ))}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

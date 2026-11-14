@@ -40,6 +40,10 @@ export const config = {
   matcher: [
     '/dashboard/:path*',
     '/events/:path*',
+    '/submissions/:path*',
+    '/decoration/:path*',
+    '/makeup/:path*',
+    '/photography/:path*',
     '/clients/:path*',
     '/quotes/:path*',
     '/invoices/:path*',

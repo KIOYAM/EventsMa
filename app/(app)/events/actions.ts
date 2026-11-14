@@ -1,17 +1,22 @@
 'use server'
 
+import { randomBytes } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { getDb, isDatabaseConfigured } from '@/lib/db/client'
 import {
+  businessServices,
   clients,
   eventStaff,
   eventTasks,
   eventVendors,
   events,
 } from '@/lib/db/schema'
+import { eventServices } from '@/lib/db/schema-services'
+import { shareLinks } from '@/lib/db/schema-share'
+import { verticalDescriptor } from '@/lib/domain/verticals'
 import { EVENT_STATUSES, TASK_STATUSES, type EventStatus, type TaskStatus } from '@/lib/domain/ops'
 import { parseRupees } from '@/lib/domain/money'
 
@@ -283,6 +288,96 @@ export async function assignCrew(formData: FormData): Promise<void> {
 
   revalidatePath(`/events/${eventId}`)
   redirect(`/events/${eventId}?tab=crew&saved=crew`)
+}
+
+/**
+ * Attach an enabled service to an event.
+ *
+ * The service must still be enabled for this organisation: a disabled vertical
+ * cannot be added to a new event, but a service already attached keeps its
+ * snapshot, which is how a confirmed booking survives a later deactivation.
+ */
+export async function attachEventService(formData: FormData): Promise<void> {
+  const ctx = await requireWorkspace()
+  if (!canManageCommercial(ctx.role)) redirect('/events?error=permission')
+  if (ctx.demo || !isDatabaseConfigured()) redirect('/events?error=demo')
+
+  const eventId = field(formData, 'eventId', 64)
+  const serviceKey = field(formData, 'serviceKey', 64)
+  if (!eventId || !serviceKey) redirect(`/events/${eventId}?tab=services&error=service`)
+
+  const db = getDb()
+  const [service] = await db
+    .select({ enabled: businessServices.enabled, config: businessServices.config })
+    .from(businessServices)
+    .where(and(eq(businessServices.orgId, ctx.orgId), eq(businessServices.verticalKey, serviceKey)))
+    .limit(1)
+
+  if (!service?.enabled) redirect(`/events/${eventId}?tab=services&error=service_disabled`)
+
+  const [owned] = await db
+    .select({ id: events.id })
+    .from(events)
+    .where(and(eq(events.orgId, ctx.orgId), eq(events.id, eventId)))
+    .limit(1)
+  if (!owned) redirect('/events?error=missing')
+
+  await db
+    .insert(eventServices)
+    .values({
+      orgId: ctx.orgId,
+      eventId,
+      serviceKey,
+      status: 'planned',
+      configSnapshot: {
+        label: verticalDescriptor(serviceKey).label,
+        config: service.config ?? {},
+        attachedAt: new Date().toISOString(),
+      },
+    })
+    .onConflictDoNothing()
+
+  revalidatePath(`/events/${eventId}`)
+  redirect(`/events/${eventId}?tab=services&saved=service`)
+}
+
+/** Create (or reuse) the public share link for an event. */
+export async function createEventShareLink(formData: FormData): Promise<void> {
+  const ctx = await requireWorkspace()
+  if (!canManageCommercial(ctx.role)) redirect('/events?error=permission')
+  if (ctx.demo || !isDatabaseConfigured()) redirect('/events?error=demo')
+
+  const eventId = field(formData, 'eventId', 64)
+  if (!eventId) redirect('/events?error=missing')
+
+  const db = getDb()
+  const [owned] = await db
+    .select({ id: events.id })
+    .from(events)
+    .where(and(eq(events.orgId, ctx.orgId), eq(events.id, eventId)))
+    .limit(1)
+  if (!owned) redirect('/events?error=missing')
+
+  const [existing] = await db
+    .select({ id: shareLinks.id })
+    .from(shareLinks)
+    .where(
+      and(eq(shareLinks.orgId, ctx.orgId), eq(shareLinks.eventId, eventId), eq(shareLinks.revoked, false)),
+    )
+    .limit(1)
+
+  if (!existing) {
+    await db.insert(shareLinks).values({
+      orgId: ctx.orgId,
+      eventId,
+      token: randomBytes(18).toString('base64url'),
+      kind: 'event',
+      createdBy: ctx.userId,
+    })
+  }
+
+  revalidatePath(`/events/${eventId}`)
+  redirect(`/events/${eventId}?tab=services&saved=share`)
 }
 
 export async function setCrewCheckIn(formData: FormData): Promise<void> {

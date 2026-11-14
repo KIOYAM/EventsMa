@@ -66,7 +66,7 @@ export default async function DecorationPage({
         description="Nothing on this page is a fixed list. Stage backdrops, floral arrangements, lighting and setup schedules are yours to configure — not a template you are stuck with."
         actions={
           <Link
-            href="/services/decoration"
+            href="/services/decor"
             className="inline-flex h-9 items-center rounded-control border border-hairline bg-paper px-3 text-sm font-medium text-ink hover:bg-mint-subtle"
           >
             Service configuration

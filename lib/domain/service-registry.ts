@@ -40,6 +40,7 @@ export function buildServiceNavigation(enabled: readonly EnabledService[]): read
   const fixed: ServiceNavEntry[] = [
     { key: 'clients', path: '/clients', label: 'Clients', icon: 'Inbox', group: 'sell' },
     { key: 'events', path: '/events', label: 'Events', icon: 'CalendarDays', group: 'sell' },
+    { key: 'submissions', path: '/submissions', label: 'Submissions', icon: 'Send', group: 'sell' },
     { key: 'quotes', path: '/quotes', label: 'Quotes', icon: 'FileText', group: 'sell' },
     { key: 'invoices', path: '/invoices', label: 'Invoices', icon: 'Receipt', group: 'sell' },
   ]

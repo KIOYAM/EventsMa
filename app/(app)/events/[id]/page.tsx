@@ -8,6 +8,8 @@ import { EmptyState } from '@/components/ui/page-header'
 import { Stat } from '@/components/ui/stat'
 import { requireWorkspace } from '@/lib/auth/session'
 import { getEventDetail, getEventFormOptions } from '@/lib/db/events'
+import { getEnabledServices } from '@/lib/db/queries'
+import { getShareLink } from '@/lib/db/share'
 import {
   EVENT_STATUSES,
   EVENT_STATUS_LABEL,
@@ -21,6 +23,8 @@ import {
   addEventTask,
   addEventVendor,
   assignCrew,
+  attachEventService,
+  createEventShareLink,
   setCrewCheckIn,
   setTaskStatus,
   updateEventStatus,
@@ -53,10 +57,16 @@ export default async function EventDetailPage({
   const ctx = await requireWorkspace()
   const { id } = await params
   const query = await searchParams
-  const [event, options] = await Promise.all([
+  const [event, options, enabledServices, shareLink] = await Promise.all([
     getEventDetail(ctx.orgId, ctx.demo, id),
     getEventFormOptions(ctx.orgId, ctx.demo),
+    getEnabledServices(ctx.orgId, ctx.demo),
+    getShareLink(ctx.orgId, id),
   ])
+  const attached = new Set(event?.services.map((service) => service.key) ?? [])
+  const availableServices = enabledServices.filter(
+    (service) => service.enabled && !attached.has(service.key),
+  )
 
   if (!event) notFound()
 
@@ -450,18 +460,78 @@ export default async function EventDetailPage({
             <CardHeader>
               <CardTitle>Add a service</CardTitle>
               <CardDescription>
-                Attach an enabled service to this event. Each service gets its own configuration
-                and appears in the consolidated quotation.
+                Only services this business has enabled can be attached. A disabled service cannot
+                be added here, and services already attached keep their snapshot.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-ink-muted">
-                Service-specific configuration pages are available from the workspace sidebar once
-                a service is enabled.
-              </p>
-              <div className="text-xs text-ink-muted">
-                Coming soon: direct service attachment from this page. For now, configure each
-                service from its dedicated workspace page, then link it here.
+              {availableServices.length === 0 ? (
+                <p className="text-sm text-ink-muted">
+                  Every enabled service is already on this event. Enable more in{' '}
+                  <Link href="/services" className="text-forest underline underline-offset-2">
+                    Services
+                  </Link>
+                  .
+                </p>
+              ) : (
+                <form action={attachEventService} className="space-y-3">
+                  <input type="hidden" name="eventId" value={event.id} />
+                  <Field label="Service" htmlFor="attachService">
+                    <Select id="attachService" name="serviceKey" required defaultValue="">
+                      <option value="" disabled>
+                        Choose a service
+                      </option>
+                      {availableServices.map((service) => (
+                        <option key={service.key} value={service.key}>
+                          {service.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <button
+                    type="submit"
+                    disabled={ctx.demo}
+                    className="inline-flex h-10 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+                  >
+                    Attach service
+                  </button>
+                </form>
+              )}
+
+              <div className="border-t border-hairline pt-4">
+                <p className="text-sm font-medium text-ink">Public share link</p>
+                <p className="mt-1 text-xs text-ink-muted">
+                  Customers use this link to pick items for this event and submit their
+                  requirements. Their request lands in Submissions.
+                </p>
+                {shareLink ? (
+                  <div className="mt-3 space-y-2">
+                    <input
+                      readOnly
+                      value={`/share/${shareLink.token}`}
+                      aria-label="Share link path"
+                      className="h-10 w-full rounded-control border border-hairline bg-canvas px-3 text-xs text-ink"
+                    />
+                    <Link
+                      href={`/share/${shareLink.token}`}
+                      target="_blank"
+                      className="inline-flex h-9 items-center rounded-control border border-hairline px-3 text-xs text-ink hover:bg-mint-subtle"
+                    >
+                      Open customer view
+                    </Link>
+                  </div>
+                ) : (
+                  <form action={createEventShareLink} className="mt-3">
+                    <input type="hidden" name="eventId" value={event.id} />
+                    <button
+                      type="submit"
+                      disabled={ctx.demo}
+                      className="inline-flex h-9 items-center rounded-control border border-hairline px-3 text-xs text-ink hover:bg-mint-subtle disabled:opacity-50"
+                    >
+                      Create share link
+                    </button>
+                  </form>
+                )}
               </div>
             </CardContent>
           </Card>

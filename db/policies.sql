@@ -369,3 +369,101 @@ create policy catering_snapshots_select on public.catering_snapshots
 drop policy if exists catering_snapshots_insert on public.catering_snapshots;
 create policy catering_snapshots_insert on public.catering_snapshots
   for insert with check (public.has_org_role(org_id, array['owner','manager']));
+
+-- ---------------------------------------------------------------------------
+-- Service modules (decoration, makeup, photography) and event composition.
+-- Every row carries org_id, so every policy is org-scoped. Without these, RLS
+-- would be enabled-but-absent: no policy means no row for any authenticated
+-- role, which would silently blank every service workspace.
+-- ---------------------------------------------------------------------------
+
+do $$
+declare
+  target text;
+begin
+  -- Member-readable operational tables.
+  foreach target in array array[
+    'event_services',
+    'decoration_areas',
+    'decoration_setups',
+    'makeup_artists',
+    'makeup_appointments',
+    'makeup_trials',
+    'photography_coverage',
+    'photography_assignments',
+    'photography_shot_lists'
+  ]
+  loop
+    execute format('alter table public.%I enable row level security', target);
+    execute format('drop policy if exists %I_select on public.%I', target, target);
+    execute format(
+      'create policy %I_select on public.%I for select using (public.is_org_member(org_id))',
+      target, target
+    );
+    execute format('drop policy if exists %I_write on public.%I', target, target);
+    execute format(
+      'create policy %I_write on public.%I for all using (public.has_org_role(org_id, array[''owner'',''manager''])) with check (public.has_org_role(org_id, array[''owner'',''manager'']))',
+      target, target
+    );
+  end loop;
+
+  -- Cost-bearing tables: owner and manager only.
+  foreach target in array array[
+    'decoration_materials',
+    'photography_deliverables'
+  ]
+  loop
+    execute format('alter table public.%I enable row level security', target);
+    execute format('drop policy if exists %I_select on public.%I', target, target);
+    execute format(
+      'create policy %I_select on public.%I for select using (public.has_org_role(org_id, array[''owner'',''manager'']))',
+      target, target
+    );
+    execute format('drop policy if exists %I_write on public.%I', target, target);
+    execute format(
+      'create policy %I_write on public.%I for all using (public.has_org_role(org_id, array[''owner'',''manager''])) with check (public.has_org_role(org_id, array[''owner'',''manager'']))',
+      target, target
+    );
+  end loop;
+end
+$$;
+
+-- Public share portal ---------------------------------------------------------
+-- The customer writes through the server route, which runs as the database
+-- owner. Staff read submissions in the workspace under these policies. Members
+-- may read; only owner and manager may change a submission's status.
+alter table public.share_links enable row level security;
+drop policy if exists share_links_select on public.share_links;
+create policy share_links_select on public.share_links
+  for select using (public.is_org_member(org_id));
+drop policy if exists share_links_write on public.share_links;
+create policy share_links_write on public.share_links
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.share_submissions enable row level security;
+drop policy if exists share_submissions_select on public.share_submissions;
+create policy share_submissions_select on public.share_submissions
+  for select using (public.has_org_role(org_id, array['owner','manager']));
+drop policy if exists share_submissions_write on public.share_submissions;
+create policy share_submissions_write on public.share_submissions
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.share_submission_services enable row level security;
+drop policy if exists share_submission_services_select on public.share_submission_services;
+create policy share_submission_services_select on public.share_submission_services
+  for select using (public.has_org_role(org_id, array['owner','manager']));
+drop policy if exists share_submission_services_write on public.share_submission_services;
+create policy share_submission_services_write on public.share_submission_services
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.share_submission_lines enable row level security;
+drop policy if exists share_submission_lines_select on public.share_submission_lines;
+create policy share_submission_lines_select on public.share_submission_lines
+  for select using (public.has_org_role(org_id, array['owner','manager']));
+drop policy if exists share_submission_lines_write on public.share_submission_lines;
+create policy share_submission_lines_write on public.share_submission_lines
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));

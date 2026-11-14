@@ -9,6 +9,10 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         '/dashboard',
         '/events',
+        '/submissions',
+        '/decoration',
+        '/makeup',
+        '/photography',
         '/clients',
         '/quotes',
         '/invoices',

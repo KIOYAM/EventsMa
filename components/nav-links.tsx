@@ -7,6 +7,7 @@ import {
   Boxes,
   CalendarDays,
   FileText,
+  Send,
   Images,
   Inbox,
   Layers,
@@ -50,6 +51,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Boxes,
   BookOpen,
   LayoutGrid,
+  Send,
 }
 
 function iconFor(name: string): LucideIcon {

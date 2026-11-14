@@ -38,12 +38,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   if (!isDatabaseConfigured()) return []
 
-  const rows = await getDb()
-    .select({ slug: organisations.slug })
-    .from(businesses)
-    .innerJoin(organisations, eq(businesses.orgId, organisations.id))
-    .where(eq(businesses.published, true))
-    .limit(5000)
+  // A sitemap is not worth failing a deploy over. If the database is paused or
+  // unreachable at build time, fall back to the static routes and let the next
+  // revalidation pick the published storefronts up.
+  let rows: { slug: string }[] = []
+  try {
+    rows = await getDb()
+      .select({ slug: organisations.slug })
+      .from(businesses)
+      .innerJoin(organisations, eq(businesses.orgId, organisations.id))
+      .where(eq(businesses.published, true))
+      .limit(5000)
+  } catch (error) {
+    console.warn('sitemap: storefront lookup skipped', error instanceof Error ? error.message : error)
+  }
 
   return [
     { url: base, lastModified: now, changeFrequency: 'weekly', priority: 1 },

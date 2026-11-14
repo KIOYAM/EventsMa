@@ -98,7 +98,19 @@ export async function setServiceConfig(formData: FormData): Promise<void> {
     )
     .limit(1)
 
-  if (!existing) return
+  if (!existing) {
+    // Saving a value before the service was ever toggled still needs a row,
+    // otherwise the first edit disappears with no error.
+    await db.insert(businessServices).values({
+      orgId: ctx.orgId,
+      verticalKey,
+      enabled: false,
+      config: { [key]: value },
+    })
+    revalidatePath('/services')
+    revalidatePath(`/services/${verticalKey}`)
+    return
+  }
 
   await db
     .update(businessServices)
