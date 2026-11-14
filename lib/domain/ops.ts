@@ -339,6 +339,15 @@ export interface ReportData {
   categories: { key: string; label: string; amountPaise: number }[]
 }
 
+export type AttentionDetailCode =
+  | 'quoteStale'
+  | 'eventTasks'
+  | 'invoiceOverdue'
+  | 'invoiceOverdueSince'
+  | 'demoEvent'
+  | 'demoInvoice'
+  | 'demoQuote'
+
 export interface AttentionItem {
   id: string
   kind: 'quote' | 'event' | 'invoice'
@@ -346,6 +355,13 @@ export interface AttentionItem {
   detail: string
   href: string
   tone: 'mint' | 'gold' | 'accent'
+  /**
+   * What the detail line says, as a machine code plus the numbers it needs.
+   * The surface renders the sentence in the reader's language; `detail` stays
+   * for logs and for callers that have not been translated yet.
+   */
+  code?: AttentionDetailCode
+  params?: Record<string, string | number>
 }
 
 export interface CalendarEvent {

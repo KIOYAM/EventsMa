@@ -13,12 +13,14 @@
  *   3. register both here and in `ta.ts`
  */
 import { common } from './en/common'
+import { dashboard } from './en/dashboard'
 import { nav } from './en/nav'
 import { rule } from './en/rule'
 import { share } from './en/share'
 
 export const en = {
   common,
+  dashboard,
   nav,
   rule,
   share,

@@ -6,10 +6,11 @@
  * `translationCoverage('ta')`.
  *
  * The whole catalogue is SEED: none of it has been reviewed by a Tamil speaker.
- * The customer link is the only surface wired to it so far, and it is complete
- * there — a customer who switches must never see a half-English screen.
+ * The customer link, the signed-in shell, the dashboard and events are the
+ * surfaces wired to it so far.
  */
 import { common } from './ta/common'
+import { dashboard } from './ta/dashboard'
 import { nav } from './ta/nav'
 import { rule } from './ta/rule'
 import { share } from './ta/share'
@@ -17,6 +18,7 @@ import type { MessagesOverride } from './en'
 
 export const ta: MessagesOverride = {
   common,
+  dashboard,
   nav,
   rule,
   share,

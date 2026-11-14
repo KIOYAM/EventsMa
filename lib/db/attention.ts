@@ -26,6 +26,7 @@ function demoAttention(): AttentionItem[] {
       detail: '8 days away - 3 open tasks',
       href: '/events/00000000-0000-4000-8000-0000000000a1',
       tone: 'mint',
+      code: 'demoEvent',
     },
     {
       id: 'demo-attention-invoice',
@@ -34,6 +35,8 @@ function demoAttention(): AttentionItem[] {
       detail: `${formatINR(17_416_000)} balance - due 18 Nov`,
       href: '/invoices/00000000-0000-4000-8000-0000000000d1',
       tone: 'gold',
+      code: 'demoInvoice',
+      params: { amount: formatINR(17_416_000) },
     },
     {
       id: 'demo-attention-quote',
@@ -42,6 +45,7 @@ function demoAttention(): AttentionItem[] {
       detail: 'Accepted - invoice not raised yet',
       href: '/quotes',
       tone: 'accent',
+      code: 'demoQuote',
     },
   ]
 }
@@ -123,6 +127,8 @@ export async function getAttentionItems(orgId: string, demo: boolean): Promise<A
       detail: `Sent at least 3 days ago - event ${row.eventDate}`,
       href: `/quotes/${row.id}`,
       tone: 'gold',
+      code: 'quoteStale',
+      params: { date: row.eventDate },
     })
   }
 
@@ -134,6 +140,8 @@ export async function getAttentionItems(orgId: string, demo: boolean): Promise<A
       detail: `${row.eventDate} - ${row.openTasks} open task${row.openTasks === 1 ? '' : 's'}`,
       href: `/events/${row.id}`,
       tone: 'mint',
+      code: 'eventTasks',
+      params: { date: row.eventDate, count: row.openTasks },
     })
   }
 
@@ -145,6 +153,8 @@ export async function getAttentionItems(orgId: string, demo: boolean): Promise<A
       detail: `${formatINR(row.balance)} overdue${row.dueOn ? ` since ${row.dueOn}` : ''}`,
       href: `/invoices/${row.id}`,
       tone: 'accent',
+      code: row.dueOn ? 'invoiceOverdueSince' : 'invoiceOverdue',
+      params: { amount: formatINR(row.balance), date: row.dueOn ?? '' },
     })
   }
 
