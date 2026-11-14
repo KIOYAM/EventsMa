@@ -6,6 +6,10 @@ import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { Select } from '@/components/ui/input'
 import { DebouncedSearch } from '@/components/debounced-search'
 import { Pagination } from '@/components/pagination'
+import { createTranslator } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locales'
+import { getLocale, translatorFor } from '@/lib/i18n/server'
+import { relativeDaysLocalised } from '@/lib/i18n/format'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getEnquiryPage } from '@/lib/db/crm'
@@ -15,10 +19,13 @@ import {
   type EnquiryStatus,
 } from '@/lib/domain/ops'
 import { PAGE_SIZE, pageHref, parsePage } from '@/lib/pagination'
-import { relativeDays, shortDate } from '@/lib/utils'
+import { shortDate } from '@/lib/utils'
 import { convertEnquiryToEvent, setEnquiryStatus } from './actions'
 
-export const metadata = { title: 'Enquiries' }
+export async function generateMetadata() {
+  const locale = await getLocale()
+  return { title: translatorFor(locale)('clients.title') }
+}
 
 const TONE: Record<EnquiryStatus, 'success' | 'mint' | 'gold' | 'accent' | 'neutral'> = {
   new: 'mint',
@@ -30,12 +37,13 @@ const TONE: Record<EnquiryStatus, 'success' | 'mint' | 'gold' | 'accent' | 'neut
   spam: 'neutral',
 }
 
-const ERROR_COPY: Record<string, string> = {
-  permission: 'Only an owner or manager can change an enquiry.',
-  demo: 'Demo mode: connect a database before changing an enquiry.',
-  invalid: 'That enquiry or status is not valid.',
-  missing: 'That enquiry no longer exists.',
-  already: 'That enquiry has already been converted to an event.',
+/** `?error=` codes are machine values; the sentence comes from the catalogue. */
+const ERROR_KEYS: Record<string, string> = {
+  permission: 'clients.errors.permission',
+  demo: 'clients.errors.demo',
+  invalid: 'clients.errors.invalid',
+  missing: 'clients.errors.missing',
+  already: 'clients.errors.already',
 }
 
 export default async function ClientsPage({
@@ -44,6 +52,8 @@ export default async function ClientsPage({
   searchParams: Promise<{ q?: string; status?: string; page?: string; error?: string; saved?: string }>
 }) {
   const ctx = await requireWorkspace()
+  const locale = await getLocale()
+  const t = createTranslator(locale)
   const params = await searchParams
   const page = parsePage(params.page)
   const data = await withWorkspace(ctx, () =>
@@ -56,10 +66,10 @@ export default async function ClientsPage({
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
 
   const tabs = [
-    { key: '', label: 'All', count: Object.values(data.counts).reduce((a, b) => a + b, 0) },
+    { key: '', label: t('clients.tabAll'), count: Object.values(data.counts).reduce((a, b) => a + b, 0) },
     ...ENQUIRY_STATUSES.map((status) => ({
       key: status,
-      label: ENQUIRY_STATUS_LABEL[status],
+      label: t(`clients.enquiryStatus.${status}`),
       count: data.counts[status] ?? 0,
     })),
   ]
@@ -67,31 +77,30 @@ export default async function ClientsPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Relationships"
-        title="Every enquiry, and what happened next"
-        description="A quote with no enquiry behind it is a guess. This is where a public form submission becomes a client, a follow-up and finally an event."
+        eyebrow={t('clients.eyebrow')}
+        title={t('clients.heading')}
+        description={t('clients.intro')}
         actions={
           <>
             <Link
               href="/clients/directory"
               className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink"
             >
-              Client directory
+              {t('clients.directory')}
             </Link>
             <Link
               href="/events#new"
               className="inline-flex h-11 items-center gap-2 rounded-control bg-forest px-4 text-sm font-medium text-white"
             >
-              <CalendarPlus className="h-4 w-4" aria-hidden />
-              New event
+              <CalendarPlus className="h-4 w-4" aria-hidden /> {t('clients.newEvent')}
             </Link>
           </>
         }
       />
 
-      {params.error && ERROR_COPY[params.error] ? (
+      {params.error ? (
         <div className="rounded-card border border-terracotta/30 bg-terracotta-soft px-4 py-3 text-sm text-terracotta">
-          {ERROR_COPY[params.error]}
+          {t(ERROR_KEYS[params.error] ?? 'clients.errors.fallback')}
         </div>
       ) : null}
       {params.saved ? (
@@ -129,7 +138,7 @@ export default async function ClientsPage({
         </div>
         <div className="w-full sm:max-w-xs">
           <Suspense fallback={<div className="h-10 rounded-control border border-hairline bg-paper" />}>
-            <DebouncedSearch placeholder="Search name, phone or occasion" />
+            <DebouncedSearch placeholder={t('clients.searchPlaceholder')} />
           </Suspense>
         </div>
       </div>
@@ -137,11 +146,11 @@ export default async function ClientsPage({
       {data.rows.length === 0 ? (
         <EmptyState
           icon={<Inbox className="h-6 w-6" aria-hidden />}
-          title="No enquiries match"
-          description="Clear the search or status filter. New enquiries arrive from your public page and are listed here immediately."
+          title={t('clients.emptyTitle')}
+          description={t('clients.emptyBody')}
           action={
             <Link href="/clients" className="text-sm text-forest underline underline-offset-4">
-              Clear filters
+              {t('clients.clearFilters')}
             </Link>
           }
         />
@@ -165,14 +174,14 @@ export default async function ClientsPage({
                     ) : (
                       <h2 className="truncate text-sm font-semibold text-ink">{row.clientName}</h2>
                     )}
-                    <Badge tone={TONE[row.status]}>{ENQUIRY_STATUS_LABEL[row.status]}</Badge>
+                    <Badge tone={TONE[row.status]}>{t(`clients.enquiryStatus.${row.status}`)}</Badge>
                     {row.source ? <Badge tone="outline">{row.source}</Badge> : null}
                   </div>
                   <p className="mt-1 text-xs text-ink-muted">
-                    {row.phone ?? 'No phone'} ·{' '}
+                    {row.phone ?? t('clients.noPhone')} ·{' '}
                     {row.eventDate
-                      ? `${shortDate(row.eventDate)} (${relativeDays(row.eventDate)})`
-                      : 'Date not decided'}{' '}
+                      ? `${shortDate(row.eventDate)} (${relativeDaysLocalised(row.eventDate, locale)})`
+                      : t('clients.dateNotDecided')}{' '}
                     · {row.guests} guests
                     {row.eventType ? ` · ${row.eventType}` : ''}
                   </p>
@@ -185,7 +194,7 @@ export default async function ClientsPage({
                     Received {shortDate(row.createdAt.slice(0, 10))}
                     {row.nextFollowUpAt
                       ? ` · Follow up ${shortDate(row.nextFollowUpAt.slice(0, 10))}`
-                      : ' · No follow-up set'}
+                      : ` · ${t('clients.noFollowUp')}`}
                   </p>
                 </div>
 
@@ -201,7 +210,7 @@ export default async function ClientsPage({
                     >
                       {ENQUIRY_STATUSES.map((status) => (
                         <option key={status} value={status}>
-                          {ENQUIRY_STATUS_LABEL[status]}
+                          {t(`clients.enquiryStatus.${status}`)}
                         </option>
                       ))}
                     </Select>
@@ -221,7 +230,7 @@ export default async function ClientsPage({
                       disabled={!canEdit || row.status === 'won'}
                       className="inline-flex h-9 items-center gap-1.5 rounded-control bg-forest px-3 text-xs font-medium text-white disabled:opacity-40"
                     >
-                      Convert to event
+                      {t('clients.convertToEvent')}
                       <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
                     </button>
                   </form>
@@ -238,6 +247,7 @@ export default async function ClientsPage({
         total={data.total}
         pageSize={PAGE_SIZE}
         params={{ q: params.q, status: params.status }}
+        locale={locale}
       />
     </div>
   )
