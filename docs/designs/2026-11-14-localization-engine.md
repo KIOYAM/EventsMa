@@ -188,6 +188,43 @@ screen itself was not visually exercised — its data path was.
 **Still open in layer 2:** meal-session names (`Lunch`/`Dinner` come from the owner's
 template) and package titles for decoration/makeup/photography.
 
+## Shipped: Tamil quotations (layer 3)
+
+The PDF was the hard blocker: `lib/pdf/quote-pdf.tsx` used Helvetica, which has no
+Indic coverage, so a Tamil quotation printed boxes no matter how well the app was
+translated.
+
+| Piece | Decision |
+|---|---|
+| Fonts | `app/fonts/noto-sans-tamil-{regular,bold}.ttf` (74 KB + 77 KB, OFL), committed like `inter-latin.woff2` |
+| Registration | `lib/pdf/fonts.ts`, once per process; English keeps built-in Helvetica so an English quote stays ~3.5 KB with no embedded font |
+| Copy | `lib/i18n/messages/{en,ta}/pdf.ts` — headings, total labels, unit words, terms, footer. Document copy, not screen copy |
+| Language | `GET /api/quotes/[id]/pdf?lang=ta`, validated against `SHIPPED_LOCALES`, defaulting to English. The document language is per download, so a Tamil quote can come from an English workspace |
+| Deployment | `outputFileTracingIncludes` in `next.config.ts` ships the TTFs with the PDF route; without it the file is missing on Vercel while working locally |
+
+Money stays `Rs.` rather than `₹` in both languages: the sign is absent from
+Helvetica, and a document must not depend on which font happened to render it. Noto
+Sans Tamil does contain `₹`, so switching later is a copy decision, not a technical
+one.
+
+Verified by rendering both documents through the real renderer:
+
+| Check | Result |
+|---|---|
+| English PDF | 3,499 bytes, no embedded font |
+| Tamil PDF | 18,075 bytes, embeds subset `CZZZZZ+NotoSansTamil-Regular` |
+| Glyph coverage (fontkit) | `விலைப்புள்ளி`, `மொத்தம்`, `உணவு சேவை`, `சிக்கன் பிரியாணி`, `கூட்டுத்தொகை` all shape with **0 missing glyphs** |
+| Font resources in the Tamil PDF | `NotoSansTamil-Regular` plus a default `Helvetica` resource that react-pdf always writes; every visible text node inherits the page family |
+
+**Known limit:** line items come from the quotation's stored snapshots, which are
+in the language the quote was built in. A Tamil PDF translates the document
+skeleton, not the historical line text — rewriting an issued quote's lines would
+change a document a customer already holds.
+
+**Not exercised:** the authenticated route itself. The renderer was driven through
+a bundled script with a real `QuoteDoc`; `/api/quotes/[id]/pdf` is type-checked and
+builds, but downloading it needs a signed-in session.
+
 ## What this change does NOT do
 
 It does **not** translate a single screen. Shipping a language selector over an

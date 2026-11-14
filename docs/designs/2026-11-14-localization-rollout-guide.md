@@ -52,10 +52,16 @@ string is how one bad edit breaks four pages.
 
 - `lib/i18n/` — locale registry, catalogue with English fallback, `Intl` formatting,
   cookie-backed server helpers, coverage report.
-- `lib/i18n/messages/{en,ta}/` — per-module catalogues: `common`, `nav`, `rule`, `share`.
+- `lib/i18n/messages/{en,ta}/` — per-module catalogues: `common`, `nav`, `pdf`,
+  `rule`, `share` (plus `catering`, `dashboard`, `events` as the other agent adds them).
 - **The customer link `/share/[token]` is fully bilingual** with a language switch.
-- `npm run i18n:audit` — counts untranslated strings (930 today).
-- 25 i18n tests, including "every `share.*` and `rule.*` key exists in Tamil".
+- **Business content is translatable**: `service_item_translations` and
+  `menu_category_translations` (migration `0008`), edited at `/menu → Translations`,
+  applied to the customer link with per-field English fallback.
+- **Tamil quotations**: `GET /api/quotes/[id]/pdf?lang=ta` embeds Noto Sans Tamil
+  (`lib/pdf/fonts.ts`). Do not add another PDF font without reading that file.
+- `npm run i18n:audit` — counts untranslated strings; the count must fall.
+- i18n tests including "every `share.*`, `rule.*` and `pdf.*` key exists in Tamil".
 
 Everything else — dashboard, events, catering planner, quotes, invoices, clients,
 inventory, reports, settings, staff, storefront, marketing, auth — is still hardcoded
@@ -356,17 +362,26 @@ remains (see `share-copy.test.ts`). Never rename a placeholder in only one langu
 longest string at 390px. When a control really cannot fit, shorten the copy — do not
 shrink the type below 11px.
 
-### 11. Fonts are Latin-only
+### 11. Fonts: Latin-only in the browser, Helvetica in the PDF
 
 **Symptom:** Tamil renders in an arbitrary device font; a PDF prints boxes.
 
 **Cause:** `inter-latin.woff2` has no Indic glyphs, and `lib/pdf/quote-pdf.tsx` hardcodes
 Helvetica, which has no Indic coverage at all.
 
-**Fix:** the CSS stack already falls back to Noto families per glyph. Bundling subset
-fonts per script is a later, measured decision. **Do not claim PDF support for a language
-until `Font.register` embeds a Noto face and a real PDF has been opened** — that is a
-separate, unfinished phase.
+**Fix:** the CSS stack falls back to Noto families per glyph; the PDF registers
+Noto Sans Tamil through `lib/pdf/fonts.ts`. Three traps if you touch either:
+
+- `@react-pdf/renderer` is in `serverExternalPackages`; bundling it breaks its
+  reconciler at runtime.
+- A font read from disk must be traced into the function
+  (`outputFileTracingIncludes` in `next.config.ts`), or the PDF works locally and
+  fails on Vercel.
+- Money is `Rs.`, not `₹`, because Helvetica has no rupee sign. Change it only if you
+  also change the English font.
+
+**Never claim a language's documents work until a real PDF has been generated and its
+glyphs checked** — a build passing proves nothing about shaping.
 
 ### 12. Translating things that must not be translated
 

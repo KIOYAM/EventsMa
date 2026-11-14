@@ -9,6 +9,13 @@ const nextConfig: NextConfig = {
   // its reconciler at runtime ("Cannot read properties of undefined (reading 'S')").
   serverExternalPackages: ['@react-pdf/renderer'],
 
+  // The Tamil PDF font is read from disk while rendering. Without this trace the
+  // file is absent from the deployed function and a Tamil quotation fails on
+  // Vercel while working locally.
+  outputFileTracingIncludes: {
+    '/api/quotes/[id]/pdf': ['./app/fonts/*.ttf'],
+  },
+
   // Tree-shake barrel imports so a single icon does not ship the whole set.
   experimental: {
     optimizePackageImports: ['lucide-react', 'sonner'],

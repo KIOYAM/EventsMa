@@ -17,6 +17,7 @@ import { common } from './en/common'
 import { dashboard } from './en/dashboard'
 import { events } from './en/events'
 import { nav } from './en/nav'
+import { pdf } from './en/pdf'
 import { rule } from './en/rule'
 import { share } from './en/share'
 
@@ -26,6 +27,7 @@ export const en = {
   dashboard,
   events,
   nav,
+  pdf,
   rule,
   share,
 } as const
