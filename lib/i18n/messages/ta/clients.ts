@@ -7,7 +7,7 @@ import { clients as enClients } from '../en/clients'
 export const clients: DeepPartial<typeof enClients> = {
   title: 'விசாரணைகள்',
   eyebrow: 'உறவுகள்',
-  heading: 'ஒவ்வொரு விசாரணையும், அதன் பின்னても',
+  heading: 'ஒவ்வொரு விசாரணையும், அதன் பிறகு என்ன நடந்தது',
   intro:
     'விலைப்புள்ளிக்கு பின்னர் விசாரணை இல்லை என்றால் அது ஊகம்தான்.',
   directory: 'வாடிக்கையாளர் பட்டியல்',
