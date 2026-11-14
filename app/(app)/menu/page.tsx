@@ -12,23 +12,9 @@ import { formatINR } from '@/lib/domain/money'
 import { unitClassLabel } from '@/lib/domain/units'
 import { MAX_IMAGE_BYTES, ORG_IMAGE_QUOTA_BYTES } from '@/lib/storage/menu-images'
 import { createMenuGroup, createMenuItem, createMenuSection } from './actions'
+import { ERROR_COPY } from './error-copy'
 
 export const metadata = { title: 'Menu' }
-
-const ERROR_COPY: Record<string, string> = {
-  name: 'A name and a price are required.',
-  time: 'Service times must be written as 07:00 or 19:30.',
-  section: 'That meal period no longer exists.',
-  group: 'That group no longer exists.',
-  permission: 'Only an owner or manager can edit the menu.',
-  demo: 'Demo mode: connect a database before changing the menu.',
-  image_empty: 'The selected file was empty.',
-  image_type: 'Images must be WebP, JPEG or PNG.',
-  image_size: `Each image must be under ${Math.round(MAX_IMAGE_BYTES / 1024)} KB.`,
-  image_quota: 'This workspace has reached its 25 MB menu-image quota.',
-  image_storage: 'Image storage is not configured yet. Add the Supabase keys to enable uploads.',
-  image_failed: 'The upload failed. The dish was not saved; try again.',
-}
 
 const kilos = (milli: number) => (milli / 1000).toLocaleString('en-IN', { maximumFractionDigits: 3 })
 
@@ -60,6 +46,9 @@ export default async function MenuPage({
         eyebrow="Menu"
         title="Meal periods, groups and the dishes inside them"
         description="Breakfast holds its own groups and dishes, with the service window printed on the menu. The same dish can be quoted without any of this structure."
+        actions={
+          <Link href="/menu/translations" className="inline-flex h-9 items-center rounded-xl border border-hairline px-3 text-sm text-ink hover:bg-mint-subtle">Translations</Link>
+        }
       />
 
       {params.error && ERROR_COPY[params.error] ? (

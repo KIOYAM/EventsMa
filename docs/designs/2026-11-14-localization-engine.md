@@ -151,6 +151,43 @@ button disabled. The seeded rows were removed afterwards.
 remaining surfaces (they are still `en`), `memberships.locale` for a saved
 preference, and the Telugu/Kannada/Malayalam catalogues.
 
+## Shipped: business content in more than one language (layer 2)
+
+Migration `0008_content_translations` adds two tables, both with `org_id`, RLS and
+a unique `(record, locale)` constraint:
+
+| Table | Points at | Holds |
+|---|---|---|
+| `service_item_translations` | `service_items` | name, description per locale (`ta`, `te`, `kn`, `ml`) |
+| `menu_category_translations` | `menu_categories` | name, description per locale |
+
+Decisions that matter:
+
+- **English is the source column, not a row.** `locale` cannot be `'en'`, so the
+  same text never has two homes to drift apart.
+- **One dish, one id, one price.** A translation is a child row; stock, quotes and
+  submission lines keep pointing at the same record.
+- **Fallback is per field** (`lib/domain/translations.ts`): a Tamil name with no
+  Tamil description shows the English description; a blank string counts as absent,
+  so clearing a box means "use English", not "show nothing".
+- **Reads are two bounded queries**, not one per dish: both maps are loaded for the
+  whole menu and overlaid while rendering.
+- **The owner edits it** at `/menu → Translations` (one save for the whole page, ids
+  filtered to the workspace before any write, blank name deletes the row).
+- **Submissions keep the source names.** `createShareSubmission` resolves the portal
+  without a locale, so what the owner reads in `/submissions` is always the wording
+  they wrote, whichever language the customer used.
+
+Verified against a seeded event: with `eventsma_locale=ta` the link rendered
+`சிக்கன் பிரியாணி` and `முக்கிய உணவு` while an untranslated `Paneer Tikka` stayed
+English; with `en` the same page showed `Chicken Biryani` and no Tamil. The seeded
+rows and translations were removed afterwards. `/menu/translations` sits behind the
+same auth gate as `/menu` (both redirect to `/login` when signed out), so the editor
+screen itself was not visually exercised — its data path was.
+
+**Still open in layer 2:** meal-session names (`Lunch`/`Dinner` come from the owner's
+template) and package titles for decoration/makeup/photography.
+
 ## What this change does NOT do
 
 It does **not** translate a single screen. Shipping a language selector over an

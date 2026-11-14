@@ -481,3 +481,24 @@ drop policy if exists share_submission_sessions_write on public.share_submission
 create policy share_submission_sessions_write on public.share_submission_sessions
   for all using (public.has_org_role(org_id, array['owner','manager']))
   with check (public.has_org_role(org_id, array['owner','manager']));
+
+-- Content translations mirror their parent rows: an owner or manager of the org
+-- may read and write them, nobody else. No anon/authenticated policy is added, so
+-- the public share path still resolves through the system client.
+alter table public.service_item_translations enable row level security;
+drop policy if exists service_item_translations_select on public.service_item_translations;
+create policy service_item_translations_select on public.service_item_translations
+  for select using (public.has_org_role(org_id, array['owner','manager']));
+drop policy if exists service_item_translations_write on public.service_item_translations;
+create policy service_item_translations_write on public.service_item_translations
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));
+
+alter table public.menu_category_translations enable row level security;
+drop policy if exists menu_category_translations_select on public.menu_category_translations;
+create policy menu_category_translations_select on public.menu_category_translations
+  for select using (public.has_org_role(org_id, array['owner','manager']));
+drop policy if exists menu_category_translations_write on public.menu_category_translations;
+create policy menu_category_translations_write on public.menu_category_translations
+  for all using (public.has_org_role(org_id, array['owner','manager']))
+  with check (public.has_org_role(org_id, array['owner','manager']));

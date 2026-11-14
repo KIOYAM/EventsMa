@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CalendarDays, Mail, MapPin, MessageCircle, Phone, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { isTranslatableLocale } from '@/lib/domain/translations'
 import { getSharePortal } from '@/lib/db/share'
 import { formatDateLocalised, formatNumberLocalised } from '@/lib/i18n/format'
 import { localeMeta } from '@/lib/i18n/locales'
@@ -17,7 +18,9 @@ export default async function SharePage({ params }: { params: Promise<{ slug: st
   const { slug } = await params
   const locale = await getLocale()
   const t = translatorFor(locale)
-  const portal = await getSharePortal(slug)
+  // The interface language also selects the owner's content translations; a
+  // language with no content translations yet simply falls back to the source text.
+  const portal = await getSharePortal(slug, isTranslatableLocale(locale) ? locale : null)
 
   if (!portal) notFound()
 

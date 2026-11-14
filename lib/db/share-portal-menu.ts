@@ -11,6 +11,9 @@ import {
 import type { MenuCategory, MenuDish, MenuSession } from '@/lib/domain/menu-selection'
 import type { SelectionRule } from '@/lib/domain/catering'
 import { isUnitClass } from '@/lib/domain/units'
+import { localiseContent } from '@/lib/domain/translations'
+import { loadCategoryTranslations, loadItemTranslations } from './content-translations'
+import type { TranslationLocale } from './schema-translations'
 
 /**
  * The customer-facing view of an event's catering plan.
@@ -26,7 +29,11 @@ import { isUnitClass } from '@/lib/domain/units'
 
 const NO_RULE: SelectionRule = { minSelections: 0, maxSelections: null, required: false }
 
-export async function loadEventMenu(orgId: string, eventId: string): Promise<MenuSession[]> {
+export async function loadEventMenu(
+  orgId: string,
+  eventId: string,
+  locale: TranslationLocale | null = null,
+): Promise<MenuSession[]> {
   const db = getSystemDb()
 
   const sessions = await db
@@ -110,15 +117,37 @@ export async function loadEventMenu(orgId: string, eventId: string): Promise<Men
 
   const categoryMeta = new Map(categories.map((row) => [row.id, row]))
 
+  // Content translations are additive: the dish ids and prices are the same rows,
+  // only the words change. Two extra bounded queries, no query per dish.
+  let itemTranslations = new Map<string, { name: string; description: string | null }>()
+  let categoryTranslations = new Map<string, { name: string; description: string | null }>()
+  if (locale) {
+    const itemIds = items.map((row) => row.id).filter((id): id is string => Boolean(id))
+    ;[itemTranslations, categoryTranslations] = await Promise.all([
+      loadItemTranslations(db, orgId, locale, itemIds),
+      loadCategoryTranslations(
+        db,
+        orgId,
+        locale,
+        categories.map((row) => row.id),
+      ),
+    ])
+  }
+
   const dishesBySessionCategory = new Map<string, MenuDish[]>()
   for (const item of items) {
     if (!item.categoryId || !item.id) continue
     const key = `${item.eventSessionId}:${item.categoryId}`
     const bucket = dishesBySessionCategory.get(key) ?? []
+    const content = localiseContent(
+      { name: item.name, description: item.description ?? null },
+      itemTranslations.get(item.id),
+    )
+
     bucket.push({
       id: item.id,
-      name: item.name,
-      description: item.description ?? null,
+      name: content.name,
+      description: content.description,
       pricePaise: item.pricePaise,
       unitClass: isUnitClass(item.unitClass) ? item.unitClass : 'PER_GUEST',
       unitLabel: item.unitLabel ?? null,
@@ -147,10 +176,15 @@ export async function loadEventMenu(orgId: string, eventId: string): Promise<Men
     for (const category of categories) {
       const dishes = dishesBySessionCategory.get(`${session.id}:${category.id}`)
       if (!dishes || dishes.length === 0) continue
+      const categoryContent = localiseContent(
+        { name: category.name, description: category.description },
+        categoryTranslations.get(category.id),
+      )
+
       sessionCategories.push({
         id: category.id,
-        name: category.name,
-        description: category.description,
+        name: categoryContent.name,
+        description: categoryContent.description,
         rule: ruleMap?.get(category.id) ?? NO_RULE,
         dishes: dishes.sort((a, b) => a.name.localeCompare(b.name)),
       })

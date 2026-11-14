@@ -9,6 +9,9 @@ import { loadEventMenu } from './share-portal-menu'
 import { verticalDescriptor } from '@/lib/domain/verticals'
 import { isUnitClass, type UnitClass } from '@/lib/domain/units'
 import type { MenuSession } from '@/lib/domain/menu-selection'
+import { localiseContent } from '@/lib/domain/translations'
+import { loadItemTranslations } from './content-translations'
+import type { TranslationLocale } from './schema-translations'
 
 /** One catalogue item a customer can pick. Prices are indicative, not confidential costs. */
 export interface PortalItem {
@@ -76,7 +79,16 @@ export interface SharePortal {
  * data a customer may see. Returns null for expired or revoked links so the page
  * can 404 rather than leak a stale catalogue.
  */
-export async function getSharePortal(token: string): Promise<SharePortal | null> {
+/**
+ * `locale` localises the *business content* the customer reads (dish and category
+ * names), never the interface — the page passes the interface language it resolved
+ * from the cookie. Omitted, everything renders in the owner's source language, which
+ * is what server-side submission handling wants.
+ */
+export async function getSharePortal(
+  token: string,
+  locale: TranslationLocale | null = null,
+): Promise<SharePortal | null> {
   if (!isDatabaseConfigured() || !token) return null
   const db = getSystemDb()
 
@@ -239,6 +251,15 @@ export async function getSharePortal(token: string): Promise<SharePortal | null>
       : Promise.resolve([]),
   ])
 
+  const itemTranslations = locale
+    ? await loadItemTranslations(
+        db,
+        event.orgId,
+        locale,
+        items.map((item) => item.id),
+      )
+    : new Map<string, { name: string; description: string | null }>()
+
   const services: PortalService[] = enabled.map((service) => {
     const descriptor = verticalDescriptor(service.key)
     const serviceItemsList = items.filter((item) => item.verticalKey === service.key)
@@ -247,10 +268,14 @@ export async function getSharePortal(token: string): Promise<SharePortal | null>
     for (const item of serviceItemsList) {
       const category = item.category?.trim() || descriptor.itemNoun
       const bucket = byCategory.get(category) ?? []
+      const content = localiseContent(
+        { name: item.name, description: item.description },
+        itemTranslations.get(item.id),
+      )
       bucket.push({
         id: item.id,
-        name: item.name,
-        description: item.description,
+        name: content.name,
+        description: content.description,
         category: item.category,
         unitClass: isUnitClass(item.unitClass) ? item.unitClass : 'FLAT',
         unitLabel: item.unitLabel,
@@ -294,7 +319,9 @@ export async function getSharePortal(token: string): Promise<SharePortal | null>
     }
   })
 
-  const menu = keys.includes('catering') ? await loadEventMenu(event.orgId, event.id) : []
+  const menu = keys.includes('catering')
+    ? await loadEventMenu(event.orgId, event.id, locale)
+    : []
 
   // A planned menu replaces the flat catering catalogue on the customer link:
   // the same dishes would otherwise appear twice, with two different rule sets.
