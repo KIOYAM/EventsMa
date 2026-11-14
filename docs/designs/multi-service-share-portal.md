@@ -81,11 +81,22 @@ inserts a `business_services` row when none exists, so the first edit is not los
   price — never `cost_paise`.
 - Expired or revoked links return 404.
 
+## Verification record
+
+Applied on the production database on 2026-11-14 (through the Supabase pooler, because
+`DIRECT_URL` no longer resolves): migrations `0005` and `0006`, then `db/setup.mjs` →
+**56 tables, 56 with RLS, 109 policies, two-tenant isolation PASS**.
+
+Proven end to end on the live deployment with a labelled test event and two services:
+portal rendered both catalogues; one POST wrote client + enquiry + submission +
+2 service rows + 2 lines + 1 queued notification; indicative total ₹14,000
+(`PER_GUEST` 100 × ₹60 = ₹6,000, `FLAT` ₹8,000); an identical repeat POST returned
+`duplicate: true` with no second row; the owner saw it at `/submissions` and
+`Mark reviewed` persisted. All test rows were then deleted and the tenant restored to
+catering-only.
+
 ## Known limitations (honest)
 
-- The Supabase project is currently unreachable (`tenant/user … not found`), so
-  `0006_share_portal.sql` has **not** been applied and no end-to-end submission has
-  been written to a real database yet.
 - Business-wide catalogue links (`kind = 'catalogue'`) are modelled but the portal
   only serves event links today.
 - Submissions are reviewed and marked; generating the consolidated quotation from a
