@@ -167,18 +167,20 @@ export default async function SubmissionsPage({
                 ) : null}
 
                 {canEdit ? (
-                  <form action={setSubmissionStatus} className="flex flex-wrap items-center gap-2">
-                    <input type="hidden" name="id" value={submission.id} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* One form per status: a submit button's value is not reliably
+                        serialised by the server-action form, so it is a hidden input. */}
                     {(['reviewed', 'quoted', 'closed'] as const).map((status) => (
-                      <button
-                        key={status}
-                        type="submit"
-                        name="status"
-                        value={status}
-                        className="inline-flex h-9 items-center rounded-control border border-hairline px-3 text-xs text-ink hover:bg-mint-subtle"
-                      >
-                        Mark {status}
-                      </button>
+                      <form key={status} action={setSubmissionStatus}>
+                        <input type="hidden" name="id" value={submission.id} />
+                        <input type="hidden" name="status" value={status} />
+                        <button
+                          type="submit"
+                          className="inline-flex h-9 items-center rounded-control border border-hairline px-3 text-xs text-ink hover:bg-mint-subtle"
+                        >
+                          Mark {status}
+                        </button>
+                      </form>
                     ))}
                     {submission.eventId ? (
                       <Link
@@ -188,7 +190,7 @@ export default async function SubmissionsPage({
                         Prepare quotation
                       </Link>
                     ) : null}
-                  </form>
+                  </div>
                 ) : null}
               </CardContent>
             </Card>
