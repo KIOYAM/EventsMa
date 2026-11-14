@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -12,6 +13,7 @@ import {
   Inbox,
   Layers,
   LayoutGrid,
+  MoreHorizontal,
   Palette,
   Package,
   Receipt,
@@ -88,7 +90,14 @@ const LABEL_KEYS: Record<string, string> = {
   '/settings': 'nav.settings',
 }
 
-/** Four tabs, because a fifth target is a miss on a phone held one-handed. */
+/**
+ * Four tabs plus "More".
+ *
+ * Four was the whole of mobile navigation, so every module outside this list —
+ * quotes, catalogue, catering, reports, settings — was unreachable on a phone.
+ * The fifth slot opens the same grouped registry the desktop rail renders, so a
+ * new module appears on both surfaces without touching this file.
+ */
 const MOBILE = [
   { key: 'dashboard', path: '/dashboard', labelKey: 'nav.home', icon: 'LayoutGrid' },
   { key: 'clients', path: '/clients', labelKey: 'nav.clients', icon: 'Inbox' },
@@ -109,6 +118,7 @@ interface NavLinksProps {
 export function NavLinks({ variant, entries = [], locale }: NavLinksProps) {
   const pathname = usePathname()
   const t = createTranslator(locale)
+  const [moreOpen, setMoreOpen] = useState(false)
 
   // Group entries by their declared group, preserving declaration order.
   const groups: { label: string; items: NavEntry[] }[] = []
@@ -126,26 +136,99 @@ export function NavLinks({ variant, entries = [], locale }: NavLinksProps) {
 
   if (variant === 'mobile') {
     return (
-      <div className="contents">
-        {MOBILE.map((item) => {
-          const Icon = iconFor(item.icon)
-          const active = isActive(pathname, item.path)
-          return (
-            <Link
-              key={item.key}
-              href={item.path}
-              aria-current={active ? 'page' : undefined}
-              className={cn(
-                'flex h-16 flex-col items-center justify-center gap-1 text-[10px]',
-                active ? 'text-forest' : 'text-ink-muted',
-              )}
+      <>
+        <div className="contents">
+          {MOBILE.map((item) => {
+            const Icon = iconFor(item.icon)
+            const active = isActive(pathname, item.path)
+            return (
+              <Link
+                key={item.key}
+                href={item.path}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'flex h-16 flex-col items-center justify-center gap-1 text-[10px]',
+                  active ? 'text-forest' : 'text-ink-muted',
+                )}
+              >
+                <Icon className={cn('h-5 w-5', active && 'stroke-[2.25]')} aria-hidden />
+                {t(item.labelKey)}
+              </Link>
+            )
+          })}
+
+          <button
+            type="button"
+            aria-expanded={moreOpen}
+            aria-controls="mobile-more"
+            onClick={() => setMoreOpen((open) => !open)}
+            className={cn(
+              'flex h-16 flex-col items-center justify-center gap-1 text-[10px]',
+              moreOpen ? 'text-forest' : 'text-ink-muted',
+            )}
+          >
+            <MoreHorizontal className="h-5 w-5" aria-hidden />
+            {t('nav.more')}
+          </button>
+        </div>
+
+        {moreOpen ? (
+          <>
+            <button
+              type="button"
+              aria-label={t('nav.closeMenu')}
+              onClick={() => setMoreOpen(false)}
+              className="fixed inset-0 z-30 bg-ink/25"
+            />
+            <div
+              id="mobile-more"
+              className="fixed inset-x-0 bottom-16 z-40 max-h-[70dvh] overflow-y-auto rounded-t-2xl border-t border-hairline bg-paper px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 shadow-xl"
             >
-              <Icon className={cn('h-5 w-5', active && 'stroke-[2.25]')} aria-hidden />
-              {t(item.labelKey)}
-            </Link>
-          )
-        })}
-      </div>
+              {groups.map((group) => (
+                <div key={group.label} className="mb-3">
+                  <p className="px-2 pb-1 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+                    {group.label}
+                  </p>
+                  <div className="grid grid-cols-2 gap-0.5">
+                    {group.items.map((item) => {
+                      const Icon = iconFor(item.icon)
+                      const active = isActive(pathname, item.path)
+                      const labelKey = LABEL_KEYS[item.path]
+                      return (
+                        <Link
+                          key={item.key}
+                          href={item.path}
+                          aria-current={active ? 'page' : undefined}
+                          onClick={() => setMoreOpen(false)}
+                          className={cn(
+                            'flex min-h-11 items-center gap-2 rounded-control px-2 text-sm',
+                            active
+                              ? 'bg-mint font-medium text-forest'
+                              : 'text-ink-muted hover:bg-mint-subtle hover:text-ink',
+                          )}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                          <span className="truncate">{labelKey ? t(labelKey) : item.label}</span>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              <Link
+                href="/me"
+                aria-current={isActive(pathname, '/me') ? 'page' : undefined}
+                onClick={() => setMoreOpen(false)}
+                className="mt-1 flex min-h-11 items-center gap-2 border-t border-hairline px-2 pt-2 text-sm text-ink-muted"
+              >
+                <Users className="h-4 w-4 shrink-0" aria-hidden />
+                {t('nav.myWork')}
+              </Link>
+            </div>
+          </>
+        ) : null}
+      </>
     )
   }
 

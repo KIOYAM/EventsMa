@@ -32,6 +32,8 @@ export const nav: DeepPartial<typeof enNav> = {
   groupBusiness: 'வணிகம்',
 
   language: 'மொழி',
+  more: 'மேலும்',
+  closeMenu: 'மெனுவை மூடு',
 
   shell: {
     workspace: 'பணியிடம்',

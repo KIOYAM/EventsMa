@@ -32,6 +32,9 @@ export const nav = {
 
   /** Language switch label: the word for "language", not the language name. */
   language: 'Language',
+  /** Fifth mobile tab: opens every module the desktop rail shows. */
+  more: 'More',
+  closeMenu: 'Close menu',
 
   /** The signed-in shell: rail, mobile header and business card. */
   shell: {

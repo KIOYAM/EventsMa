@@ -98,7 +98,7 @@ export function AppShell({
 
           <nav
             aria-label={t('nav.shell.primary')}
-            className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-hairline bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+            className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-hairline bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
           >
             <NavLinks variant="mobile" entries={nav} locale={locale} />
           </nav>
