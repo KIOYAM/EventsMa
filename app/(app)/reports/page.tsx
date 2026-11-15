@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
 import { Stat } from '@/components/ui/stat'
+import { TrendChart } from '@/components/charts/trend-chart'
 import { createTranslator } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locales'
 import { getLocale, translatorFor } from '@/lib/i18n/server'
@@ -24,6 +25,11 @@ export default async function ReportsPage() {
   const peak = Math.max(1, ...data.months.map((month) => Math.max(month.revenuePaise, month.expensePaise)))
   const marginBp =
     data.revenuePaise > 0 ? Math.round((data.marginPaise * 10_000) / data.revenuePaise) : 0
+  const marginPoints = data.months.map((month) => ({
+    key: month.key,
+    label: month.label,
+    value: month.revenuePaise - month.expensePaise,
+  }))
 
   return (
     <div className="space-y-6">
@@ -116,6 +122,26 @@ export default async function ReportsPage() {
           <p className="mt-2 text-xs text-ink-muted">
             {t('reports.barsNote')}
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('reports.marginTrend')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TrendChart
+            id="margin"
+            points={marginPoints}
+            tone="forest"
+            formatValue={(value) => formatPaiseLocalised(value, locale)}
+            ariaLabel={t('reports.marginTrendAria', {
+              series: marginPoints
+                .map((point) => `${point.label} ${formatPaiseLocalised(point.value, locale)}`)
+                .join(', '),
+            })}
+            caption={t('reports.marginTrendHint')}
+          />
         </CardContent>
       </Card>
 

@@ -41,4 +41,9 @@ export const reports = {
     permission: 'reports.errors.permission',
     demo: 'reports.errors.demo',
   },
+
+  marginTrend: 'Margin trend',
+  marginTrendHint:
+    'Revenue less costs for each month. A line below zero is a month that lost money.',
+  marginTrendAria: 'Margin by month: {series}',
 } as const

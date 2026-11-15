@@ -81,4 +81,11 @@ export const dashboard = {
 
   /** `{file}` keeps the inline code style around `.env.local`. */
   demoNote: 'Showing labelled demo data. Connect Supabase in {file} to use a live workspace.',
+
+  trend: {
+    heading: 'Pipeline trend',
+    hint: 'Quote value issued each month, declined quotes excluded.',
+    aria: 'Quote value by month: {series}',
+    empty: 'No quote has been issued in the last six months yet.',
+  },
 } as const

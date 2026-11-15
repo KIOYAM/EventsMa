@@ -578,3 +578,84 @@ export async function getEnabledServices(
 export function serviceNavigation(enabled: readonly EnabledService[]) {
   return buildServiceNavigation(enabled)
 }
+
+export interface TrendPointData {
+  key: string
+  label: string
+  value: number
+}
+
+function trendMonthKey(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+function trendMonthLabel(key: string, locale: string): string {
+  const [year, month] = key.split('-').map(Number)
+  return new Date(Date.UTC(year ?? 2026, (month ?? 1) - 1, 1)).toLocaleString(locale, {
+    month: 'short',
+    timeZone: 'UTC',
+  })
+}
+
+/**
+ * Quote value issued in each of the last six months.
+ *
+ * Declined quotes are excluded — they never were pipeline — and the months are
+ * generated rather than grouped so an empty month is a zero on the line, not a
+ * missing point that silently shortens the axis.
+ */
+export async function getPipelineTrend(
+  orgId: string,
+  demo: boolean,
+  locale = 'en',
+): Promise<TrendPointData[]> {
+  const months: string[] = []
+  for (let index = 5; index >= 0; index -= 1) {
+    const cursor = new Date()
+    cursor.setUTCDate(1)
+    cursor.setUTCHours(0, 0, 0, 0)
+    cursor.setUTCMonth(cursor.getUTCMonth() - index)
+    months.push(trendMonthKey(cursor))
+  }
+
+  if (demo || !isDatabaseConfigured()) {
+    const pipeline = demoQuotes
+      .filter((quote) => quote.status === 'sent' || quote.status === 'draft')
+      .reduce((sum, quote) => sum + quote.totalPaise, 0)
+    // A deterministic shape so the demo line has a story; the demo banner says it is not real.
+    const shape = [0.55, 0.8, 0.62, 0.95, 1.1, 1.25]
+    return months.map((key, index) => ({
+      key,
+      label: trendMonthLabel(key, locale),
+      value: Math.round((pipeline * (shape[index] ?? 1)) / 1.25 / 10_000) * 10_000,
+    }))
+  }
+
+  const since = new Date()
+  since.setUTCDate(1)
+  since.setUTCHours(0, 0, 0, 0)
+  since.setUTCMonth(since.getUTCMonth() - 5)
+
+  const rows = await getDb()
+    .select({
+      key: sql<string>`to_char(${quotations.createdAt}, 'YYYY-MM')`,
+      n: sql<number>`coalesce(sum(${quotationVersions.totalPaise}), 0)::int`,
+    })
+    .from(quotations)
+    .innerJoin(quotationVersions, eq(quotations.currentVersionId, quotationVersions.id))
+    .where(
+      and(
+        eq(quotations.orgId, orgId),
+        gte(quotations.createdAt, since),
+        sql`${quotations.status} <> 'declined'`,
+      ),
+    )
+    .groupBy(sql`to_char(${quotations.createdAt}, 'YYYY-MM')`)
+
+  const byMonth = new Map(rows.map((row) => [row.key, row.n]))
+  return months.map((key) => ({
+    key,
+    label: trendMonthLabel(key, locale),
+    value: byMonth.get(key) ?? 0,
+  }))
+}

@@ -44,4 +44,9 @@ export const reports: DeepPartial<typeof enReports> = {
     permission: 'reports.errors.permission',
     demo: 'reports.errors.demo',
   },
+
+  marginTrend: 'லாப வரம்பு போக்கு',
+  marginTrendHint:
+    'ஒவ்வொரு மாதமும் வருவாய் கழித்து செலவு. பூஜ்ஜியத்திற்குக் கீழே இருந்தால் அந்த மாதம் நட்டம்.',
+  marginTrendAria: 'மாதம் வாரியாக லாப வரம்பு: {series}',
 }

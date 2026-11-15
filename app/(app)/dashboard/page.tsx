@@ -12,7 +12,8 @@ import { StatSkeleton, TableSkeleton } from '@/components/ui/skeleton'
 import { requireWorkspace, type WorkspaceContext } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getAttentionItems } from '@/lib/db/attention'
-import { getWorkspaceSummary } from '@/lib/db/queries'
+import { getPipelineTrend, getWorkspaceSummary } from '@/lib/db/queries'
+import { TrendChart } from '@/components/charts/trend-chart'
 import { formatINR, formatPercentBp } from '@/lib/domain/money'
 import { verticalDescriptor } from '@/lib/domain/verticals'
 import { createTranslator } from '@/lib/i18n'
@@ -100,10 +101,11 @@ export default async function DashboardPage() {
 
 async function DashboardBody({ ctx, locale }: { ctx: WorkspaceContext; locale: Locale }) {
   const t = createTranslator(locale)
-  const [data, attention] = await withWorkspace(ctx, () =>
+  const [data, attention, trend] = await withWorkspace(ctx, () =>
     Promise.all([
       getWorkspaceSummary(ctx.orgId, ctx.demo),
       getAttentionItems(ctx.orgId, ctx.demo),
+      getPipelineTrend(ctx.orgId, ctx.demo, locale),
     ]),
   )
   const activeServices = data.services.filter((s) => s.enabled)
@@ -137,6 +139,37 @@ async function DashboardBody({ ctx, locale }: { ctx: WorkspaceContext; locale: L
           hint={t('dashboard.stats.marginHint')}
           icon={<TrendingUp className="h-4 w-4" aria-hidden />}
         />
+      </section>
+
+      <section className="card-surface p-4 sm:p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">{t('dashboard.trend.heading')}</h2>
+            <p className="mt-0.5 text-xs text-ink-muted">{t('dashboard.trend.hint')}</p>
+          </div>
+          <p className="tabular text-sm text-ink-muted">
+            {formatPaiseLocalised(
+              trend.reduce((sum, point) => sum + point.value, 0),
+              locale,
+            )}
+          </p>
+        </div>
+        {trend.every((point) => point.value === 0) ? (
+          <p className="mt-4 text-sm text-ink-muted">{t('dashboard.trend.empty')}</p>
+        ) : (
+          <TrendChart
+            id="pipeline"
+            className="mt-4"
+            points={trend}
+            tone="forest"
+            formatValue={(value) => formatINR(value, { compact: true })}
+            ariaLabel={t('dashboard.trend.aria', {
+              series: trend
+                .map((point) => `${point.label} ${formatINR(point.value, { compact: true })}`)
+                .join(', '),
+            })}
+          />
+        )}
       </section>
 
       <section className="space-y-3">
