@@ -49,7 +49,7 @@ export default async function SubmissionsPage({
         actions={
           <Link
             href="/events"
-            className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink hover:bg-mint-subtle"
+            className="btn btn-md btn-outline hover:bg-mint-subtle"
           >
             {t('submissions.events')}
           </Link>

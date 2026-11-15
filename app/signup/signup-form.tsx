@@ -14,7 +14,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex h-11 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-60"
+      className="btn btn-md btn-primary w-full disabled:opacity-60"
     >
       {pending ? 'Creating your account…' : 'Create account and continue'}
     </button>

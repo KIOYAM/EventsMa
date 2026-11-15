@@ -16,7 +16,7 @@ export default function Loading() {
       </div>
       <Skeleton className="h-10 w-full max-w-md" />
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <div className="rounded-card border border-hairline bg-paper p-5">
+        <div className="card-surface p-5">
           <Skeleton className="h-4 w-32" />
           <div className="mt-5 space-y-3">
             {Array.from({ length: 5 }, (_, row) => (
@@ -24,7 +24,7 @@ export default function Loading() {
             ))}
           </div>
         </div>
-        <div className="rounded-card border border-hairline bg-paper p-5">
+        <div className="card-surface p-5">
           <Skeleton className="h-4 w-24" />
           <div className="mt-5 space-y-3">
             {Array.from({ length: 3 }, (_, row) => (

@@ -56,7 +56,95 @@
   --radius-control: 0.625rem;
 }
 
+/*
+ * Two surface utilities, adopted across every page.
+ *
+ * Before this, 64 places spelled out `rounded-card border border-hairline
+ * bg-paper` by hand, so every panel had the same weight and none had elevation.
+ * Naming them means a page says what it means, and one change restyles them all.
+ */
+@layer components {
+  .card-surface {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-hairline);
+    background-color: var(--color-paper);
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-flat {
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-hairline);
+    background-color: var(--color-paper);
+  }
+
+  /*
+   * The same action language as `components/ui/button.tsx`, available to markup that
+   * has not migrated to the component yet. Kept in step with `buttonVariants`: if
+   * one changes, change both. This is what lets 40+ hand-written buttons adopt one
+   * height, radius and focus ring without a risky JSX rewrite.
+   */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest;
+  }
+
+  .btn-md {
+    @apply h-11 px-4 text-sm;
+  }
+
+  .btn-sm {
+    @apply h-10 px-3 text-sm;
+  }
+
+  .btn-primary {
+    @apply bg-forest text-white hover:bg-forest-hover;
+  }
+
+  .btn-secondary {
+    @apply bg-mint text-forest hover:bg-mint-subtle;
+  }
+
+  .btn-outline {
+    @apply border border-hairline bg-paper text-ink hover:bg-mint-subtle;
+  }
+
+  .btn-ghost {
+    @apply text-ink hover:bg-mint-subtle;
+  }
+}
+
 @layer base {
+  ::selection {
+    background-color: var(--color-mint);
+    color: var(--color-forest);
+  }
+
+  /*
+   * Tables get a baseline from here, because every list page hand-rolls its own.
+   * Header cells read as labels rather than as content, and rows separate with a
+   * hairline instead of a border on every cell.
+   */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  thead th {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--color-ink-muted);
+  }
+
+  tbody tr + tr {
+    border-top: 1px solid var(--color-hairline);
+  }
+
+  a {
+    text-underline-offset: 4px;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;

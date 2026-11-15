@@ -31,7 +31,7 @@ export function AppShell({
   return (
     <div lang={localeMeta(locale).intl} className="min-h-dvh bg-canvas">
       <PerfMonitor />
-      <div className="mx-auto flex w-full max-w-[1400px]">
+      <div className="mx-auto flex w-full max-w-[1320px]">
         {/* Desktop rail: 252px, matching the prototype's information architecture. */}
         <aside className="sticky top-0 hidden h-dvh w-[252px] shrink-0 flex-col border-r border-hairline bg-paper px-4 py-6 lg:flex">
           <Link href="/dashboard" className="flex items-center gap-2 px-2">
@@ -50,7 +50,7 @@ export function AppShell({
             <LocaleSwitch locale={locale} label={t('nav.language')} />
           </div>
 
-          <div className="mt-auto space-y-3 rounded-card border border-hairline bg-canvas p-3">
+          <div className="mt-auto space-y-3 card-flat bg-canvas p-3">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
               {t('nav.shell.business')}
             </p>

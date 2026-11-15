@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CopyButton } from '@/components/copy-button'
 import { Field, Input, Select } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
+import { createTranslator } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locales'
+import { translatorFor } from '@/lib/i18n/server'
 import { appUrl } from '@/lib/app-url'
 import { requireWorkspace } from '@/lib/auth/session'
 import { getDb } from '@/lib/db/client'
@@ -13,15 +16,15 @@ import { inviteMember, setMemberActive, updateMemberRole } from './actions'
 
 export const metadata = { title: 'Team' }
 
-const ERROR_COPY: Record<string, string> = {
-  permission: 'Only the owner can change the team.',
-  email: 'Enter a valid email address.',
-  role: 'That role is not valid.',
-  missing: 'That member no longer exists.',
-  already: 'That email is already on the team.',
-  pending: 'That email already has a pending invitation. Copy the existing link below.',
-  last_owner: 'A workspace must keep at least one active owner.',
-  demo: 'Demo mode: connect a database before inviting anyone.',
+const ERROR_KEYS: Record<string, string> = {
+  permission: 'team.errors.permission',
+  email: 'team.errors.email',
+  role: 'team.errors.role',
+  missing: 'team.errors.missing',
+  already: 'team.errors.already',
+  pending: 'team.errors.pending',
+  last_owner: 'team.errors.lastOwner',
+  demo: 'team.errors.demo',
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -42,6 +45,8 @@ export default async function TeamPage({
   searchParams: Promise<{ error?: string; invited?: string; saved?: string }>
 }) {
   const ctx = await requireWorkspace()
+  const locale = 'en'
+  const t = translatorFor(locale)
   const params = await searchParams
 
   const demo = ctx.demo
@@ -79,32 +84,36 @@ export default async function TeamPage({
   const isOwner = ctx.role === 'owner'
   const canEdit = isOwner && !ctx.demo
 
+  const errorKey = params.error ? ERROR_KEYS[params.error] : undefined
+
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Team"
-        title="Who can see prices, and who cannot"
-        description="Roles are enforced in the database, not in the navigation. Employees work with events and stock; owners and managers see money."
+        eyebrow={t('team.eyebrow')}
+        title={t('team.heading')}
+        description={t('team.intro')}
       />
 
-      {params.error && ERROR_COPY[params.error] ? (
+      {errorKey ? (
         <div className="rounded-card border border-terracotta/30 bg-terracotta-soft px-4 py-3 text-sm text-terracotta">
-          {ERROR_COPY[params.error]}
+          {t(errorKey)}
         </div>
       ) : null}
       {params.invited ? (
         <div className="rounded-card border border-mint bg-mint-subtle px-4 py-3 text-sm text-forest">
-          Invitation recorded. Email delivery is not wired yet — copy the link manually until it is.
+          {t('team.invitationRecorded')}
         </div>
       ) : null}
       {params.saved ? (
-        <div className="rounded-card border border-mint bg-mint-subtle px-4 py-3 text-sm text-forest">Saved.</div>
+        <div className="rounded-card border border-mint bg-mint-subtle px-4 py-3 text-sm text-forest">
+          {t('team.saved.settings')}
+        </div>
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Members</CardTitle>
+            <CardTitle>{t('team.members')}</CardTitle>
             <Badge tone="outline">{members.length}</Badge>
           </CardHeader>
           <CardContent className="divide-y divide-hairline">
@@ -139,7 +148,7 @@ export default async function TeamPage({
                     disabled={!canEdit}
                     className="text-xs font-medium text-forest underline underline-offset-2 disabled:opacity-40"
                   >
-                    Save
+                    {t('team.save')}
                   </button>
                 </form>
 
@@ -151,7 +160,7 @@ export default async function TeamPage({
                     disabled={!canEdit}
                     className="text-xs text-ink-muted underline underline-offset-2 disabled:opacity-40"
                   >
-                    {member.status === 'active' ? 'Deactivate' : 'Reactivate'}
+                    {member.status === 'active' ? t('team.deactivate') : t('team.reactivate')}
                   </button>
                 </form>
               </div>
@@ -162,40 +171,40 @@ export default async function TeamPage({
         <div className="space-y-5">
           <Card>
             <CardHeader>
-              <CardTitle>Invite a teammate</CardTitle>
+              <CardTitle>{t('team.invite')}</CardTitle>
             </CardHeader>
             <CardContent>
               <form action={inviteMember} className="space-y-3">
-                <Field label="Email" htmlFor="inviteEmail">
+                <Field label={t('team.email')} htmlFor="inviteEmail">
                   <Input id="inviteEmail" name="email" type="email" required placeholder="name@business.in" />
                 </Field>
-                <Field label="Role" htmlFor="inviteRole" hint="Managers see prices. Employees do not.">
+                <Field label={t('team.role')} htmlFor="inviteRole" hint={t('team.roleHint')}>
                   <Select id="inviteRole" name="role" defaultValue="employee">
-                    <option value="manager">Manager</option>
-                    <option value="employee">Employee</option>
-                    <option value="owner">Owner</option>
+                    <option value="manager">{t('team.manager')}</option>
+                    <option value="employee">{t('team.employee')}</option>
+                    <option value="owner">{t('team.owner')}</option>
                   </Select>
                 </Field>
                 <button
                   type="submit"
                   disabled={!canEdit}
-                  className="inline-flex h-10 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+                  className="btn btn-md btn-primary w-full disabled:opacity-50"
                 >
-                  Send invitation
+                  {t('team.sendInvitation')}
                 </button>
-                {!isOwner ? <p className="text-xs text-ink-muted">Owner only.</p> : null}
+                {!isOwner ? <p className="text-xs text-ink-muted">{t('team.ownerOnly')}</p> : null}
               </form>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Pending invitations</CardTitle>
+              <CardTitle>{t('team.pending')}</CardTitle>
               <Badge tone="outline">{pending.length}</Badge>
             </CardHeader>
             <CardContent className="space-y-2">
               {pending.length === 0 ? (
-                <p className="text-xs text-ink-muted">Nothing waiting.</p>
+                <p className="text-xs text-ink-muted">{t('team.noPending')}</p>
               ) : (
                 pending.map((invite) => (
                   <div key={invite.id} className="space-y-1.5 border-b border-hairline pb-2 last:border-0 last:pb-0">
@@ -209,8 +218,8 @@ export default async function TeamPage({
                       </code>
                       <CopyButton
                         value={`${appUrl()}/invite/${invite.token}`}
-                        label="Copy"
-                        copiedLabel="Copied"
+                        label={t('team.copy')}
+                        copiedLabel={t('team.copied')}
                       />
                     </div>
                   </div>

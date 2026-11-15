@@ -149,7 +149,7 @@ export default async function AdminPage() {
       {/* Notifications */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CardWithTitle title="Notification queue" subtitle="Outbound emails and in-app messages">
-          <div className="overflow-hidden rounded-card border border-hairline bg-paper">
+          <div className="overflow-hidden card-surface">
             <div className="grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 border-b border-hairline px-4 py-2.5 text-[10px] uppercase tracking-[0.12em] text-ink-muted sm:grid">
               <span>Kind</span>
               <span>Channel</span>
@@ -182,7 +182,7 @@ export default async function AdminPage() {
         </CardWithTitle>
 
         <CardWithTitle title="Organisation list" subtitle="All tenant organisations on the platform">
-          <div className="overflow-hidden rounded-card border border-hairline bg-paper">
+          <div className="overflow-hidden card-surface">
             <div className="grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 border-b border-hairline px-4 py-2.5 text-[10px] uppercase tracking-[0.12em] text-ink-muted sm:grid">
               <span>Organisation</span>
               <span>Plan</span>
@@ -228,7 +228,7 @@ function CardWithTitle({
   children: React.ReactNode
 }) {
   return (
-    <Card className="overflow-hidden rounded-card border border-hairline bg-paper">
+    <Card className="overflow-hidden card-surface">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">

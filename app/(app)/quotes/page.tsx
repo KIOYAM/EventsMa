@@ -44,7 +44,7 @@ export default async function QuotesPage() {
         actions={
           <Link
             href="/quotes/new"
-            className="inline-flex h-11 items-center rounded-control bg-forest px-4 text-sm font-medium text-white"
+            className="btn btn-md btn-primary"
           >
             {t('quotes.list.newQuote')}
           </Link>
@@ -57,7 +57,7 @@ export default async function QuotesPage() {
           <p className="mt-1 text-sm text-ink-muted">{t('quotes.list.emptyBody')}</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-card border border-hairline bg-paper">
+        <div className="overflow-hidden card-surface">
           {data.quotes.map((quote) => (
             <Link
               key={quote.id}

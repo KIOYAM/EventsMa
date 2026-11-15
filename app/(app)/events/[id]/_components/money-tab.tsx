@@ -72,7 +72,7 @@ export function MoneyTab({
           </div>
           <Link
             href={`/invoices?event=${event.id}`}
-            className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white"
+            className="mt-2 btn btn-md btn-primary w-full"
           >
             {t('events.detail.raiseInvoice')}
           </Link>

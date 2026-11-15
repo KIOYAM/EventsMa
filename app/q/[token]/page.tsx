@@ -146,7 +146,7 @@ function PublicView({
       ) : null}
 
       {demo ? (
-        <div className="mb-4 rounded-card border border-hairline bg-mint-subtle px-4 py-3 text-sm text-forest">
+        <div className="mb-4 card-flat bg-mint-subtle px-4 py-3 text-sm text-forest">
           {t('quotes.public.demo')}
         </div>
       ) : null}

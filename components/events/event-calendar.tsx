@@ -48,7 +48,7 @@ export function EventCalendar({
   }).format(first)
 
   return (
-    <section className="rounded-card border border-hairline bg-paper">
+    <section className="card-surface">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline p-4">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">

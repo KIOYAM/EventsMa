@@ -34,7 +34,7 @@ export default async function ClientDirectoryPage({
         actions={
           <Link
             href="/clients"
-            className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink"
+            className="btn btn-md btn-outline"
           >
             Enquiries
           </Link>
@@ -65,7 +65,7 @@ export default async function ClientDirectoryPage({
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-card border border-hairline bg-paper">
+        <div className="overflow-hidden card-surface">
           <div className="hidden grid-cols-[1.4fr_1fr_0.7fr_0.7fr_0.8fr] gap-3 border-b border-hairline bg-canvas/60 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-ink-muted sm:grid">
             <span>Client</span>
             <span>Contact</span>

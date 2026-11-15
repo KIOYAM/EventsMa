@@ -9,7 +9,7 @@ export default function Loading() {
           <StatSkeleton key={index} />
         ))}
       </div>
-      <div className="rounded-card border border-hairline bg-paper p-5">
+      <div className="card-surface p-5">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="mt-5 h-52 w-full" />
       </div>

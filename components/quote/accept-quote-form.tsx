@@ -12,7 +12,7 @@ function Submit({ label, pendingLabel }: { label: string; pendingLabel: string }
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex h-11 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-60"
+      className="btn btn-md btn-primary w-full disabled:opacity-60"
     >
       {pending ? pendingLabel : label}
     </button>
@@ -23,7 +23,7 @@ export function AcceptQuoteForm({ token, locale = DEFAULT_LOCALE }: { token: str
   const t = createTranslator(locale)
 
   return (
-    <form action={acceptQuote} className="rounded-card border border-hairline bg-paper p-5">
+    <form action={acceptQuote} className="card-surface p-5">
       <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
         {t('quotes.accept.eyebrow')}
       </p>

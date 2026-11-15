@@ -90,7 +90,7 @@ export default async function ClientDetailPage({
         </div>
         <Link
           href="/quotes/new"
-          className="inline-flex h-10 items-center rounded-control bg-forest px-4 text-sm font-medium text-white"
+          className="btn btn-sm btn-primary"
         >
           {t('clients.detail.quoteThisClient')}
         </Link>
@@ -265,7 +265,7 @@ export default async function ClientDetailPage({
                 </Field>
                 <button
                   type="submit"
-                  className="inline-flex h-10 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white"
+                  className="btn btn-md btn-primary w-full"
                 >
                   {t('clients.detail.saveDetails')}
                 </button>

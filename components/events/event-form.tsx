@@ -156,7 +156,7 @@ export function EventForm({
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="submit"
-          className="inline-flex h-11 items-center justify-center rounded-control bg-forest px-5 text-sm font-medium text-white"
+          className="btn btn-md btn-primary"
         >
           {submitLabel}
         </button>

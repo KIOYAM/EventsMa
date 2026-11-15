@@ -64,7 +64,7 @@ export default async function PortfolioPage({
           ) : (
             <div className="space-y-3">
               {items.map((item) => (
-                <article key={item.id} className="rounded-card border border-hairline bg-paper p-4">
+                <article key={item.id} className="card-surface p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-ink">{item.title}</p>
@@ -130,7 +130,7 @@ export default async function PortfolioPage({
               <button
                 type="submit"
                 disabled={!canEdit}
-                className="inline-flex h-11 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+                className="btn btn-md btn-primary w-full disabled:opacity-50"
               >
                 Add entry
               </button>

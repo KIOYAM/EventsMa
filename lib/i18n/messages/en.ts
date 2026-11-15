@@ -19,6 +19,10 @@ import { quotes } from './en/quotes'
 import { dashboard } from './en/dashboard'
 import { submissions } from './en/submissions'
 import { invoices } from './en/invoices'
+import { inventory } from './en/inventory'
+import { reports } from './en/reports'
+import { settings } from './en/settings'
+import { team } from './en/team'
 import { events } from './en/events'
 import { nav } from './en/nav'
 import { pdf } from './en/pdf'
@@ -32,6 +36,10 @@ export const en = {
   quotes,
   dashboard,
   invoices,
+  inventory,
+  reports,
+  settings,
+  team,
   submissions,
   events,
   nav,

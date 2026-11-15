@@ -139,7 +139,7 @@ export default async function InvoicesPage({
           description={t('invoices.emptyBody')}
         />
       ) : (
-        <div className="overflow-hidden rounded-card border border-hairline bg-paper">
+        <div className="overflow-hidden card-surface">
           {data.rows.map((row) => (
             <Link
               key={row.id}

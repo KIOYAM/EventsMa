@@ -84,7 +84,7 @@ export default async function ClientsPage({
           <>
             <Link
               href="/clients/directory"
-              className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink"
+              className="btn btn-md btn-outline"
             >
               {t('clients.directory')}
             </Link>
@@ -109,7 +109,7 @@ export default async function ClientsPage({
         </div>
       ) : null}
       {ctx.demo ? (
-        <div className="rounded-card border border-hairline bg-mint-subtle px-4 py-3 text-sm text-forest">
+        <div className="card-flat bg-mint-subtle px-4 py-3 text-sm text-forest">
           Demo data. Enquiry changes are disabled until a database is connected.
         </div>
       ) : null}
@@ -159,7 +159,7 @@ export default async function ClientsPage({
           {data.rows.map((row) => (
             <article
               key={row.id}
-              className="rounded-card border border-hairline bg-paper p-4 sm:p-5"
+              className="card-surface p-4 sm:p-5"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">

@@ -91,7 +91,7 @@ export function SessionCard({
         {canEdit ? (
           <form
             action={updateEventSession}
-            className="grid gap-3 rounded-card border border-hairline bg-canvas p-3 sm:grid-cols-2 lg:grid-cols-6"
+            className="grid gap-3 card-flat bg-canvas p-3 sm:grid-cols-2 lg:grid-cols-6"
           >
             <input type="hidden" name="eventId" value={eventId} />
             <input type="hidden" name="id" value={session.id} />
@@ -197,7 +197,7 @@ export function SessionCard({
                 ? validateSelection(rule, selected)
                 : { ok: true as const, count: selected }
               return (
-                <div key={categoryId} className="rounded-card border border-hairline p-3">
+                <div key={categoryId} className="card-flat p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm font-medium text-ink">
                       {category.name}{' '}

@@ -6,7 +6,7 @@ export default function Loading() {
       <PageHeaderSkeleton />
       <div className="grid gap-5 lg:grid-cols-2">
         {Array.from({ length: 2 }, (_, card) => (
-          <div key={card} className="rounded-card border border-hairline bg-paper p-5">
+          <div key={card} className="card-surface p-5">
             <Skeleton className="h-4 w-32" />
             <div className="mt-5 space-y-4">
               {Array.from({ length: 5 }, (_, row) => (

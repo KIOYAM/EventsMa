@@ -32,7 +32,7 @@ export function PaymentInstructions({
   const t = createTranslator(locale)
 
   return (
-    <section className="rounded-card border border-hairline bg-paper p-5">
+    <section className="card-surface p-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">

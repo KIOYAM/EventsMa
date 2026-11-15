@@ -32,7 +32,7 @@ export function AuthShell({
           <span className="font-display text-lg text-forest">EventsMa</span>
         </div>
 
-        <div className="mt-5 rounded-card border border-hairline bg-paper p-5 sm:p-6">
+        <div className="mt-5 card-surface p-5 sm:p-6">
           <div className="grid grid-cols-2 gap-1 rounded-control bg-canvas p-1 text-sm font-medium">
             {tabs.map((tab) => (
               <Link

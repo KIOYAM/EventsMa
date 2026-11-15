@@ -84,7 +84,7 @@ export default async function OnboardingPage({
           </CardContent>
         </Card>
 
-        <fieldset className="rounded-card border border-hairline bg-paper p-5">
+        <fieldset className="card-surface p-5">
           <legend className="px-1 text-sm font-semibold text-ink">Services you provide</legend>
           <p className="mt-1 text-xs text-ink-muted">
             Each service gets its own catalogue, units and tax treatment. Pick what you sell — you
@@ -117,7 +117,7 @@ export default async function OnboardingPage({
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-control bg-forest px-5 text-sm font-medium text-white"
+            className="btn btn-md btn-primary"
           >
             Create workspace
           </button>

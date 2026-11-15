@@ -203,7 +203,7 @@ export function NavLinks({ variant, entries = [], locale }: NavLinksProps) {
                           className={cn(
                             'flex min-h-11 items-center gap-2 rounded-control px-2 text-sm',
                             active
-                              ? 'bg-mint font-medium text-forest'
+                              ? 'bg-mint font-medium text-forest shadow-[inset_2px_0_0_0_var(--color-forest)]'
                               : 'text-ink-muted hover:bg-mint-subtle hover:text-ink',
                           )}
                         >
@@ -243,7 +243,7 @@ export function NavLinks({ variant, entries = [], locale }: NavLinksProps) {
         className={cn(
           'flex h-10 items-center gap-2.5 rounded-control px-2.5 text-sm transition-colors',
           pathname === '/dashboard'
-            ? 'bg-mint font-medium text-forest'
+            ? 'bg-mint font-medium text-forest shadow-[inset_2px_0_0_0_var(--color-forest)]'
             : 'text-ink-muted hover:bg-mint-subtle hover:text-ink',
         )}
       >
@@ -271,7 +271,7 @@ export function NavLinks({ variant, entries = [], locale }: NavLinksProps) {
                     // miss with a thumb, and the rail is long enough to scroll anyway.
                     'flex min-h-11 items-center gap-2.5 rounded-control px-2.5 text-sm transition-colors',
                     active
-                      ? 'bg-mint font-medium text-forest'
+                      ? 'bg-mint font-medium text-forest shadow-[inset_2px_0_0_0_var(--color-forest)]'
                       : 'text-ink-muted hover:bg-mint-subtle hover:text-ink',
                   )}
                 >
@@ -291,7 +291,7 @@ export function NavLinks({ variant, entries = [], locale }: NavLinksProps) {
           className={cn(
             'flex h-9 items-center gap-2.5 rounded-control px-2.5 text-sm transition-colors',
             isActive(pathname, '/me')
-              ? 'bg-mint font-medium text-forest'
+              ? 'bg-mint font-medium text-forest shadow-[inset_2px_0_0_0_var(--color-forest)]'
               : 'text-ink-muted hover:bg-mint-subtle hover:text-ink',
           )}
         >

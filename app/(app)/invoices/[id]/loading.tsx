@@ -10,11 +10,11 @@ export default function Loading() {
         ))}
       </div>
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <div className="rounded-card border border-hairline bg-paper p-5">
+        <div className="card-surface p-5">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="mt-5 h-24 w-full" />
         </div>
-        <div className="rounded-card border border-hairline bg-paper p-5">
+        <div className="card-surface p-5">
           <Skeleton className="h-4 w-32" />
           <div className="mt-5 space-y-3">
             <Skeleton className="h-10 w-full" />

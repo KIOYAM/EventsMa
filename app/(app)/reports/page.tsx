@@ -2,15 +2,21 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
 import { Stat } from '@/components/ui/stat'
+import { createTranslator } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locales'
+import { translatorFor } from '@/lib/i18n/server'
+import { formatPaiseLocalised } from '@/lib/i18n/format'
+import { formatPercentBp } from '@/lib/domain/money'
 import { requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getReportData } from '@/lib/db/money'
-import { formatINR, formatPercentBp } from '@/lib/domain/money'
 
 export const metadata = { title: 'Reports' }
 
 export default async function ReportsPage() {
   const ctx = await requireWorkspace()
+  const locale = 'en'
+  const t = translatorFor(locale)
   const data = await withWorkspace(ctx, () => getReportData(ctx.orgId, ctx.demo))
   const peak = Math.max(1, ...data.months.map((month) => Math.max(month.revenuePaise, month.expensePaise)))
   const marginBp =
@@ -19,51 +25,64 @@ export default async function ReportsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Performance"
-        title="The numbers you would show a bank"
-        description="Server-aggregated from captured payments and recorded expenses. No client-side totals, no chart library, no measurement timing to go wrong."
+        eyebrow={t('reports.eyebrow')}
+        title={t('reports.heading')}
+        description={t('reports.intro')}
         actions={
           <div className="flex gap-2">
             <Link
               href="/api/exports?kind=ledger"
               prefetch={false}
-              className="inline-flex h-10 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink"
+              className="btn btn-sm btn-outline"
             >
-              Ledger CSV
+              {t('reports.ledgerCsv')}
             </Link>
             <Link
               href="/api/exports?kind=monthly"
               prefetch={false}
-              className="inline-flex h-10 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink"
+              className="btn btn-sm btn-outline"
             >
-              Monthly CSV
+              {t('reports.monthlyCsv')}
             </Link>
           </div>
         }
       />
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Revenue" value={formatINR(data.revenuePaise, { compact: true })} hint="All captured payments" tone="positive" />
-        <Stat label="Costs" value={formatINR(data.expensePaise, { compact: true })} hint="All recorded expenses" />
-        <Stat label="Margin" value={formatINR(data.marginPaise, { compact: true })} hint={`${formatPercentBp(marginBp)} of revenue`} />
         <Stat
-          label="Quote conversion"
+          label={t('reports.stats.revenue')}
+          value={formatPaiseLocalised(data.revenuePaise, locale)}
+          hint={t('reports.stats.revenueHint')}
+          tone="positive"
+        />
+        <Stat
+          label={t('reports.stats.costs')}
+          value={formatPaiseLocalised(data.expensePaise, locale)}
+          hint={t('reports.stats.costsHint')}
+        />
+        <Stat
+          label={t('reports.stats.margin')}
+          value={formatPaiseLocalised(data.marginPaise, locale)}
+          hint={t('reports.stats.marginHint', { percent: formatPercentBp(marginBp) })}
+        />
+        <Stat
+          label={t('reports.stats.conversion')}
           value={formatPercentBp(data.conversionBp)}
-          hint={`${data.acceptedCount} of ${data.quoteCount} accepted`}
+          hint={t('reports.stats.conversionHint', { accepted: data.acceptedCount, quotes: data.quoteCount })}
         />
       </section>
 
       <Card>
         <CardHeader>
-          <CardTitle>Last six months</CardTitle>
+          <CardTitle>{t('reports.lastSixMonths')}</CardTitle>
           <div className="flex items-center gap-3 text-[11px] text-ink-muted">
             <span className="inline-flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-forest" aria-hidden />
-              Revenue
+              {t('reports.revenue')}
             </span>
             <span className="inline-flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-terracotta" aria-hidden />
-              Costs
+              {t('reports.costs')}
             </span>
           </div>
         </CardHeader>
@@ -78,12 +97,12 @@ export default async function ReportsPage() {
                     <div
                       className="w-1/2 rounded-t bg-forest/85"
                       style={{ height: `${revenueHeight}%` }}
-                      title={`Revenue ${formatINR(month.revenuePaise)}`}
+                      title={`Revenue ${formatPaiseLocalised(month.revenuePaise, locale)}`}
                     />
                     <div
                       className="w-1/2 rounded-t bg-terracotta/70"
                       style={{ height: `${expenseHeight}%` }}
-                      title={`Costs ${formatINR(month.expensePaise)}`}
+                      title={`Costs ${formatPaiseLocalised(month.expensePaise, locale)}`}
                     />
                   </div>
                   <p className="text-[11px] text-ink-muted">{month.label}</p>
@@ -92,8 +111,7 @@ export default async function ReportsPage() {
             })}
           </div>
           <p className="mt-2 text-xs text-ink-muted">
-            Bars are percentages of the highest month in the window. Exact figures are in the
-            monthly CSV.
+            {t('reports.barsNote')}
           </p>
         </CardContent>
       </Card>
@@ -101,11 +119,11 @@ export default async function ReportsPage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Where the money went</CardTitle>
+            <CardTitle>{t('reports.whereMoneyWent')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {data.categories.length === 0 ? (
-              <p className="text-sm text-ink-muted">No expenses recorded yet.</p>
+              <p className="text-sm text-ink-muted">{t('reports.noExpenses')}</p>
             ) : (
               data.categories.map((category) => {
                 const share =
@@ -117,7 +135,10 @@ export default async function ReportsPage() {
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-ink">{category.label}</span>
                       <span className="tabular text-ink-muted">
-                        {formatINR(category.amountPaise)} · {share}%
+                        {t('reports.share', {
+                          amount: formatPaiseLocalised(category.amountPaise, locale),
+                          percent: share,
+                        })}
                       </span>
                     </div>
                     <div className="mt-1 h-2 overflow-hidden rounded-full bg-canvas">
@@ -132,28 +153,27 @@ export default async function ReportsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Events and quotes</CardTitle>
+            <CardTitle>{t('reports.eventsAndQuotes')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-ink-muted">Events on record</span>
+              <span className="text-ink-muted">{t('reports.eventsOnRecord')}</span>
               <span className="tabular text-ink">{data.eventCount}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-ink-muted">Quotes issued</span>
+              <span className="text-ink-muted">{t('reports.quotesIssued')}</span>
               <span className="tabular text-ink">{data.quoteCount}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-ink-muted">Accepted</span>
+              <span className="text-ink-muted">{t('reports.accepted')}</span>
               <span className="tabular text-ink">{data.acceptedCount}</span>
             </div>
             <div className="flex justify-between border-t border-hairline pt-3">
-              <span className="text-ink-muted">Conversion</span>
+              <span className="text-ink-muted">{t('reports.conversionLabel')}</span>
               <span className="tabular text-forest">{formatPercentBp(data.conversionBp)}</span>
             </div>
             <p className="text-xs leading-relaxed text-ink-muted">
-              Conversion counts accepted quotes over every quote issued in the workspace, not just
-              this month. A quote that was revised counts once.
+              {t('reports.conversionNote')}
             </p>
           </CardContent>
         </Card>

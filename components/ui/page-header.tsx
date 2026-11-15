@@ -56,9 +56,16 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-card border border-dashed border-hairline bg-paper px-6 py-12 text-center">
-      {icon ? <div className="mb-3 text-forest">{icon}</div> : null}
-      <p className="font-medium text-ink">{title}</p>
-      <p className="mt-1 max-w-sm text-sm text-ink-muted">{description}</p>
+      {icon ? (
+        <span
+          aria-hidden
+          className="mb-3 grid h-12 w-12 place-items-center rounded-full bg-mint-subtle text-forest"
+        >
+          {icon}
+        </span>
+      ) : null}
+      <p className="text-base font-semibold text-ink">{title}</p>
+      <p className="mt-1 max-w-sm text-sm leading-relaxed text-ink-muted">{description}</p>
       {action ? <div className="mt-4">{action}</div> : null}
     </div>
   )

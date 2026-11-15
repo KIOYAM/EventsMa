@@ -16,6 +16,10 @@ import { quotes } from './ta/quotes'
 import { dashboard } from './ta/dashboard'
 import { submissions } from './ta/submissions'
 import { invoices } from './ta/invoices'
+import { inventory } from './ta/inventory'
+import { reports } from './ta/reports'
+import { settings } from './ta/settings'
+import { team } from './ta/team'
 import { events } from './ta/events'
 import { nav } from './ta/nav'
 import { pdf } from './ta/pdf'
@@ -31,6 +35,10 @@ export const ta: MessagesOverride = {
   dashboard,
   submissions,
   invoices,
+  inventory,
+  reports,
+  settings,
+  team,
   events,
   nav,
   pdf,

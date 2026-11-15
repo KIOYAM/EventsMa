@@ -15,7 +15,7 @@ export default function WorkspaceError({
   }, [error])
 
   return (
-    <div className="mx-auto max-w-xl space-y-4 rounded-card border border-hairline bg-paper p-6">
+    <div className="mx-auto max-w-xl space-y-4 card-surface p-6">
       <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
         Something went wrong
       </p>
@@ -33,7 +33,7 @@ export default function WorkspaceError({
         <button
           type="button"
           onClick={reset}
-          className="inline-flex h-10 items-center rounded-control bg-forest px-4 text-sm font-medium text-white"
+          className="btn btn-sm btn-primary"
         >
           Try again
         </button>

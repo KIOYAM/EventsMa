@@ -43,7 +43,7 @@ export default async function FinancePage({
         actions={
           <Link
             href="/api/exports?kind=ledger"
-            className="inline-flex h-10 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink"
+            className="btn btn-sm btn-outline"
             prefetch={false}
           >
             Export CSV
@@ -83,7 +83,7 @@ export default async function FinancePage({
               description="Record a payment against an invoice, or add the first expense. Both feed the reports page immediately."
             />
           ) : (
-            <div className="overflow-hidden rounded-card border border-hairline bg-paper">
+            <div className="overflow-hidden card-surface">
               {data.rows.map((row) => (
                 <div
                   key={`${row.kind}-${row.id}`}
@@ -148,7 +148,7 @@ export default async function FinancePage({
               <button
                 type="submit"
                 disabled={!canEdit}
-                className="inline-flex h-11 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+                className="btn btn-md btn-primary w-full disabled:opacity-50"
               >
                 Add expense
               </button>

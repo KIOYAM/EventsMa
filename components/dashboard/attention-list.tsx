@@ -54,7 +54,7 @@ export function AttentionList({ items, locale }: { items: AttentionItem[]; local
 
   if (items.length === 0) {
     return (
-      <div className="rounded-card border border-hairline bg-paper p-5 text-sm text-ink-muted">
+      <div className="card-surface p-5 text-sm text-ink-muted">
         {t('dashboard.attention.clear')}
       </div>
     )

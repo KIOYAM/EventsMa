@@ -68,7 +68,7 @@ export default async function EditEventPage({
       ) : null}
 
       {!canManageCommercial(ctx.role) || ctx.demo ? (
-        <div className="rounded-card border border-hairline bg-paper p-4 text-sm text-ink-muted">
+        <div className="card-surface p-4 text-sm text-ink-muted">
           {t('events.edit.readOnly')}
         </div>
       ) : (

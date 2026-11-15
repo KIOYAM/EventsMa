@@ -170,7 +170,7 @@ async function DashboardBody({ ctx, locale }: { ctx: WorkspaceContext; locale: L
               return (
                 <div
                   key={service.verticalKey}
-                  className="min-w-[168px] rounded-card border border-hairline bg-paper p-4"
+                  className="min-w-[168px] card-surface p-4"
                 >
                   <p className="text-sm font-medium text-ink">{descriptor.label}</p>
                   <p className="mt-1 text-xs text-ink-muted">
@@ -205,7 +205,7 @@ async function DashboardBody({ ctx, locale }: { ctx: WorkspaceContext; locale: L
             </CardContent>
           </Card>
         ) : (
-          <div className="overflow-hidden rounded-card border border-hairline bg-paper">
+          <div className="overflow-hidden card-surface">
             {data.quotes.map((quote) => (
               <Link
                 key={quote.id}

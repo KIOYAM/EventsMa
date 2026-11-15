@@ -118,7 +118,7 @@ export function SessionsCard({
         {canEdit ? (
           <form
             action={createCateringSession}
-            className="grid gap-3 rounded-card border border-hairline bg-canvas p-3 sm:grid-cols-2 lg:grid-cols-6"
+            className="grid gap-3 card-flat bg-canvas p-3 sm:grid-cols-2 lg:grid-cols-6"
           >
             <Field label={t('catering.sessions.name')} className="lg:col-span-2">
               <Input

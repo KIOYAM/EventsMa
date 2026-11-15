@@ -43,7 +43,7 @@ export default async function MyWorkPage() {
             <Link
               key={event.id}
               href={`/events/${event.id}`}
-              className="rounded-card border border-hairline bg-paper p-4 transition-colors hover:border-forest/30"
+              className="card-surface p-4 transition-colors hover:border-forest/30"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -65,7 +65,7 @@ export default async function MyWorkPage() {
         </div>
       )}
 
-      <p className="rounded-card border border-hairline bg-mint-subtle px-4 py-3 text-xs leading-relaxed text-forest">
+      <p className="card-flat bg-mint-subtle px-4 py-3 text-xs leading-relaxed text-forest">
         Leave requests, wage slips and attendance are not part of this build yet. They need a
         payroll decision first, not a form that quietly records money without a ledger entry.
       </p>

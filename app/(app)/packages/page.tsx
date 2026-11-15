@@ -56,7 +56,7 @@ export default async function PackagesPage({
             />
           ) : (
             packages.map((row) => (
-              <article key={row.id} className="rounded-card border border-hairline bg-paper p-4 sm:p-5">
+              <article key={row.id} className="card-surface p-4 sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -142,7 +142,7 @@ export default async function PackagesPage({
               <button
                 type="submit"
                 disabled={!canEdit}
-                className="inline-flex h-11 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+                className="btn btn-md btn-primary w-full disabled:opacity-50"
               >
                 Add package
               </button>

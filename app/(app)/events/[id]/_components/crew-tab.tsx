@@ -101,7 +101,7 @@ export function CrewTab({
             <button
               type="submit"
               disabled={demo}
-              className="inline-flex h-10 items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50 sm:col-span-2"
+              className="btn btn-md btn-primary disabled:opacity-50 sm:col-span-2"
             >
               {t('events.detail.assign')}
             </button>

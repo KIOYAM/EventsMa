@@ -71,7 +71,7 @@ export function QuoteDocument({
     : t('quotes.document.terms')
 
   return (
-    <article className="overflow-hidden rounded-card border border-hairline bg-paper">
+    <article className="overflow-hidden card-surface">
       <header className="flex flex-col gap-4 border-b border-hairline p-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-ink-muted">
@@ -186,7 +186,7 @@ export function MarginPanel({
   const money = (paise: number) => formatPaiseLocalised(paise, locale)
   const healthy = marginBp >= 2500
   return (
-    <div className="rounded-card border border-hairline bg-paper p-5">
+    <div className="card-surface p-5">
       <p className="text-xs font-medium uppercase tracking-[0.12em] text-ink-muted">
         {t('quotes.margin.title')}
       </p>

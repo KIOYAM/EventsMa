@@ -99,7 +99,7 @@ export default async function InvoiceDetailPage({
         <div className="flex items-center gap-2">
           <Link
             href={`/events/${invoice.eventId}`}
-            className="inline-flex h-10 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink print:hidden"
+            className="btn btn-sm btn-outline print:hidden"
           >
             {t('invoices.detail.openEvent')}
           </Link>
@@ -266,7 +266,7 @@ export default async function InvoiceDetailPage({
                   <button
                     type="submit"
                     disabled={!canEdit}
-                    className="inline-flex h-10 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+                    className="btn btn-md btn-primary w-full disabled:opacity-50"
                   >
                     {t('invoices.detail.recordPaymentBtn')}
                   </button>

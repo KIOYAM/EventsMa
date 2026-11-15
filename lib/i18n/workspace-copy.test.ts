@@ -38,7 +38,7 @@ function varsFor(message: string): Record<string, string> {
 }
 
 const missing = translationCoverage('ta').missing
-const modules = ['catering', 'clients', 'events', 'dashboard', 'nav', 'quotes', 'submissions', 'invoices'] as const
+const modules = ['catering', 'clients', 'events', 'dashboard', 'nav', 'quotes', 'submissions', 'invoices', 'inventory', 'reports', 'settings', 'team'] as const
 
 describe('workspace surfaces are complete in Tamil', () => {
   for (const module of modules) {

@@ -46,7 +46,7 @@ export default async function MenuCardPage() {
               <PrintButton label="Print card" />
               <Link
                 href="/menu"
-                className="inline-flex h-10 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink"
+                className="btn btn-sm btn-outline"
               >
                 Back to menu
               </Link>
@@ -55,7 +55,7 @@ export default async function MenuCardPage() {
         />
       </div>
 
-      <article className="mx-auto w-full max-w-3xl rounded-card border border-hairline bg-white p-8 text-ink print:max-w-none print:border-0 print:p-0">
+      <article className="mx-auto w-full max-w-3xl card-flat bg-white p-8 text-ink print:max-w-none print:border-0 print:p-0">
         <header className="border-b-2 pb-4" style={{ borderColor: accent }}>
           <p className="font-display text-3xl leading-tight">{settings.name}</p>
           {settings.tagline ? (

@@ -72,12 +72,12 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     <main className="min-h-dvh bg-canvas">
       <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
         {demo ? (
-          <div className="mb-4 rounded-card border border-hairline bg-mint-subtle px-4 py-3 text-sm text-forest">
+          <div className="mb-4 card-flat bg-mint-subtle px-4 py-3 text-sm text-forest">
             Demo storefront. This is sample data, not a live listing.
           </div>
         ) : null}
 
-        <header className="rounded-card border border-hairline bg-paper p-6">
+        <header className="card-surface p-6">
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-ink-muted">
             {profile.city ?? 'Service area on request'}
           </p>
@@ -101,7 +101,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
               {profile.services.map((service) => {
                 const descriptor = verticalDescriptor(service.verticalKey)
                 return (
-                  <div key={service.verticalKey} className="rounded-card border border-hairline bg-paper p-4">
+                  <div key={service.verticalKey} className="card-surface p-4">
                     <p className="text-sm font-medium text-ink">{descriptor.label}</p>
                     <p className="mt-1 text-xs text-ink-muted">
                       Priced by {descriptor.allowedUnitClasses.length} unit type
@@ -120,7 +120,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             </p>
           </section>
 
-          <section className="rounded-card border border-hairline bg-paper p-5">
+          <section className="card-surface p-5">
             <h2 className="text-sm font-semibold text-ink">Ask for a quote</h2>
             <p className="mt-1 text-xs text-ink-muted">
               The business receives this instantly. You will get a reply on the number you provide.
@@ -166,7 +166,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
               <button
                 type="submit"
-                className="inline-flex h-11 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white"
+                className="btn btn-md btn-primary w-full"
               >
                 Send enquiry
               </button>

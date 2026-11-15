@@ -41,7 +41,7 @@ export default async function ServiceConfigPage({
         actions={
           <Link
             href="/services"
-            className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink hover:bg-mint-subtle"
+            className="btn btn-md btn-outline hover:bg-mint-subtle"
           >
             ← Back to services
           </Link>
@@ -49,7 +49,7 @@ export default async function ServiceConfigPage({
       />
 
       {!canEdit ? (
-        <div className="rounded-card border border-hairline bg-mint-subtle px-4 py-3 text-sm text-forest">
+        <div className="card-flat bg-mint-subtle px-4 py-3 text-sm text-forest">
           {ctx.demo
             ? 'Demo mode: service configuration is disabled until a database is connected.'
             : 'Only an owner or manager can configure services.'}

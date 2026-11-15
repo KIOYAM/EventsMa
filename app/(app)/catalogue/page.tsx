@@ -85,7 +85,7 @@ export default async function CataloguePage({
               description={`Add the first ${descriptor.itemNoun} with a price and a billing unit. It becomes available in the quote composer immediately.`}
             />
           ) : (
-            <div className="overflow-hidden rounded-card border border-hairline bg-paper">
+            <div className="overflow-hidden card-surface">
               {items.map((item) => (
                 <div
                   key={item.id}
@@ -152,7 +152,7 @@ export default async function CataloguePage({
               <button
                 type="submit"
                 disabled={!canEdit}
-                className="inline-flex h-11 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+                className="btn btn-md btn-primary w-full disabled:opacity-50"
               >
                 Add to catalogue
               </button>

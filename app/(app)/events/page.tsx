@@ -68,7 +68,7 @@ export default async function EventsPage({
           <>
             <Link
               href="/events/calendar"
-              className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink"
+              className="btn btn-md btn-outline"
             >
               {t('events.list.calendar')}
             </Link>
@@ -133,7 +133,7 @@ export default async function EventsPage({
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-card border border-hairline bg-paper">
+        <div className="overflow-hidden card-surface">
           {data.rows.map((row) => {
             const meta = t('events.list.rowMeta', {
               client: row.clientName ?? t('events.list.noClient'),

@@ -30,14 +30,14 @@ export default async function ServicesPage() {
         title="Choose the services this business offers"
         description="A business can provide one service or many. Each enabled service gets its own catalogue, units, tax rate and package pricing — one quotation can carry all of them."
         actions={
-          <Link href="/settings" className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink hover:bg-mint-subtle">
+          <Link href="/settings" className="btn btn-md btn-outline hover:bg-mint-subtle">
             Business settings
           </Link>
         }
       />
 
       {!canEdit ? (
-        <div className="rounded-card border border-hairline bg-mint-subtle px-4 py-3 text-sm text-forest">
+        <div className="card-flat bg-mint-subtle px-4 py-3 text-sm text-forest">
           {ctx.demo
             ? 'Demo mode: service changes are disabled until a database is connected.'
             : 'Only an owner or manager can change which services are offered.'}
@@ -157,7 +157,7 @@ export default async function ServicesPage() {
         })}
       </div>
 
-      <div className="rounded-card border border-hairline bg-paper p-4">
+      <div className="card-surface p-4">
         <p className="text-xs font-medium uppercase tracking-[0.16em] text-ink-muted mb-3">
           How services work
         </p>

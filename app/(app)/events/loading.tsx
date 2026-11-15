@@ -9,7 +9,7 @@ export default function Loading() {
         <Skeleton className="h-10 w-64" />
       </div>
       <TableSkeleton rows={5} />
-      <div className="rounded-card border border-hairline bg-paper p-5">
+      <div className="card-surface p-5">
         <Skeleton className="h-4 w-40" />
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {Array.from({ length: 6 }, (_, row) => (

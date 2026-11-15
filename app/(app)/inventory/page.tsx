@@ -3,20 +3,23 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, Select } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
+import { createTranslator } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locales'
+import { translatorFor } from '@/lib/i18n/server'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { getDb, isDatabaseConfigured } from '@/lib/db/client'
 import { withWorkspace } from '@/lib/db/workspace'
 import { inventoryItems, inventoryMovements } from '@/lib/db/schema'
-import { formatINR } from '@/lib/domain/money'
+import { formatPaiseLocalised } from '@/lib/i18n/format'
 import { createInventoryItem, recordInventoryMovement } from './actions'
 
 export const metadata = { title: 'Inventory' }
 
-const ERROR_COPY: Record<string, string> = {
-  invalid: 'Check the name and quantities — they must be numbers.',
-  permission: 'Only an owner or manager can change stock.',
-  missing: 'That item no longer exists.',
-  demo: 'Demo mode: connect a database before recording stock.',
+const ERROR_KEYS: Record<string, string> = {
+  invalid: 'inventory.errors.invalid',
+  permission: 'inventory.errors.permission',
+  missing: 'inventory.errors.missing',
+  demo: 'inventory.errors.demo',
 }
 
 const UNITS = ['kg', 'ltr', 'pcs', 'dozen', 'pack'] as const
@@ -52,6 +55,8 @@ export default async function InventoryPage({
   searchParams: Promise<{ error?: string; saved?: string }>
 }) {
   const ctx = await requireWorkspace()
+  const locale = 'en'
+  const t = translatorFor(locale)
   const params = await searchParams
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
 
@@ -81,60 +86,67 @@ export default async function InventoryPage({
     0,
   )
 
+  const errorKey = params.error ? ERROR_KEYS[params.error] : undefined
+  const savedKey = params.saved === 'movement' ? 'inventory.saved.movement' : params.saved === 'item' ? 'inventory.saved.item' : undefined
+
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Inventory"
-        title="Stock that reconciles, because it is only ever a sum"
-        description="There is no editable on-hand number. Every receipt, issue and wastage is an append-only movement; a mistake is fixed with a reversing entry."
+        eyebrow={t('inventory.eyebrow')}
+        title={t('inventory.heading')}
+        description={t('inventory.intro')}
       />
 
-      {params.error && ERROR_COPY[params.error] ? (
+      {errorKey ? (
         <div className="rounded-card border border-terracotta/30 bg-terracotta-soft px-4 py-3 text-sm text-terracotta">
-          {ERROR_COPY[params.error]}
+          {t(errorKey)}
         </div>
       ) : null}
-      {params.saved ? (
-        <div className="rounded-card border border-mint bg-mint-subtle px-4 py-3 text-sm text-forest">Saved.</div>
+      {savedKey ? (
+        <div className="rounded-card border border-mint bg-mint-subtle px-4 py-3 text-sm text-forest">
+          {t(savedKey)}
+        </div>
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Card>
           <CardContent className="pt-5">
-            <p className="text-xs text-ink-muted">Items tracked</p>
+            <p className="text-xs text-ink-muted">{t('inventory.stats.items')}</p>
             <p className="tabular text-2xl font-semibold text-ink">{rows.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-xs text-ink-muted">Below reorder level</p>
+            <p className="text-xs text-ink-muted">{t('inventory.stats.belowReorder')}</p>
             <p className="tabular text-2xl font-semibold text-ink">{low.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-xs text-ink-muted">Stock value at cost</p>
-            <p className="tabular text-2xl font-semibold text-ink">{formatINR(stockValuePaise)}</p>
+            <p className="text-xs text-ink-muted">{t('inventory.stats.stockValue')}</p>
+            <p className="tabular text-2xl font-semibold text-ink">
+              {formatPaiseLocalised(stockValuePaise, locale)}
+            </p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-        <div className="overflow-x-auto rounded-card border border-hairline bg-paper">
+        <div className="overflow-x-auto card-surface">
           <table className="w-full min-w-[620px] text-sm">
             <thead>
               <tr className="border-b border-hairline text-left text-[11px] uppercase tracking-wide text-ink-muted">
-                <th className="px-4 py-3 font-medium">Item</th>
-                <th className="px-4 py-3 text-right font-medium">On hand</th>
-                <th className="px-4 py-3 text-right font-medium">Reorder at</th>
-                <th className="px-4 py-3 text-right font-medium">Value</th>
+                <th className="px-4 py-3 font-medium">{t('inventory.table.item')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('inventory.table.onHand')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('inventory.table.reorderAt')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('inventory.table.value')}</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-4 py-8 text-center text-xs text-ink-muted">
-                    No stock items yet. Add rice, oil or gas to start the ledger.
+                    {t('inventory.empty')}
                   </td>
                 </tr>
               ) : (
@@ -145,15 +157,15 @@ export default async function InventoryPage({
                       <td className="px-4 py-3">
                         <p className="text-ink">{row.name}</p>
                         <p className="text-[11px] text-ink-muted">
-                          {row.supplier ?? 'No supplier set'}
-                          {row.costPaisePerUnit != null ? ` · ${formatINR(row.costPaisePerUnit)}/${row.unit}` : ''}
+                          {row.supplier ?? t('inventory.table.noSupplier')}
+                          {row.costPaisePerUnit != null ? ` · ${formatPaiseLocalised(row.costPaisePerUnit, locale)}/${row.unit}` : ''}
                         </p>
                       </td>
                       <td className="tabular px-4 py-3 text-right text-ink">
                         {qty(row.onHandMilli)} {row.unit}
                         {isLow ? (
                           <span className="mt-1 block">
-                            <Badge tone="warning">Low</Badge>
+                            <Badge tone="warning">{t('inventory.stats.belowReorder')}</Badge>
                           </span>
                         ) : null}
                       </td>
@@ -161,7 +173,7 @@ export default async function InventoryPage({
                         {row.reorderLevelMilli > 0 ? `${qty(row.reorderLevelMilli)} ${row.unit}` : '—'}
                       </td>
                       <td className="tabular px-4 py-3 text-right text-ink">
-                        {formatINR(Math.round(((row.costPaisePerUnit ?? 0) * row.onHandMilli) / 1000))}
+                        {formatPaiseLocalised(Math.round(((row.costPaisePerUnit ?? 0) * row.onHandMilli) / 1000), locale)}
                       </td>
                     </tr>
                   )
@@ -174,14 +186,14 @@ export default async function InventoryPage({
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Record a movement</CardTitle>
+              <CardTitle>{t('inventory.movement.title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <form action={recordInventoryMovement} className="space-y-3">
-                <Field label="Item" htmlFor="movementItem">
+                <Field label={t('inventory.movement.item')} htmlFor="movementItem">
                   <Select id="movementItem" name="itemId" required defaultValue="">
                     <option value="" disabled>
-                      Choose
+                      {t('inventory.movement.item')}
                     </option>
                     {rows.map((row) => (
                       <option key={row.id} value={row.id}>
@@ -191,10 +203,14 @@ export default async function InventoryPage({
                   </Select>
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Quantity" htmlFor="movementQty" hint="In the item unit.">
-                    <Input id="movementQty" name="quantity" inputMode="decimal" required placeholder="25" />
+                  <Field
+                    label={t('inventory.movement.quantity')}
+                    htmlFor="movementQty"
+                    hint={t('inventory.movement.itemHint')}
+                  >
+                    <Input id="movementQty" name="quantity" inputMode="decimal" required placeholder={t('inventory.movement.quantityPlaceholder')} />
                   </Field>
-                  <Field label="Reason" htmlFor="movementReason">
+                  <Field label={t('inventory.movement.reason')} htmlFor="movementReason">
                     <Select id="movementReason" name="reason" defaultValue="purchase">
                       {REASONS.map((reason) => (
                         <option key={reason.key} value={reason.key}>
@@ -204,15 +220,15 @@ export default async function InventoryPage({
                     </Select>
                   </Field>
                 </div>
-                <Field label="Note" htmlFor="movementNote">
-                  <Input id="movementNote" name="note" maxLength={240} placeholder="Invoice 4821, Balaji Stores" />
+                <Field label={t('inventory.movement.note')} htmlFor="movementNote">
+                  <Input id="movementNote" name="note" maxLength={240} placeholder={t('inventory.movement.notePlaceholder')} />
                 </Field>
                 <button
                   type="submit"
                   disabled={!canEdit}
-                  className="inline-flex h-10 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+                  className="btn btn-md btn-primary w-full disabled:opacity-50"
                 >
-                  Record movement
+                  {t('inventory.movement.record')}
                 </button>
               </form>
             </CardContent>
@@ -220,15 +236,15 @@ export default async function InventoryPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Add an item</CardTitle>
+              <CardTitle>{t('inventory.add.title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <form action={createInventoryItem} className="space-y-3">
-                <Field label="Item" htmlFor="itemName">
-                  <Input id="itemName" name="name" required maxLength={120} placeholder="Sona masoori rice" />
+                <Field label={t('inventory.add.item')} htmlFor="itemName">
+                  <Input id="itemName" name="name" required maxLength={120} placeholder={t('inventory.add.itemPlaceholder')} />
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Unit" htmlFor="itemUnit">
+                  <Field label={t('inventory.add.unit')} htmlFor="itemUnit">
                     <Select id="itemUnit" name="unit" defaultValue="kg">
                       {UNITS.map((unit) => (
                         <option key={unit} value={unit}>
@@ -237,31 +253,31 @@ export default async function InventoryPage({
                       ))}
                     </Select>
                   </Field>
-                  <Field label="Opening stock" htmlFor="itemOpening">
-                    <Input id="itemOpening" name="opening" inputMode="decimal" placeholder="0" />
+                  <Field label={t('inventory.add.openingStock')} htmlFor="itemOpening">
+                    <Input id="itemOpening" name="opening" inputMode="decimal" placeholder={t('inventory.add.openingPlaceholder')} />
                   </Field>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Reorder at" htmlFor="itemReorder">
-                    <Input id="itemReorder" name="reorder" inputMode="decimal" placeholder="25" />
+                  <Field label={t('inventory.add.reorderAt')} htmlFor="itemReorder">
+                    <Input id="itemReorder" name="reorder" inputMode="decimal" placeholder={t('inventory.add.reorderPlaceholder')} />
                   </Field>
-                  <Field label="Cost / unit (₹)" htmlFor="itemCost">
-                    <Input id="itemCost" name="cost" inputMode="decimal" placeholder="72" />
+                  <Field label={t('inventory.add.costUnit')} htmlFor="itemCost">
+                    <Input id="itemCost" name="cost" inputMode="decimal" placeholder={t('inventory.add.costPlaceholder')} />
                   </Field>
                 </div>
-                <Field label="Supplier" htmlFor="itemSupplier">
-                  <Input id="itemSupplier" name="supplier" maxLength={120} placeholder="Balaji Stores" />
+                <Field label={t('inventory.add.supplier')} htmlFor="itemSupplier">
+                  <Input id="itemSupplier" name="supplier" maxLength={120} placeholder={t('inventory.add.supplierPlaceholder')} />
                 </Field>
                 <button
                   type="submit"
                   disabled={!canEdit}
-                  className="inline-flex h-10 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+                  className="btn btn-md btn-primary w-full disabled:opacity-50"
                 >
-                  Add item
+                  {t('inventory.add.add')}
                 </button>
                 {!canEdit ? (
                   <p className="text-xs text-ink-muted">
-                    {ctx.demo ? 'Demo mode is read-only.' : 'Owner or manager only.'}
+                    {ctx.demo ? t('inventory.errors.demo') : t('inventory.errors.permission')}
                   </p>
                 ) : null}
               </form>
@@ -270,10 +286,7 @@ export default async function InventoryPage({
         </div>
       </div>
 
-      <p className="text-[11px] text-ink-muted">
-        Stock is not yet deducted automatically when a quotation is sent. The prep sheet will do that once event
-        sessions exist — until then, record consumption manually.
-      </p>
+      <p className="text-[11px] text-ink-muted">{t('inventory.note')}</p>
     </div>
   )
 }

@@ -222,7 +222,7 @@ export default async function MenuPage({
           ))}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-card border border-hairline bg-paper">
+        <div className="overflow-x-auto card-surface">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-hairline text-left text-[11px] uppercase tracking-wide text-ink-muted">
@@ -269,7 +269,7 @@ export default async function MenuPage({
       )}
 
       <div className="grid gap-3 lg:grid-cols-3">
-        <details className="rounded-card border border-hairline bg-paper">
+        <details className="card-surface">
           <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-ink">
             Add a meal period
           </summary>
@@ -293,14 +293,14 @@ export default async function MenuPage({
             <button
               type="submit"
               disabled={!canEdit}
-              className="inline-flex h-10 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+              className="btn btn-md btn-primary w-full disabled:opacity-50"
             >
               Add meal period
             </button>
           </form>
         </details>
 
-        <details className="rounded-card border border-hairline bg-paper">
+        <details className="card-surface">
           <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-ink">Add a group</summary>
           <form action={createMenuGroup} className="space-y-3 border-t border-hairline px-4 py-4">
             <Field label="Meal period" htmlFor="groupSection">
@@ -324,14 +324,14 @@ export default async function MenuPage({
             <button
               type="submit"
               disabled={!canEdit}
-              className="inline-flex h-10 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+              className="btn btn-md btn-primary w-full disabled:opacity-50"
             >
               Add group
             </button>
           </form>
         </details>
 
-        <details className="rounded-card border border-hairline bg-paper">
+        <details className="card-surface">
           <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-ink">Add a dish</summary>
           <form action={createMenuItem} className="space-y-3 border-t border-hairline px-4 py-4">
             <Field label="Group" htmlFor="itemGroup">
@@ -375,7 +375,7 @@ export default async function MenuPage({
             <button
               type="submit"
               disabled={!canEdit}
-              className="inline-flex h-10 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+              className="btn btn-md btn-primary w-full disabled:opacity-50"
             >
               Add dish
             </button>

@@ -101,7 +101,7 @@ export default async function InvitePage({
             <div className="grid gap-2 sm:grid-cols-2">
               <Link
                 href={`/login?next=${encodeURIComponent(next)}`}
-                className="inline-flex h-11 items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white"
+                className="btn btn-md btn-primary"
               >
                 Sign in
               </Link>
@@ -118,7 +118,7 @@ export default async function InvitePage({
             <input type="hidden" name="token" value={token} />
             <button
               type="submit"
-              className="inline-flex h-11 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white"
+              className="btn btn-md btn-primary w-full"
             >
               Accept invitation
             </button>

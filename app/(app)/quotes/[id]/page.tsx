@@ -52,13 +52,13 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           <>
             <Link
               href="/quotes"
-              className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink"
+              className="btn btn-md btn-outline"
             >
               {t('quotes.detail.all')}
             </Link>
             <a
               href={`/api/quotes/${id}/pdf?lang=${locale}`}
-              className="inline-flex h-11 items-center rounded-control border border-hairline bg-paper px-4 text-sm text-ink"
+              className="btn btn-md btn-outline"
             >
               {t('quotes.detail.pdf')}
             </a>
@@ -68,7 +68,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               href={`https://wa.me/?text=${shareText}`}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex h-11 items-center rounded-control bg-forest px-4 text-sm font-medium text-white"
+              className="btn btn-md btn-primary"
             >
               {t('quotes.detail.whatsapp')}
             </a>
@@ -119,14 +119,14 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               </p>
               <Link
                 href={`/invoices?quote=${doc.id}#new`}
-                className="mt-3 inline-flex h-10 items-center rounded-control bg-forest px-4 text-sm font-medium text-white"
+                className="mt-3 btn btn-sm btn-primary"
               >
                 {t('quotes.detail.createInvoice')}
               </Link>
             </div>
           ) : null}
 
-          <div className="rounded-card border border-hairline bg-paper p-5">
+          <div className="card-surface p-5">
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-ink-muted">
               {t('quotes.detail.versioningTitle')}
             </p>
@@ -135,7 +135,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             </p>
           </div>
 
-          <div className="rounded-card border border-hairline bg-paper p-5">
+          <div className="card-surface p-5">
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-ink-muted">
               {t('quotes.detail.moneyTitle')}
             </p>

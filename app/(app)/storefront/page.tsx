@@ -30,7 +30,7 @@ export default async function StorefrontPage() {
           <Link
             href={publicPath}
             target="_blank"
-            className="inline-flex h-10 items-center rounded-control bg-forest px-4 text-sm font-medium text-white"
+            className="btn btn-sm btn-primary"
           >
             Open public page
           </Link>

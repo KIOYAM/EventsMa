@@ -94,7 +94,7 @@ export function ServicesTab({
               <button
                 type="submit"
                 disabled={demo}
-                className="inline-flex h-10 w-full items-center justify-center rounded-control bg-forest px-4 text-sm font-medium text-white disabled:opacity-50"
+                className="btn btn-md btn-primary w-full disabled:opacity-50"
               >
                 {t('events.detail.attachService')}
               </button>

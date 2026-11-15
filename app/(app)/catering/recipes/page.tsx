@@ -172,7 +172,7 @@ export default async function RecipesPage({
                   {canEdit ? (
                     <form
                       action={addRecipeIngredient}
-                      className="grid gap-3 rounded-card border border-hairline bg-canvas p-3 sm:grid-cols-2 lg:grid-cols-5"
+                      className="grid gap-3 card-flat bg-canvas p-3 sm:grid-cols-2 lg:grid-cols-5"
                     >
                       <input type="hidden" name="itemId" value={dish.id} />
                       <Field label={t('catering.recipes.ingredient')} className="lg:col-span-2">

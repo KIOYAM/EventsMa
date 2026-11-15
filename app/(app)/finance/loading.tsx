@@ -11,7 +11,7 @@ export default function Loading() {
       </div>
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         <TableSkeleton rows={5} />
-        <div className="rounded-card border border-hairline bg-paper p-5">
+        <div className="card-surface p-5">
           <div className="h-10 w-full rounded bg-canvas" />
         </div>
       </div>
