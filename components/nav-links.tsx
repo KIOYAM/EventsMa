@@ -267,7 +267,9 @@ export function NavLinks({ variant, entries = [], locale }: NavLinksProps) {
                   href={item.path}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'flex h-9 items-center gap-2.5 rounded-control px-2.5 text-sm transition-colors',
+                    // 44px minimum: the ui-skills-collection rule. A 36px row is a
+                    // miss with a thumb, and the rail is long enough to scroll anyway.
+                    'flex min-h-11 items-center gap-2.5 rounded-control px-2.5 text-sm transition-colors',
                     active
                       ? 'bg-mint font-medium text-forest'
                       : 'text-ink-muted hover:bg-mint-subtle hover:text-ink',

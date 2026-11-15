@@ -1,33 +1,61 @@
-import { Card, CardContent } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
+/**
+ * A KPI: one number, its label, its context.
+ *
+ * `emphasis="hero"` makes the primary metric on a screen distinguishable from the
+ * three that support it — the dashboard previously rendered four equal cards, so
+ * nothing told the eye where to start.
+ */
 export function Stat({
   label,
   value,
   hint,
   tone = 'default',
+  icon,
+  emphasis = 'default',
 }: {
   label: string
   value: string
   hint?: string
   tone?: 'default' | 'positive' | 'warning'
+  icon?: React.ReactNode
+  emphasis?: 'default' | 'hero'
 }) {
+  const valueTone =
+    tone === 'positive' ? 'text-positive' : tone === 'warning' ? 'text-terracotta' : 'text-forest'
+
   return (
-    <Card>
-      <CardContent className="p-4 sm:p-5">
-        <p className="text-xs font-medium uppercase tracking-[0.1em] text-ink-muted">{label}</p>
-        <p
-          className={
-            tone === 'positive'
-              ? 'tabular mt-3 text-xl font-semibold text-positive sm:text-2xl'
-              : tone === 'warning'
-                ? 'tabular mt-3 text-xl font-semibold text-terracotta sm:text-2xl'
-                : 'tabular mt-3 text-xl font-semibold text-forest sm:text-2xl'
-          }
-        >
-          {value}
+    <div
+      className={cn(
+        'flex flex-col gap-2 rounded-card p-4 sm:p-5',
+        emphasis === 'hero'
+          ? 'bg-forest text-white shadow-card'
+          : 'border border-hairline bg-paper shadow-card',
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p className={cn('t-eyebrow', emphasis === 'hero' && 'text-mint')}>{label}</p>
+        {icon ? (
+          <span
+            aria-hidden
+            className={cn(
+              'grid h-8 w-8 shrink-0 place-items-center rounded-full',
+              emphasis === 'hero' ? 'bg-white/15 text-mint' : 'bg-mint-subtle text-forest',
+            )}
+          >
+            {icon}
+          </span>
+        ) : null}
+      </div>
+
+      <p className={cn('t-metric', emphasis === 'hero' ? 'text-white' : valueTone)}>{value}</p>
+
+      {hint ? (
+        <p className={cn('text-xs leading-relaxed', emphasis === 'hero' ? 'text-mint/90' : 'text-ink-muted')}>
+          {hint}
         </p>
-        {hint ? <p className="mt-1 text-xs text-ink-muted">{hint}</p> : null}
-      </CardContent>
-    </Card>
+      ) : null}
+    </div>
   )
 }

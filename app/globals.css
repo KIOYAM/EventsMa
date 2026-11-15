@@ -21,6 +21,22 @@
   --color-positive: #2c6b44;
   --color-warning: #a8652f;
 
+  /*
+   * Three surfaces so not every panel has to be a bordered box:
+   * canvas (page) → sunken (quiet grouping) → paper (raised card).
+   * Status pairs exist so a badge or banner never needs a raw hex in a component.
+   */
+  --color-sunken: #eef2ef;
+  --color-gold-soft: #fbf2df;
+  --color-gold-ink: #8a6524;
+  --color-success-bg: #e6f4ea;
+  --color-warning-bg: #fdf0e2;
+  --color-danger-bg: #f7e7e0;
+  --color-danger-ink: #b4543a;
+
+  /* One shadow, forest-tinted, soft. Elevation communicates "actionable card". */
+  --shadow-card: 0 1px 2px rgb(24 61 51 / 0.05), 0 8px 24px -12px rgb(24 61 51 / 0.16);
+
   /* Marketing-only dark surfaces. The workspace stays on canvas/paper. */
   --color-night: #071b14;
   --color-night-soft: #0b241b;
@@ -57,6 +73,45 @@
   /* Tabular figures everywhere money appears, so totals do not jitter. */
   .tabular {
     font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * Three type roles, tokenised. Bracket sizes (text-[11px], text-[13px]) were the
+   * reason headings drifted between pages; these are the only sizes a surface needs.
+   * Sizes are rem so a Tamil label that runs 20-35% longer can still wrap.
+   */
+  .t-eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+  }
+
+  /*
+   * Tamil is a syllabic script: uppercase is a no-op and letter-spacing opens gaps
+   * inside words that a reader parses as word breaks. Neutralise both when the
+   * subtree is Tamil (the shell already sets lang on its content wrapper).
+   */
+  [lang='ta-IN'] .t-eyebrow {
+    letter-spacing: 0.01em;
+    text-transform: none;
+    font-size: 0.75rem;
+  }
+
+  .t-section {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  .t-metric {
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(1.5rem, 1.1rem + 1.1vw, 2rem);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
   }
 
   :focus-visible {

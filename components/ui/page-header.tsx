@@ -19,10 +19,26 @@ export function PageHeader({
         {eyebrow ? (
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-ink-muted">{eyebrow}</p>
         ) : null}
-        <h1 className="font-display text-2xl leading-tight text-forest sm:text-3xl">{title}</h1>
-        {description ? <p className="max-w-2xl text-sm text-ink-muted">{description}</p> : null}
+        {/*
+          Workspace headings are sans: the serif display face belongs to marketing
+          and to customer-facing documents, where it reads as ceremony. In a page a
+          bookkeeper opens fifty times a day it read as decoration.
+          `tracking-tight` keeps a long Tamil title on one line where it can be.
+        */}
+        {/*
+          One step down at mobile: a Tamil heading runs 20-35% longer than its
+          English source, and at 24px it took half the fold on a 390px screen.
+        */}
+        <h1 className="text-pretty text-xl font-semibold leading-tight tracking-tight text-forest sm:text-2xl lg:text-3xl">
+          {title}
+        </h1>
+        {description ? (
+          <p className="max-w-2xl text-sm leading-relaxed text-ink-muted">{description}</p>
+        ) : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">{actions}</div>
+      ) : null}
     </header>
   )
 }

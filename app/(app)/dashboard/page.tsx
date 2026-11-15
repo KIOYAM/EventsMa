@@ -3,6 +3,9 @@ import Link from 'next/link'
 import { ArrowUpRight, CalendarDays, FileText, IndianRupee, TrendingUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { LinkButton } from '@/components/ui/button'
+import { SectionHeader } from '@/components/ui/surface'
+import { Stat } from '@/components/ui/stat'
 import { AttentionList } from '@/components/dashboard/attention-list'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatSkeleton, TableSkeleton } from '@/components/ui/skeleton'
@@ -81,13 +84,10 @@ export default async function DashboardPage() {
         title={t('dashboard.heading')}
         description={t('dashboard.intro')}
         actions={
-          <Link
-            href="/quotes/new"
-            className="inline-flex h-11 items-center gap-2 rounded-control bg-forest px-4 text-sm font-medium text-white hover:bg-forest-hover"
-          >
+          <LinkButton href="/quotes/new">
             {t('dashboard.newQuote')}
             <ArrowUpRight className="h-4 w-4" aria-hidden />
-          </Link>
+          </LinkButton>
         }
       />
 
@@ -117,6 +117,7 @@ async function DashboardBody({ ctx, locale }: { ctx: WorkspaceContext; locale: L
           value={formatINR(data.stats.pipelinePaise, { compact: true })}
           hint={t('dashboard.stats.pipelineHint')}
           icon={<IndianRupee className="h-4 w-4" aria-hidden />}
+          emphasis="hero"
         />
         <Stat
           label={t('dashboard.stats.awaiting')}
@@ -139,25 +140,23 @@ async function DashboardBody({ ctx, locale }: { ctx: WorkspaceContext; locale: L
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-ink">{t('dashboard.attention.heading')}</h2>
-            <p className="text-xs text-ink-muted">{t('dashboard.attention.intro')}</p>
-          </div>
-        </div>
+        <SectionHeader
+          title={t('dashboard.attention.heading')}
+          hint={t('dashboard.attention.intro')}
+        />
         <AttentionList items={attention} locale={locale} />
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-ink">{t('dashboard.services.heading')}</h2>
-            <p className="text-xs text-ink-muted">{t('dashboard.services.intro')}</p>
-          </div>
-          <Link href="/services" className="text-sm text-forest underline-offset-4 hover:underline">
-            {t('dashboard.services.manage')}
-          </Link>
-        </div>
+        <SectionHeader
+          title={t('dashboard.services.heading')}
+          hint={t('dashboard.services.intro')}
+          action={
+            <Link href="/services" className="text-forest underline-offset-4 hover:underline">
+              {t('dashboard.services.manage')}
+            </Link>
+          }
+        />
         <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           {activeServices.length === 0 ? (
             <Card className="w-full">
@@ -185,27 +184,24 @@ async function DashboardBody({ ctx, locale }: { ctx: WorkspaceContext; locale: L
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-ink">{t('dashboard.quotes.heading')}</h2>
-            <p className="text-xs text-ink-muted">{t('dashboard.quotes.intro')}</p>
-          </div>
-          <Link href="/quotes" className="text-sm text-forest underline-offset-4 hover:underline">
-            {t('dashboard.quotes.all')}
-          </Link>
-        </div>
+                <SectionHeader
+          title={t('dashboard.quotes.heading')}
+          hint={t('dashboard.quotes.intro')}
+          action={
+            <Link href="/quotes" className="text-forest underline-offset-4 hover:underline">
+              {t('dashboard.quotes.all')}
+            </Link>
+          }
+        />
 
         {data.quotes.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-start gap-2 p-6">
               <p className="text-sm font-medium text-ink">{t('dashboard.quotes.emptyTitle')}</p>
               <p className="text-sm text-ink-muted">{t('dashboard.quotes.emptyBody')}</p>
-              <Link
-                href="/quotes/new"
-                className="mt-1 inline-flex h-10 items-center rounded-control bg-forest px-4 text-sm font-medium text-white"
-              >
+              <LinkButton href="/quotes/new" size="sm" className="mt-1">
                 {t('dashboard.quotes.emptyAction')}
-              </Link>
+              </LinkButton>
             </CardContent>
           </Card>
         ) : (
@@ -247,31 +243,6 @@ async function DashboardBody({ ctx, locale }: { ctx: WorkspaceContext; locale: L
         </p>
       ) : null}
     </div>
-  )
-}
-
-function Stat({
-  label,
-  value,
-  hint,
-  icon,
-}: {
-  label: string
-  value: string
-  hint: string
-  icon: React.ReactNode
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-center gap-2 text-ink-muted">
-          {icon}
-          <p className="text-xs font-medium uppercase tracking-[0.1em]">{label}</p>
-        </div>
-        <p className="tabular mt-3 text-xl font-semibold text-forest sm:text-2xl">{value}</p>
-        <p className="mt-1 text-xs text-ink-muted">{hint}</p>
-      </CardContent>
-    </Card>
   )
 }
 
