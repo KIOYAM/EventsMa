@@ -7,6 +7,7 @@ const MESSAGES: Record<string, string> = {
   contact: 'Please add your name and a 10-digit mobile number.',
   demo: 'Demo mode: enquiries are not delivered until a database is connected.',
   notfound: 'That business could not be found.',
+  ratelimited: 'Too many enquiries from this connection. Please try again in a few minutes.',
 }
 
 /**
@@ -26,8 +27,8 @@ export function PublicNotice() {
       role={error ? 'alert' : 'status'}
       className={
         error
-          ? 'mt-3 rounded-control bg-[#fdf0e2] px-3 py-2 text-xs text-warning'
-          : 'mt-3 rounded-control bg-[#e6f4ea] px-3 py-2 text-xs text-positive'
+          ? 'mt-3 rounded-control bg-terracotta-soft px-3 py-2 text-xs text-terracotta'
+          : 'mt-3 rounded-control bg-mint-subtle px-3 py-2 text-xs text-forest'
       }
     >
       {message}

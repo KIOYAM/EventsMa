@@ -132,6 +132,11 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
             <form action={submitEnquiry} className="mt-4 space-y-3">
               <input type="hidden" name="slug" value={profile.slug} />
+              {/* Honeypot: hidden from people, tempting to form-filling bots. */}
+              <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+                <label htmlFor="website">Website</label>
+                <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+              </div>
 
               <Field label="Your name" htmlFor="name">
                 <Input id="name" name="name" required maxLength={120} />

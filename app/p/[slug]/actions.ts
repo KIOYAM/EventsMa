@@ -1,9 +1,11 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { and, eq } from 'drizzle-orm'
 import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { clients, enquiries, notifications, organisations } from '@/lib/db/schema'
+import { HONEYPOT_FIELD, consumeRateLimit, honeypotTripped } from '@/lib/security/rate-limit'
 
 function normalisePhone(value: string): string {
   return value.replace(/\D/g, '').slice(-10)
@@ -27,8 +29,25 @@ export async function submitEnquiry(formData: FormData): Promise<void> {
   const message = String(formData.get('message') ?? '').trim().slice(0, 1000)
   const eventType = String(formData.get('eventType') ?? '').trim().slice(0, 60)
 
+  // Honeypot: answer exactly like success so a bot learns nothing, and write nothing.
+  if (honeypotTripped(formData.get(HONEYPOT_FIELD))) {
+    redirect(`${back}?sent=1`)
+  }
+
   if (!name || normalisePhone(phone).length < 10) {
     redirect(`${back}?error=contact`)
+  }
+
+  const forwarded = (await headers()).get('x-forwarded-for')
+  const ip = forwarded?.split(',')[0]?.trim().slice(0, 64) ?? 'unknown'
+  const limit = await consumeRateLimit({
+    bucket: 'enquiry-ip',
+    identifier: `${slug}:${ip}`,
+    limit: 5,
+    windowSeconds: 900,
+  })
+  if (!limit.allowed) {
+    redirect(`${back}?error=ratelimited`)
   }
 
   if (!isDatabaseConfigured()) {

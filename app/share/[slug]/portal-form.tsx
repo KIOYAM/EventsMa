@@ -29,6 +29,7 @@ const FAILURE_KEYS: Record<string, string> = {
   rule: 'share.errorCheck',
   empty: 'share.errorChooseItem',
   items: 'share.errorCheck',
+  rate_limited: 'share.errorRateLimited',
 }
 
 export function PortalForm({ portal, locale }: { portal: SharePortal; locale: Locale }) {
@@ -52,6 +53,8 @@ export function PortalForm({ portal, locale }: { portal: SharePortal; locale: Lo
   const [clientEmail, setClientEmail] = useState('')
   const [clientPhone, setClientPhone] = useState('')
   const [message, setMessage] = useState('')
+  /** Honeypot — kept in state only so it travels with the payload. */
+  const [website, setWebsite] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
@@ -177,6 +180,7 @@ export function PortalForm({ portal, locale }: { portal: SharePortal; locale: Lo
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          website,
           clientName,
           clientEmail,
           clientPhone,
@@ -224,6 +228,19 @@ export function PortalForm({ portal, locale }: { portal: SharePortal; locale: Lo
 
   return (
     <form onSubmit={submit} className="space-y-6">
+      {/* Honeypot: off-screen for people, skipped by the keyboard, filled by naive bots. */}
+      <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+        <label htmlFor="website">Website</label>
+        <input
+          id="website"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={website}
+          onChange={(event) => setWebsite(event.target.value)}
+        />
+      </div>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="space-y-6">
           {portal.menu.length > 0 ? (

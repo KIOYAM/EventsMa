@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createShareSubmission } from '@/lib/db/share'
 import { sendEmail } from '@/lib/email'
+import { clientIp, consumeRateLimit, honeypotTripped } from '@/lib/security/rate-limit'
 
 export const revalidate = 0
 
@@ -17,6 +18,8 @@ const MenuSelectionSchema = z.object({
 })
 
 const SubmitSchema = z.object({
+  /** Honeypot: real customers never see it, naive bots fill it in. */
+  website: z.string().max(200).optional(),
   clientName: z.string().trim().min(1).max(120),
   clientEmail: z.string().trim().email().max(160).optional().or(z.literal('')),
   clientPhone: z.string().trim().max(24).optional().or(z.literal('')),
@@ -53,6 +56,47 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const data = parsed.data
+
+  // A filled honeypot gets the success the bot expects and nothing else: no row,
+  // no email, no indication that it was recognised.
+  if (honeypotTripped(data.website)) {
+    return NextResponse.json({
+      ok: true,
+      duplicate: true,
+      message:
+        'Thank you for sharing your event requirements. Our team has received your request and will contact you shortly with a customized quotation.',
+    })
+  }
+
+  const ip = clientIp(request)
+  const ipLimit = await consumeRateLimit({
+    bucket: 'share-submit-ip',
+    identifier: ip,
+    limit: 12,
+    windowSeconds: 600,
+  })
+  if (!ipLimit.allowed) {
+    return NextResponse.json(
+      { ok: false, code: 'rate_limited', params: { seconds: ipLimit.retryAfterSeconds } },
+      { status: 429, headers: { 'Retry-After': String(ipLimit.retryAfterSeconds) } },
+    )
+  }
+
+  // A single share link being hammered is the more common pattern than one noisy
+  // address, and this limit does not trust the caller's IP at all.
+  const tokenLimit = await consumeRateLimit({
+    bucket: 'share-submit-token',
+    identifier: slug,
+    limit: 25,
+    windowSeconds: 600,
+  })
+  if (!tokenLimit.allowed) {
+    return NextResponse.json(
+      { ok: false, code: 'rate_limited', params: { seconds: tokenLimit.retryAfterSeconds } },
+      { status: 429, headers: { 'Retry-After': String(tokenLimit.retryAfterSeconds) } },
+    )
+  }
+
   const result = await createShareSubmission({
     token: slug,
     clientName: data.clientName,

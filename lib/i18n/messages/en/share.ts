@@ -80,6 +80,7 @@ export const share = {
   errorChooseItem: 'Choose at least one item before submitting.',
   errorCheck: 'Please check your selections.',
   errorSubmit: 'We could not submit your request. Please try again.',
+  errorRateLimited: 'Too many attempts from this connection. Please wait {seconds} seconds and try again.',
   errorNetwork: 'Network error. Please check your connection and try again.',
   errorNoMenu: 'This event has no catering menu to choose from.',
   errorSessionGone: 'One of the meal sessions is no longer available. Please refresh and choose again.',
