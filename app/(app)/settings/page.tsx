@@ -4,13 +4,16 @@ import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { createTranslator } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locales'
-import { translatorFor } from '@/lib/i18n/server'
+import { getLocale, translatorFor } from '@/lib/i18n/server'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getSettings } from '@/lib/db/settings'
 import { setPublished, updateSettings } from './actions'
 
-export const metadata = { title: 'Settings' }
+export async function generateMetadata() {
+  const locale = await getLocale()
+  return { title: translatorFor(locale)('settings.title') }
+}
 
 const ERROR_KEYS: Record<string, string> = {
   permission: 'settings.errors.permission',
@@ -25,7 +28,7 @@ export default async function SettingsPage({
   searchParams: Promise<{ error?: string; saved?: string }>
 }) {
   const ctx = await requireWorkspace()
-  const locale = 'en'
+  const locale = await getLocale()
   const t = translatorFor(locale)
   const params = await searchParams
   const data = await withWorkspace(ctx, () => getSettings(ctx.orgId, ctx.demo))

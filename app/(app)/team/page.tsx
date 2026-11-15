@@ -6,7 +6,7 @@ import { Field, Input, Select } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { createTranslator } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locales'
-import { translatorFor } from '@/lib/i18n/server'
+import { getLocale, translatorFor } from '@/lib/i18n/server'
 import { appUrl } from '@/lib/app-url'
 import { requireWorkspace } from '@/lib/auth/session'
 import { getDb } from '@/lib/db/client'
@@ -14,7 +14,10 @@ import { withWorkspace } from '@/lib/db/workspace'
 import { invitations, memberships } from '@/lib/db/schema'
 import { inviteMember, setMemberActive, updateMemberRole } from './actions'
 
-export const metadata = { title: 'Team' }
+export async function generateMetadata() {
+  const locale = await getLocale()
+  return { title: translatorFor(locale)('team.title') }
+}
 
 const ERROR_KEYS: Record<string, string> = {
   permission: 'team.errors.permission',
@@ -45,7 +48,7 @@ export default async function TeamPage({
   searchParams: Promise<{ error?: string; invited?: string; saved?: string }>
 }) {
   const ctx = await requireWorkspace()
-  const locale = 'en'
+  const locale = await getLocale()
   const t = translatorFor(locale)
   const params = await searchParams
 
