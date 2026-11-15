@@ -29,6 +29,7 @@ export const submissions = {
   services: 'Services',
   message: 'Message',
   mark: 'Mark {status}',
+  viewQuote: 'Open quote',
   prepareQuotation: 'Prepare quotation',
   noPhone: 'No phone',
   noEmail: 'No email',

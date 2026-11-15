@@ -341,6 +341,14 @@ export const quotations = pgTable(
     number: text('number').notNull(),
     status: quoteStatus('status').notNull().default('draft'),
     currentVersionId: uuid('current_version_id'),
+    /**
+     * The customer submission this quote was drafted from, if any.
+     *
+     * No `.references()` here on purpose: `share_submissions` lives in a module
+     * that already imports this one, and a back-reference would be a cycle. The
+     * foreign key itself is declared in migration 0009.
+     */
+    submissionId: uuid('submission_id'),
     /** Signed, unguessable token for the public quote page. */
     publicToken: text('public_token'),
     tokenExpiresAt: timestamp('token_expires_at', { withTimezone: true }),
@@ -353,6 +361,7 @@ export const quotations = pgTable(
     uniqueIndex('quotations_org_number_key').on(t.orgId, t.number),
     uniqueIndex('quotations_public_token_key').on(t.publicToken),
     index('quotations_org_status_idx').on(t.orgId, t.status, t.createdAt),
+    index('quotations_org_submission_idx').on(t.orgId, t.submissionId),
   ],
 )
 

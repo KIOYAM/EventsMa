@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, desc, eq, gte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, sql } from 'drizzle-orm'
 import { getDb, getSystemDb, isDatabaseConfigured, type EventsMaDatabase } from './client'
 import {
   businessServices,
@@ -13,7 +13,14 @@ import {
   servicePackages,
 } from './schema'
 import { demoBusiness, demoComputation, demoItems, demoQuotes, demoServices } from '@/lib/demo/data'
+import {
+  shareSubmissionLines,
+  shareSubmissionServices,
+  shareSubmissionSessions,
+  shareSubmissions,
+} from './schema-share'
 import type { UnitClass } from '@/lib/domain/units'
+import type { ComposerPrefill } from '@/lib/domain/quote-prefill'
 import type { PaymentDetails } from '@/lib/domain/ops'
 import { EMPTY_PAYMENT_DETAILS, paymentDetailsFrom } from '@/lib/domain/payments'
 import { EnabledService, buildServiceNavigation } from '@/lib/domain/service-registry'
@@ -577,6 +584,115 @@ export async function getEnabledServices(
 /** Build the full navigation rail from enabled services. */
 export function serviceNavigation(enabled: readonly EnabledService[]) {
   return buildServiceNavigation(enabled)
+}
+
+/**
+ * What a customer submission becomes in the composer.
+ *
+ * The review screen used to hand the owner an empty form, so every dish the
+ * customer chose had to be re-typed. This is the same data the customer's page
+ * stored: event, client, guest count and one line per chosen item.
+ */
+export type { ComposerPrefill } from '@/lib/domain/quote-prefill'
+
+export async function getSubmissionPrefill(
+  orgId: string,
+  demo: boolean,
+  submissionId: string,
+): Promise<ComposerPrefill | null> {
+  if (demo || !isDatabaseConfigured()) return null
+  const db = getDb()
+
+  let rows: {
+    id: string
+    clientName: string
+    eventId: string | null
+    eventTitle: string | null
+    eventDate: string | null
+    guests: number | null
+    clientId: string | null
+    venueName: string | null
+  }[] = []
+
+  try {
+    rows = await db
+      .select({
+        id: shareSubmissions.id,
+        clientName: shareSubmissions.clientName,
+        eventId: shareSubmissions.eventId,
+        eventTitle: events.title,
+        eventDate: events.eventDate,
+        guests: events.guests,
+        clientId: events.clientId,
+        venueName: events.venueName,
+      })
+      .from(shareSubmissions)
+      .leftJoin(events, eq(shareSubmissions.eventId, events.id))
+      .where(and(eq(shareSubmissions.orgId, orgId), eq(shareSubmissions.id, submissionId)))
+      .limit(1)
+  } catch {
+    return null
+  }
+
+  const row = rows[0]
+  if (!row) return null
+
+  const [lineRows, sessionRows] = await Promise.all([
+    db
+      .select({
+        serviceKey: shareSubmissionServices.serviceKey,
+        label: shareSubmissionLines.label,
+        unitClass: shareSubmissionLines.unitClass,
+        unitRatePaise: shareSubmissionLines.unitPricePaise,
+        quantity: shareSubmissionLines.quantity,
+        taxRateBp: serviceItems.taxRateBp,
+        costPerUnitPaise: serviceItems.costPaise,
+      })
+      .from(shareSubmissionLines)
+      .innerJoin(
+        shareSubmissionServices,
+        eq(shareSubmissionLines.submissionServiceId, shareSubmissionServices.id),
+      )
+      .leftJoin(serviceItems, eq(shareSubmissionLines.itemId, serviceItems.id))
+      .where(
+        and(
+          eq(shareSubmissionLines.orgId, orgId),
+          eq(shareSubmissionServices.submissionId, submissionId),
+        ),
+      )
+      .orderBy(asc(shareSubmissionServices.serviceKey), asc(shareSubmissionLines.sortOrder)),
+    db
+      .select({ guests: shareSubmissionSessions.guests })
+      .from(shareSubmissionSessions)
+      .where(
+        and(
+          eq(shareSubmissionSessions.orgId, orgId),
+          eq(shareSubmissionSessions.submissionId, submissionId),
+        ),
+      ),
+  ])
+
+  const sessionGuests = sessionRows.reduce((max, session) => Math.max(max, session.guests), 0)
+  const guests = row.guests ?? sessionGuests
+
+  return {
+    submissionId: row.id,
+    eventId: row.eventId,
+    title: row.eventTitle ?? row.clientName,
+    eventDate: row.eventDate ?? new Date().toISOString().slice(0, 10),
+    guests,
+    clientId: row.clientId,
+    venueName: row.venueName,
+    lines: lineRows.map((line) => ({
+      serviceKey: line.serviceKey,
+      label: line.label,
+      unitClass: (line.unitClass ?? 'FLAT') as UnitClass,
+      unitRatePaise: line.unitRatePaise,
+      quantity: line.quantity,
+      taxRateBp: line.taxRateBp ?? 0,
+      costPerUnitPaise: line.costPerUnitPaise ?? null,
+    })),
+  }
 }
 
 export interface TrendPointData {

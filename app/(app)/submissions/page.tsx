@@ -131,8 +131,12 @@ export default async function SubmissionsPage({
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge tone={TONE[submission.status] ?? 'outline'}>
-                      {t('submissions.status', { status: submission.status })}
+                    <Badge
+                      tone={TONE[submission.quoteNumber ? 'quoted' : submission.status] ?? 'outline'}
+                    >
+                      {t('submissions.status', {
+                        status: submission.quoteNumber ? 'quoted' : submission.status,
+                      })}
                     </Badge>
                     <span className="tabular text-sm font-medium text-forest">
                       {formatPaiseLocalised(submission.indicativeTotalPaise, locale)}
@@ -243,10 +247,15 @@ export default async function SubmissionsPage({
                         </button>
                       </form>
                     ))}
-                    {submission.eventId ? (
+                    {submission.quoteId ? (
+                      <Link href={`/quotes/${submission.quoteId}`} className="btn btn-sm btn-primary">
+                        {t('submissions.viewQuote')}
+                        {submission.quoteNumber ? ` · ${submission.quoteNumber}` : ''}
+                      </Link>
+                    ) : submission.eventId ? (
                       <Link
-                        href="/quotes/new"
-                        className="inline-flex h-9 items-center rounded-control bg-forest px-3 text-xs font-medium text-white"
+                        href={`/quotes/new?submission=${submission.id}`}
+                        className="btn btn-sm btn-primary"
                       >
                         {t('submissions.prepareQuotation')}
                       </Link>

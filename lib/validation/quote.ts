@@ -20,6 +20,8 @@ export const quoteLineSchema = z.object({
 export const saveQuoteSchema = z.object({
   quotationId: z.string().uuid().optional(),
   eventId: z.string().uuid().optional(),
+  /** The customer submission this quote is being drafted from, if any. */
+  submissionId: z.string().uuid().optional(),
   title: z.string().min(1).max(160),
   eventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   clientId: z.string().uuid().optional(),

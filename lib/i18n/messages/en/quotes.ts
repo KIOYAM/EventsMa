@@ -51,6 +51,9 @@ export const quotes = {
     heading: 'One event, every service you provide',
     description:
       'Add lines from any enabled service. The preview is instant; the saved total is recomputed on the server and frozen as version 1.',
+    fromSubmissionHeading: 'Quote the customer’s selection',
+    fromSubmissionIntro:
+      'Prefilled with {count} lines from {client}’s submission. Check the rates, then send.',
   },
 
   detail: {

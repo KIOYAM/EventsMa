@@ -1,7 +1,7 @@
 import 'server-only'
-import { asc, desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { getDb, isDatabaseConfigured } from './client'
-import { events } from './schema'
+import { events, quotations } from './schema'
 import {
   shareSubmissionLines,
   shareSubmissionServices,
@@ -50,6 +50,15 @@ export interface OwnerSubmission {
   eventId: string | null
   eventTitle: string | null
   eventDate: string | null
+  /**
+   * The quote drafted from this submission, if one exists.
+   *
+   * "Quoted" is a fact about this link, never a stored flag: the review screen
+   * derives its status from it, so a submission cannot claim to be quoted while
+   * no quote points back at it.
+   */
+  quoteId: string | null
+  quoteNumber: string | null
   services: OwnerSubmissionService[]
   menuSessions: OwnerMenuSession[]
 }
@@ -167,6 +176,25 @@ export async function getOwnerSubmissions(orgId: string, demo: boolean): Promise
           .orderBy(asc(shareSubmissionSessions.sortOrder))
       : []
 
+  const quoteRows = await db
+    .select({
+      submissionId: quotations.submissionId,
+      id: quotations.id,
+      number: quotations.number,
+      status: quotations.status,
+    })
+    .from(quotations)
+    .where(
+      and(
+        eq(quotations.orgId, orgId),
+        inArray(
+          quotations.submissionId,
+          rows.map((row) => row.id),
+        ),
+      ),
+    )
+    .orderBy(desc(quotations.createdAt))
+
   return rows.map((row) => ({
     id: row.id,
     clientName: row.clientName,
@@ -179,6 +207,8 @@ export async function getOwnerSubmissions(orgId: string, demo: boolean): Promise
     eventId: row.eventId,
     eventTitle: row.eventTitle,
     eventDate: row.eventDate,
+    quoteId: quoteRows.find((quote) => quote.submissionId === row.id)?.id ?? null,
+    quoteNumber: quoteRows.find((quote) => quote.submissionId === row.id)?.number ?? null,
     services: serviceRows
       .filter((service) => service.submissionId === row.id)
       .map((service) => ({

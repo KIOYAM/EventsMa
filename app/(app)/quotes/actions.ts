@@ -2,7 +2,7 @@
 
 import { createHash, randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { getDb, isDatabaseConfigured } from '@/lib/db/client'
 import { withWorkspace } from '@/lib/db/workspace'
@@ -14,6 +14,7 @@ import {
   quoteCounters,
   usageEvents,
 } from '@/lib/db/schema'
+import { shareSubmissions } from '@/lib/db/schema-share'
 import { computeQuote } from '@/lib/domain/pricing'
 import type { UnitClass } from '@/lib/domain/units'
 import { saveQuoteSchema } from '@/lib/validation/quote'
@@ -117,6 +118,7 @@ export async function saveQuotation(input: unknown): Promise<SaveResult> {
             status: 'sent',
             publicToken,
             tokenExpiresAt: validUntil,
+            submissionId: data.submissionId ?? null,
           })
           .returning({ id: quotations.id })
 
@@ -175,6 +177,20 @@ export async function saveQuotation(input: unknown): Promise<SaveResult> {
             sortOrder: index,
           })),
         )
+
+        // The review screen reads "quoted" from this link, not from a stored flag,
+        // so the row is updated in the same transaction as the quote itself.
+        if (data.submissionId) {
+          await tx
+            .update(shareSubmissions)
+            .set({ status: 'quoted' })
+            .where(
+              and(
+                eq(shareSubmissions.id, data.submissionId),
+                eq(shareSubmissions.orgId, ctx.orgId),
+              ),
+            )
+        }
 
         return { quotationId: quotation.id, number, mismatch: data.clientTotalPaise !== computed.totalPaise }
       })

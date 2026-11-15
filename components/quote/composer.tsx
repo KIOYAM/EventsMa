@@ -8,6 +8,7 @@ import { saveQuotation } from '@/app/(app)/quotes/actions'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, Select } from '@/components/ui/input'
+import type { ComposerPrefill } from '@/lib/domain/quote-prefill'
 import { createTranslator } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locales'
 import { computeQuote, groupByService } from '@/lib/domain/pricing'
@@ -48,25 +49,42 @@ export function QuoteComposer({
   items,
   clients,
   locale,
+  prefill,
 }: {
   demo: boolean
   services: { verticalKey: string; config: Record<string, string> }[]
   items: CatalogueItem[]
   clients: { id: string; name: string }[]
   locale: Locale
+  /** Set when this quote is drafted from a customer submission. */
+  prefill?: ComposerPrefill | null
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const t = createTranslator(locale)
 
-  const [title, setTitle] = useState('')
-  const [eventDate, setEventDate] = useState(todayISO())
-  const [guests, setGuests] = useState(250)
-  const [clientId, setClientId] = useState('')
-  const [venueName, setVenueName] = useState('')
+  const [title, setTitle] = useState(prefill?.title ?? '')
+  const [eventDate, setEventDate] = useState(prefill?.eventDate ?? todayISO())
+  const [guests, setGuests] = useState(prefill?.guests ?? 250)
+  const [clientId, setClientId] = useState(prefill?.clientId ?? '')
+  const [venueName, setVenueName] = useState(prefill?.venueName ?? '')
   const [discountPercent, setDiscountPercent] = useState(0)
-  const [lines, setLines] = useState<DraftLine[]>([])
-  const [activeService, setActiveService] = useState(services[0]?.verticalKey ?? 'catering')
+  const [lines, setLines] = useState<DraftLine[]>(() =>
+    (prefill?.lines ?? []).map((line, index) => ({
+      key: `submission-${index}-${line.label.slice(0, 24)}`,
+      serviceKey: line.serviceKey,
+      label: line.label,
+      unitClass: line.unitClass,
+      unitRatePaise: line.unitRatePaise,
+      quantity: line.quantity,
+      minQuantity: 0,
+      taxRateBp: line.taxRateBp,
+      costPerUnitPaise: line.costPerUnitPaise,
+    })),
+  )
+  const [activeService, setActiveService] = useState(
+    prefill?.lines[0]?.serviceKey ?? services[0]?.verticalKey ?? 'catering',
+  )
 
   const computed = useMemo(
     () =>
@@ -134,6 +152,8 @@ export function QuoteComposer({
         title: title.trim(),
         eventDate,
         guests,
+        eventId: prefill?.eventId ?? undefined,
+        submissionId: prefill?.submissionId,
         clientId: clientId || undefined,
         venueName: venueName || undefined,
         lines: lines.map((line) => ({

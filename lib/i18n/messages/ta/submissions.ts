@@ -18,6 +18,7 @@ export const submissions: DeepPartial<typeof enSubmissions> = {
   emptyTitle: 'இன்னும் விண்ணப்பங்கள் இல்லை',
   emptyBody: 'ஒரு நிகழ்வைத் திறக்கவும்.',
   received: '{date}',
+  viewQuote: 'விலைப்புள்ளியைத் திற',
   status: '{status}',
   indicativeOnly: 'தோராயமானதுதான் · உறுதிக்கப்பட்ட விலை அல்ல',
   cateringMenuBySession: 'வேளை வாரிய உணவு பட்டியல்',
