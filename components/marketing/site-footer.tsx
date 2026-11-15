@@ -1,22 +1,26 @@
 ﻿import Link from 'next/link'
 import { Mail } from 'lucide-react'
+import { createTranslator } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locales'
 
 const PRODUCT_LINKS = [
-  ['Product', '#product'],
-  ['Features', '#features'],
-  ['How it works', '#how-it-works'],
-  ['Pricing', '#pricing'],
-  ['FAQ', '#faq'],
+  { key: 'product', href: '#product' },
+  { key: 'features', href: '#features' },
+  { key: 'howItWorks', href: '#how-it-works' },
+  { key: 'pricing', href: '#pricing' },
+  { key: 'faq', href: '#faq' },
 ] as const
 
 const SOLUTION_LINKS = [
-  ['Catering', '#solutions'],
-  ['Decor & styling', '#solutions'],
-  ['Photography', '#solutions'],
-  ['Event planners', '#solutions'],
+  { key: 'catering', href: '#solutions', label: 'Catering' },
+  { key: 'decor', href: '#solutions', label: 'Decor & styling' },
+  { key: 'photography', href: '#solutions', label: 'Photography' },
+  { key: 'eventPlanners', href: '#solutions', label: 'Event planners' },
 ] as const
 
-export function SiteFooter() {
+export function SiteFooter({ locale = 'en' }: { locale?: Locale }) {
+  const t = createTranslator(locale)
+
   return (
     <footer className="border-t border-white/10 bg-night">
       <div className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 lg:px-10">
@@ -32,23 +36,22 @@ export function SiteFooter() {
               <span className="font-display text-xl text-cream">EventsMa</span>
             </Link>
             <p className="mt-4 text-[13px] leading-relaxed text-white/50">
-              One workspace for catering, decor, photography and every other event service you
-              provide. Price it, quote it and know the margin before you send it.
+              {t('marketing.footer.description')}
             </p>
             <p className="mt-4 inline-flex rounded-full border border-white/10 px-3 py-1.5 text-[11px] text-white/55">
-              Built for Coimbatore and beyond
+              {t('marketing.footer.tagline')}
             </p>
           </div>
 
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/55">
-              Product
+              {t('marketing.footer.product')}
             </p>
             <ul className="mt-4 space-y-2.5">
-              {PRODUCT_LINKS.map(([label, href]) => (
-                <li key={label}>
-                  <a href={href} className="text-[13px] text-white/55 hover:text-cream">
-                    {label}
+              {PRODUCT_LINKS.map((link) => (
+                <li key={link.key}>
+                  <a href={link.href} className="text-[13px] text-white/55 hover:text-cream">
+                    {t(`marketing.header.${link.key}`)}
                   </a>
                 </li>
               ))}
@@ -57,13 +60,13 @@ export function SiteFooter() {
 
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/55">
-              Solutions
+              {t('marketing.footer.solutions')}
             </p>
             <ul className="mt-4 space-y-2.5">
-              {SOLUTION_LINKS.map(([label, href]) => (
-                <li key={label}>
-                  <a href={href} className="text-[13px] text-white/55 hover:text-cream">
-                    {label}
+              {SOLUTION_LINKS.map((row) => (
+                <li key={row.key}>
+                  <a href={row.href} className="text-[13px] text-white/55 hover:text-cream">
+                    {row.label}
                   </a>
                 </li>
               ))}
@@ -72,27 +75,27 @@ export function SiteFooter() {
 
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/55">
-              Company
+              {t('marketing.footer.company')}
             </p>
             <ul className="mt-4 space-y-2.5">
               <li>
                 <Link href="/signup" className="text-[13px] text-white/55 hover:text-cream">
-                  Get started
+                  {t('marketing.footer.getStarted')}
                 </Link>
               </li>
               <li>
                 <Link href="/login" className="text-[13px] text-white/55 hover:text-cream">
-                  Sign in
+                  {t('marketing.footer.signIn')}
                 </Link>
               </li>
               <li>
                 <Link href="/privacy" className="text-[13px] text-white/55 hover:text-cream">
-                  Privacy
+                  {t('marketing.footer.privacy')}
                 </Link>
               </li>
               <li>
                 <Link href="/terms" className="text-[13px] text-white/55 hover:text-cream">
-                  Terms
+                  {t('marketing.footer.terms')}
                 </Link>
               </li>
               <li>
@@ -101,7 +104,7 @@ export function SiteFooter() {
                   className="inline-flex items-center gap-1.5 text-[13px] text-white/55 hover:text-cream"
                 >
                   <Mail className="h-3.5 w-3.5" aria-hidden />
-                  Contact
+                  {t('marketing.footer.contact')}
                 </a>
               </li>
             </ul>
@@ -110,9 +113,7 @@ export function SiteFooter() {
 
         <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-[11px] text-white/55 sm:flex-row sm:items-center sm:justify-between">
           <p>Â© {new Date().getFullYear()} EventsMa. All rights reserved.</p>
-          <p>
-            Manual payments only. EventsMa does not collect customer payments or store card data.
-          </p>
+          <p>{t('marketing.footer.manualPayments')}</p>
         </div>
       </div>
     </footer>

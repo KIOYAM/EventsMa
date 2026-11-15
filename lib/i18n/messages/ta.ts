@@ -22,6 +22,8 @@ import { settings } from './ta/settings'
 import { team } from './ta/team'
 import { events } from './ta/events'
 import { nav } from './ta/nav'
+import { auth } from './ta/auth'
+import { marketing } from './ta/marketing'
 import { pdf } from './ta/pdf'
 import { rule } from './ta/rule'
 import { share } from './ta/share'
@@ -41,6 +43,8 @@ export const ta: MessagesOverride = {
   team,
   events,
   nav,
+  auth,
+  marketing,
   pdf,
   rule,
   share,

@@ -1,4 +1,8 @@
+'use client'
+
 import Link from 'next/link'
+import { createTranslator } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locales'
 
 /**
  * The one card every auth screen sits in. Sign-in and sign-up are two links in
@@ -10,16 +14,19 @@ export function AuthShell({
   title,
   description,
   children,
+  locale = 'en',
 }: {
   active: 'signin' | 'signup'
   step: string
   title: string
   description: string
   children: React.ReactNode
+  locale?: Locale
 }) {
+  const t = createTranslator(locale)
   const tabs = [
-    { id: 'signin' as const, href: '/login', label: 'Sign in' },
-    { id: 'signup' as const, href: '/signup', label: 'Create account' },
+    { id: 'signin' as const, href: '/login', label: t('auth.shell.tabs.signin') },
+    { id: 'signup' as const, href: '/signup', label: t('auth.shell.tabs.signup') },
   ]
 
   return (
@@ -60,8 +67,7 @@ export function AuthShell({
         </div>
 
         <p className="mt-4 px-1 text-xs leading-relaxed text-ink-muted">
-          Built for event businesses — catering, decor, photography, planning. Quotes, invoices and
-          margin in one workspace.
+          {t('auth.shell.footer')}
         </p>
       </div>
     </main>

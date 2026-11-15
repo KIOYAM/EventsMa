@@ -25,6 +25,8 @@ import { settings } from './en/settings'
 import { team } from './en/team'
 import { events } from './en/events'
 import { nav } from './en/nav'
+import { auth } from './en/auth'
+import { marketing } from './en/marketing'
 import { pdf } from './en/pdf'
 import { rule } from './en/rule'
 import { share } from './en/share'
@@ -42,6 +44,8 @@ export const en = {
   team,
   submissions,
   events,
+  auth,
+  marketing,
   nav,
   pdf,
   rule,

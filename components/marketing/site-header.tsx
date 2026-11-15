@@ -3,18 +3,21 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, Menu, X } from 'lucide-react'
+import { createTranslator } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n/locales'
 
 const LINKS = [
-  { href: '#product', label: 'Product' },
-  { href: '#features', label: 'Features' },
-  { href: '#solutions', label: 'Solutions' },
-  { href: '#how-it-works', label: 'How it works' },
-  { href: '#pricing', label: 'Pricing' },
-  { href: '#faq', label: 'FAQ' },
-]
+  { href: '#product', labelKey: 'marketing.header.product' },
+  { href: '#features', labelKey: 'marketing.header.features' },
+  { href: '#solutions', labelKey: 'marketing.header.solutions' },
+  { href: '#how-it-works', labelKey: 'marketing.header.howItWorks' },
+  { href: '#pricing', labelKey: 'marketing.header.pricing' },
+  { href: '#faq', labelKey: 'marketing.header.faq' },
+] as const
 
-export function SiteHeader() {
+export function SiteHeader({ locale = 'en' }: { locale?: Locale }) {
   const [open, setOpen] = useState(false)
+  const t = createTranslator(locale)
 
   useEffect(() => {
     if (!open) return
@@ -45,7 +48,7 @@ export function SiteHeader() {
               href={link.href}
               className="text-[13px] text-white/65 transition-colors hover:text-cream focus-visible:text-cream"
             >
-              {link.label}
+              {t(link.labelKey)}
             </a>
           ))}
         </nav>
@@ -55,13 +58,13 @@ export function SiteHeader() {
             href="/login"
             className="inline-flex h-10 items-center rounded-control px-4 text-sm text-white/75 transition-colors hover:bg-white/5 hover:text-cream"
           >
-            Sign in
+            {t('auth.shell.tabs.signin')}
           </Link>
           <Link
             href="/signup"
             className="inline-flex h-10 items-center gap-1.5 rounded-control bg-mint-bright px-4 text-sm font-medium text-forest transition-colors hover:bg-mint"
           >
-            Get started
+            {t('marketing.header.getStarted')}
             <ArrowUpRight className="h-4 w-4" aria-hidden />
           </Link>
         </div>
@@ -71,7 +74,7 @@ export function SiteHeader() {
           className="grid h-11 w-11 place-items-center rounded-control text-cream hover:bg-white/5 lg:hidden"
           aria-expanded={open}
           aria-controls="mobile-navigation"
-          aria-label={open ? 'Close navigation' : 'Open navigation'}
+          aria-label={open ? t('marketing.header.closeNavigation') : t('marketing.header.openNavigation')}
           onClick={() => setOpen((value) => !value)}
         >
           {open ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
@@ -91,7 +94,7 @@ export function SiteHeader() {
                 onClick={() => setOpen(false)}
                 className="flex min-h-11 items-center rounded-control px-3 text-sm text-white/75 hover:bg-white/5 hover:text-cream"
               >
-                {link.label}
+                {t(link.labelKey)}
               </a>
             ))}
             <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/10 pt-4">
@@ -100,14 +103,14 @@ export function SiteHeader() {
                 className="inline-flex h-11 items-center justify-center rounded-control border border-white/15 text-sm text-cream"
                 onClick={() => setOpen(false)}
               >
-                Sign in
+                {t('auth.shell.tabs.signin')}
               </Link>
               <Link
                 href="/signup"
                 className="inline-flex h-11 items-center justify-center rounded-control bg-mint-bright text-sm font-medium text-forest"
                 onClick={() => setOpen(false)}
               >
-                Get started
+                {t('marketing.header.getStarted')}
               </Link>
             </div>
           </nav>
