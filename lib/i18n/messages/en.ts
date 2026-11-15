@@ -18,6 +18,7 @@ import { common } from './en/common'
 import { quotes } from './en/quotes'
 import { dashboard } from './en/dashboard'
 import { submissions } from './en/submissions'
+import { invoices } from './en/invoices'
 import { events } from './en/events'
 import { nav } from './en/nav'
 import { pdf } from './en/pdf'
@@ -30,6 +31,7 @@ export const en = {
   common,
   quotes,
   dashboard,
+  invoices,
   submissions,
   events,
   nav,
