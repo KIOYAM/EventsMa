@@ -39,9 +39,11 @@ export function TrendChart({
   className?: string
 }) {
   const values = points.map((point) => point.value)
-  const domainMax = Math.max(0, ...values)
   const domainMin = Math.min(0, ...values)
-  const span = domainMax - domainMin || 1
+  const rawMax = Math.max(0, ...values)
+  // An all-zero series would pin the line to the top edge; give it a baseline instead.
+  const domainMax = rawMax === 0 && domainMin === 0 ? 1 : rawMax
+  const span = domainMax - domainMin
 
   const y = (value: number) => ((domainMax - value) / span) * 100
   const x = (index: number) =>
