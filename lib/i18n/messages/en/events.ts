@@ -256,4 +256,11 @@ export const events = {
     festival: 'Festival',
     custom: 'Custom',
   },
+
+  table: {
+    event: 'Event',
+    date: 'Date',
+    tasks: 'Open tasks',
+    status: 'Status',
+  },
 } as const

@@ -84,4 +84,17 @@ export const clients = {
     noPhone: 'No phone',
     noEmail: 'No email',
   },
+
+  save: 'Save',
+  statusLabel: 'Enquiry status',
+  guests: 'guests',
+  followUp: 'Follow up',
+  demoNotice: 'Demo data. Enquiry changes are disabled until a database is connected.',
+
+  table: {
+    enquiry: 'Enquiry',
+    contact: 'Contact',
+    received: 'Received',
+    actions: 'Actions',
+  },
 } as const

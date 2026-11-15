@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DataTable } from '@/components/ui/data-table'
 import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { Stat } from '@/components/ui/stat'
@@ -139,37 +140,80 @@ export default async function InvoicesPage({
           description={t('invoices.emptyBody')}
         />
       ) : (
-        <div className="overflow-hidden card-surface">
-          {data.rows.map((row) => (
-            <Link
-              key={row.id}
-              href={`/invoices/${row.id}`}
-              className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline px-4 py-3.5 last:border-b-0 hover:bg-mint-subtle/60 sm:px-5"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-ink">
-                  {row.number} · {row.eventTitle}
-                </p>
-                <p className="mt-0.5 text-xs text-ink-muted">
-                  {row.clientName ?? t('invoices.detail.noClient')}
-                  {row.dueOn ? ` · due ${shortDate(row.dueOn)}` : ''} · issued{' '}
-                  {shortDate(row.issuedAt.slice(0, 10))}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="tabular text-sm text-ink">
-                    {formatPaiseLocalised(row.amountPaise, locale)}
+        <DataTable
+          rows={data.rows}
+          rowKey={(row) => row.id}
+          href={(row) => `/invoices/${row.id}`}
+          rowLabel={(row) => `${row.number} ${row.eventTitle}`}
+          density="comfortable"
+          columns={[
+            {
+              key: 'invoice',
+              header: t('invoices.table.invoice'),
+              cell: (row) => (
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-ink">
+                    {row.number} · {row.eventTitle}
                   </p>
-                  <p className="tabular text-[11px] text-ink-muted">
-                    {formatPaiseLocalised(row.paidPaise, locale)} received
+                  <p className="mt-0.5 text-xs text-ink-muted">
+                    {t('invoices.detail.issued')} {shortDate(row.issuedAt.slice(0, 10))}
+                    {row.dueOn ? ` · ${t('invoices.detail.due')} ${shortDate(row.dueOn)}` : ''}
                   </p>
                 </div>
-                <Badge tone="neutral">{t(`invoices.tab.${row.status}`)}</Badge>
-              </div>
-            </Link>
-          ))}
-        </div>
+              ),
+            },
+            {
+              key: 'client',
+              header: t('invoices.table.client'),
+              secondary: true,
+              className: 'w-52',
+              cell: (row) => (
+                <span className="block truncate text-ink-muted">
+                  {row.clientName ?? t('invoices.detail.noClient')}
+                </span>
+              ),
+            },
+            {
+              key: 'amount',
+              header: t('invoices.table.amount'),
+              align: 'end',
+              className: 'w-44',
+              cell: (row) => (
+                <>
+                  <p className="tabular">{formatPaiseLocalised(row.amountPaise, locale)}</p>
+                  <p className="tabular text-xs text-ink-muted">
+                    {formatPaiseLocalised(row.paidPaise, locale)} {t('invoices.detail.statReceived')}
+                  </p>
+                </>
+              ),
+            },
+            {
+              key: 'status',
+              header: t('invoices.table.status'),
+              align: 'end',
+              className: 'w-32',
+              cell: (row) => <Badge tone="neutral">{t(`invoices.tab.${row.status}`)}</Badge>,
+            },
+          ]}
+          mobileTitle={(row) => `${row.number} · ${row.eventTitle}`}
+          mobileMeta={(row) =>
+            [
+              row.clientName ?? t('invoices.detail.noClient'),
+              `${formatPaiseLocalised(row.paidPaise, locale)} ${t('invoices.detail.statReceived')}`,
+              row.dueOn ? `${t('invoices.detail.due')} ${shortDate(row.dueOn)}` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')
+          }
+          mobileTrailing={(row) => (
+            <div className="space-y-1.5">
+              <p className="tabular text-sm text-ink">
+                {formatPaiseLocalised(row.amountPaise, locale)}
+              </p>
+              <Badge tone="neutral">{t(`invoices.tab.${row.status}`)}</Badge>
+            </div>
+          )}
+        />
       )}
 
       <Pagination
@@ -230,7 +274,7 @@ export default async function InvoicesPage({
                 <button
                   type="submit"
                   disabled={!canEdit}
-                  className="inline-flex h-11 items-center rounded-control bg-forest px-5 text-sm font-medium text-white disabled:opacity-50"
+                  className="btn btn-md btn-primary"
                 >
                   {t('invoices.raiseInvoice')}
                 </button>

@@ -2,22 +2,18 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, CalendarPlus, Inbox } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { DataTable } from '@/components/ui/data-table'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { Select } from '@/components/ui/input'
 import { DebouncedSearch } from '@/components/debounced-search'
 import { Pagination } from '@/components/pagination'
 import { createTranslator } from '@/lib/i18n'
-import type { Locale } from '@/lib/i18n/locales'
 import { getLocale, translatorFor } from '@/lib/i18n/server'
 import { relativeDaysLocalised } from '@/lib/i18n/format'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getEnquiryPage } from '@/lib/db/crm'
-import {
-  ENQUIRY_STATUSES,
-  ENQUIRY_STATUS_LABEL,
-  type EnquiryStatus,
-} from '@/lib/domain/ops'
+import { ENQUIRY_STATUSES, type EnquiryStatus } from '@/lib/domain/ops'
 import { PAGE_SIZE, pageHref, parsePage } from '@/lib/pagination'
 import { shortDate } from '@/lib/utils'
 import { convertEnquiryToEvent, setEnquiryStatus } from './actions'
@@ -65,6 +61,56 @@ export default async function ClientsPage({
   )
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
 
+  const contactLine = (row: (typeof data.rows)[number]) =>
+    [
+      row.phone ?? t('clients.noPhone'),
+      row.eventDate
+        ? `${shortDate(row.eventDate)} (${relativeDaysLocalised(row.eventDate, locale)})`
+        : t('clients.dateNotDecided'),
+      `${row.guests} ${t('clients.guests')}`,
+    ].join(' · ')
+
+  /** Same controls on desktop and in the card footer, so neither loses a verb. */
+  const renderActions = (row: (typeof data.rows)[number]) => (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <form action={setEnquiryStatus} className="flex items-center gap-1.5">
+        <input type="hidden" name="id" value={row.id} />
+        <Select
+          name="status"
+          defaultValue={row.status}
+          disabled={!canEdit}
+          aria-label={`${t('clients.statusLabel')} — ${row.clientName}`}
+          className="h-9 w-32 text-xs"
+        >
+          {ENQUIRY_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {t(`clients.enquiryStatus.${status}`)}
+            </option>
+          ))}
+        </Select>
+        <button
+          type="submit"
+          disabled={!canEdit}
+          className="text-xs font-medium text-forest underline underline-offset-2 disabled:opacity-40"
+        >
+          {t('clients.save')}
+        </button>
+      </form>
+
+      <form action={convertEnquiryToEvent}>
+        <input type="hidden" name="id" value={row.id} />
+        <button
+          type="submit"
+          disabled={!canEdit || row.status === 'won'}
+          className="inline-flex h-9 items-center gap-1.5 rounded-control bg-forest px-3 text-xs font-medium text-white disabled:opacity-40"
+        >
+          {t('clients.convertToEvent')}
+          <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      </form>
+    </div>
+  )
+
   const tabs = [
     { key: '', label: t('clients.tabAll'), count: Object.values(data.counts).reduce((a, b) => a + b, 0) },
     ...ENQUIRY_STATUSES.map((status) => ({
@@ -82,16 +128,10 @@ export default async function ClientsPage({
         description={t('clients.intro')}
         actions={
           <>
-            <Link
-              href="/clients/directory"
-              className="btn btn-md btn-outline"
-            >
+            <Link href="/clients/directory" className="btn btn-md btn-outline">
               {t('clients.directory')}
             </Link>
-            <Link
-              href="/events#new"
-              className="inline-flex h-11 items-center gap-2 rounded-control bg-forest px-4 text-sm font-medium text-white"
-            >
+            <Link href="/events#new" className="btn btn-md btn-primary">
               <CalendarPlus className="h-4 w-4" aria-hidden /> {t('clients.newEvent')}
             </Link>
           </>
@@ -105,12 +145,12 @@ export default async function ClientsPage({
       ) : null}
       {params.saved ? (
         <div className="rounded-card border border-mint bg-mint-subtle px-4 py-3 text-sm text-forest">
-          Saved.
+          {t('clients.errors.saved')}
         </div>
       ) : null}
       {ctx.demo ? (
         <div className="card-flat bg-mint-subtle px-4 py-3 text-sm text-forest">
-          Demo data. Enquiry changes are disabled until a database is connected.
+          {t('clients.demoNotice')}
         </div>
       ) : null}
 
@@ -155,90 +195,79 @@ export default async function ClientsPage({
           }
         />
       ) : (
-        <div className="space-y-3">
-          {data.rows.map((row) => (
-            <article
-              key={row.id}
-              className="card-surface p-4 sm:p-5"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
+        <DataTable
+          rows={data.rows}
+          rowKey={(row) => row.id}
+          density="comfortable"
+          columns={[
+            {
+              key: 'enquiry',
+              header: t('clients.table.enquiry'),
+              cell: (row) => (
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     {row.clientId ? (
                       <Link
                         href={`/clients/${row.clientId}`}
-                        className="truncate text-sm font-semibold text-ink hover:text-forest hover:underline"
+                        className="truncate font-medium text-ink hover:text-forest hover:underline"
                       >
                         {row.clientName}
                       </Link>
                     ) : (
-                      <h2 className="truncate text-sm font-semibold text-ink">{row.clientName}</h2>
+                      <span className="truncate font-medium text-ink">{row.clientName}</span>
                     )}
                     <Badge tone={TONE[row.status]}>{t(`clients.enquiryStatus.${row.status}`)}</Badge>
                     {row.source ? <Badge tone="outline">{row.source}</Badge> : null}
                   </div>
-                  <p className="mt-1 text-xs text-ink-muted">
-                    {row.phone ?? t('clients.noPhone')} ·{' '}
-                    {row.eventDate
-                      ? `${shortDate(row.eventDate)} (${relativeDaysLocalised(row.eventDate, locale)})`
-                      : t('clients.dateNotDecided')}{' '}
-                    · {row.guests} guests
-                    {row.eventType ? ` · ${row.eventType}` : ''}
-                  </p>
                   {row.message ? (
-                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted">
-                      {row.message}
-                    </p>
+                    <p className="mt-1 line-clamp-1 max-w-xl text-xs text-ink-muted">{row.message}</p>
                   ) : null}
-                  <p className="mt-2 text-[11px] text-ink-muted">
-                    Received {shortDate(row.createdAt.slice(0, 10))}
+                </div>
+              ),
+            },
+            {
+              key: 'contact',
+              header: t('clients.table.contact'),
+              secondary: true,
+              className: 'w-72',
+              cell: (row) => (
+                <span className="text-xs leading-relaxed text-ink-muted">{contactLine(row)}</span>
+              ),
+            },
+            {
+              key: 'received',
+              header: t('clients.table.received'),
+              secondary: true,
+              className: 'w-40',
+              cell: (row) => (
+                <>
+                  <p className="text-sm">{shortDate(row.createdAt.slice(0, 10))}</p>
+                  <p className="text-xs text-ink-muted">
                     {row.nextFollowUpAt
-                      ? ` · Follow up ${shortDate(row.nextFollowUpAt.slice(0, 10))}`
-                      : ` · ${t('clients.noFollowUp')}`}
+                      ? `${t('clients.followUp')} ${shortDate(row.nextFollowUpAt.slice(0, 10))}`
+                      : t('clients.noFollowUp')}
                   </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <form action={setEnquiryStatus} className="flex items-center gap-1.5">
-                    <input type="hidden" name="id" value={row.id} />
-                    <Select
-                      name="status"
-                      defaultValue={row.status}
-                      disabled={!canEdit}
-                      aria-label={`Status for ${row.clientName}`}
-                      className="h-9 w-32 text-xs"
-                    >
-                      {ENQUIRY_STATUSES.map((status) => (
-                        <option key={status} value={status}>
-                          {t(`clients.enquiryStatus.${status}`)}
-                        </option>
-                      ))}
-                    </Select>
-                    <button
-                      type="submit"
-                      disabled={!canEdit}
-                      className="text-xs font-medium text-forest underline underline-offset-2 disabled:opacity-40"
-                    >
-                      Save
-                    </button>
-                  </form>
-
-                  <form action={convertEnquiryToEvent}>
-                    <input type="hidden" name="id" value={row.id} />
-                    <button
-                      type="submit"
-                      disabled={!canEdit || row.status === 'won'}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-control bg-forest px-3 text-xs font-medium text-white disabled:opacity-40"
-                    >
-                      {t('clients.convertToEvent')}
-                      <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
+                </>
+              ),
+            },
+            {
+              key: 'actions',
+              header: t('clients.table.actions'),
+              align: 'end',
+              className: 'w-64',
+              cell: renderActions,
+            },
+          ]}
+          mobileTitle={(row) => row.clientName}
+          mobileMeta={(row) => `${contactLine(row)}`}
+          mobileTrailing={(row) => (
+            <div className="space-y-1.5">
+              <Badge tone={TONE[row.status]}>{t(`clients.enquiryStatus.${row.status}`)}</Badge>
+              <p className="text-[11px] text-ink-muted">{shortDate(row.createdAt.slice(0, 10))}</p>
+            </div>
+          )}
+          mobileActions={renderActions}
+        />
       )}
 
       <Pagination

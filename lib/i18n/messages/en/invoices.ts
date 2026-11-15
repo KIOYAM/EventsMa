@@ -99,4 +99,11 @@ export const invoices = {
     savedSettled: 'This invoice is already settled.',
     savedPayment: 'Saved.',
   },
+
+  table: {
+    invoice: 'Invoice',
+    client: 'Client',
+    amount: 'Amount',
+    status: 'Status',
+  },
 } as const

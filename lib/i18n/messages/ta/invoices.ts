@@ -95,4 +95,11 @@ export const invoices: DeepPartial<typeof enInvoices> = {
     savedSettled: 'இந்த விலைப்பட்டியல் ஏற்கனவே தீர்ந்துள்ளது.',
     savedPayment: 'சேமிக்கப்பட்டது.',
   },
+
+  table: {
+    invoice: 'விலைப்பட்டியல்',
+    client: 'வாடிக்கையாளர்',
+    amount: 'தொகை',
+    status: 'நிலை',
+  },
 }

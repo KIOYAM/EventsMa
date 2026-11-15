@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { CalendarDays, CalendarPlus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { DataTable } from '@/components/ui/data-table'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
 import { DebouncedSearch } from '@/components/debounced-search'
 import { Pagination } from '@/components/pagination'
@@ -74,7 +75,7 @@ export default async function EventsPage({
             </Link>
             <Link
               href="#new"
-              className="inline-flex h-11 items-center gap-2 rounded-control bg-forest px-4 text-sm font-medium text-white"
+              className="btn btn-md btn-primary"
             >
               <CalendarPlus className="h-4 w-4" aria-hidden /> {t('events.list.newEvent')}
             </Link>
@@ -133,40 +134,82 @@ export default async function EventsPage({
           }
         />
       ) : (
-        <div className="overflow-hidden card-surface">
-          {data.rows.map((row) => {
-            const meta = t('events.list.rowMeta', {
+        <DataTable
+          rows={data.rows}
+          rowKey={(row) => row.id}
+          href={(row) => `/events/${row.id}`}
+          rowLabel={(row) => row.title}
+          density="comfortable"
+          columns={[
+            {
+              key: 'event',
+              header: t('events.table.event'),
+              cell: (row) => (
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-ink">{row.title}</p>
+                  <p className="mt-0.5 text-xs text-ink-muted">
+                    {row.clientName ?? t('events.list.noClient')}
+                    {row.venueName ? ` · ${row.venueName}` : ''}
+                  </p>
+                </div>
+              ),
+            },
+            {
+              key: 'date',
+              header: t('events.table.date'),
+              secondary: true,
+              className: 'w-48',
+              cell: (row) => (
+                <>
+                  <p>
+                    {formatDateLocalised(row.eventDate, locale, 'short', 'numeric')}
+                  </p>
+                  <p className="text-xs text-ink-muted">
+                    {relativeDaysLocalised(row.eventDate, locale)}
+                  </p>
+                </>
+              ),
+            },
+            {
+              key: 'tasks',
+              header: t('events.table.tasks'),
+              align: 'end',
+              className: 'w-24',
+              cell: (row) =>
+                row.openTasks > 0 ? (
+                  <span className="tabular text-ink-muted">{row.openTasks}</span>
+                ) : (
+                  <span className="text-xs text-ink-muted">—</span>
+                ),
+            },
+            {
+              key: 'status',
+              header: t('events.table.status'),
+              align: 'end',
+              className: 'w-32',
+              cell: (row) => <Badge tone={TONE[row.status]}>{t(eventStatusKey(row.status))}</Badge>,
+            },
+          ]}
+          mobileTitle={(row) => row.title}
+          mobileMeta={(row) =>
+            t('events.list.rowMeta', {
               client: row.clientName ?? t('events.list.noClient'),
               date: formatDateLocalised(row.eventDate, locale, 'short', 'numeric'),
               relative: relativeDaysLocalised(row.eventDate, locale),
               guests: row.guests,
             })
-            return (
-              <Link
-                key={row.id}
-                href={`/events/${row.id}`}
-                className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline px-4 py-3.5 last:border-b-0 hover:bg-mint-subtle/60 sm:px-5"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-ink">{row.title}</p>
-                  <p className="mt-0.5 text-xs text-ink-muted">
-                    {row.venueName
-                      ? t('events.list.rowVenue', { meta, venue: row.venueName })
-                      : meta}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {row.openTasks > 0 ? (
-                    <span className="text-[11px] text-ink-muted">
-                      {t('events.list.open', { count: row.openTasks })}
-                    </span>
-                  ) : null}
-                  <Badge tone={TONE[row.status]}>{t(eventStatusKey(row.status))}</Badge>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+          }
+          mobileTrailing={(row) => (
+            <div className="space-y-1.5">
+              <Badge tone={TONE[row.status]}>{t(eventStatusKey(row.status))}</Badge>
+              {row.openTasks > 0 ? (
+                <p className="text-[11px] text-ink-muted">
+                  {t('events.list.open', { count: row.openTasks })}
+                </p>
+              ) : null}
+            </div>
+          )}
+        />
       )}
 
       <Pagination

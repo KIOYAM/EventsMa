@@ -260,4 +260,11 @@ export const events: DeepPartial<typeof enEvents> = {
     festival: 'பண்டிகை',
     custom: 'தனிப்பயன்',
   },
+
+  table: {
+    event: 'நிகழ்வு',
+    date: 'தேதி',
+    tasks: 'திறந்த பணிகள்',
+    status: 'நிலை',
+  },
 }

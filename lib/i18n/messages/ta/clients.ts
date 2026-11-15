@@ -81,4 +81,17 @@ export const clients: DeepPartial<typeof enClients> = {
     noPhone: 'தொலைபேசி இல்லை',
     noEmail: 'மின்னஞ்சல் இல்லை',
   },
+
+  save: 'சேமி',
+  statusLabel: 'விசாரணை நிலை',
+  guests: 'விருந்தினர்',
+  followUp: 'பின்தொடரவும்',
+  demoNotice: 'மாதிரி தரவு. தரவுத்தளம் இணைக்கும் வரை விசாரணை மாற்றங்கள் முடக்கப்பட்டுள்ளன.',
+
+  table: {
+    enquiry: 'விசாரணை',
+    contact: 'தொடர்பு',
+    received: 'பெறப்பட்டது',
+    actions: 'செயல்கள்',
+  },
 }
