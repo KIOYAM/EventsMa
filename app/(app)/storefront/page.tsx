@@ -5,96 +5,108 @@ import { PageHeader } from '@/components/ui/page-header'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getSettings } from '@/lib/db/settings'
+import { getStorefrontBrand } from '@/lib/db/storefront'
+import { getLocale, translatorFor } from '@/lib/i18n/server'
 import { setPublished } from '../settings/actions'
+import { publishPage } from './actions'
 
-export const metadata = { title: 'Storefront' }
+export async function generateMetadata() {
+  const locale = await getLocale()
+  return { title: translatorFor(locale)('storefront.overview.title') }
+}
 
 /**
- * The public page is a projection of settings, portfolio and menu. This screen
- * shows what a stranger sees and the one switch that puts it online, so nobody
- * has to hunt for publish inside a settings form.
+ * The storefront overview: what a stranger sees, and the one switch that puts it
+ * online. Everything editable lives in `/storefront/customise`, so this screen has
+ * exactly one job — show the state and let an owner publish.
  */
 export default async function StorefrontPage() {
   const ctx = await requireWorkspace()
-  const settings = await withWorkspace(ctx, () => getSettings(ctx.orgId, ctx.demo))
+  const locale = await getLocale()
+  const t = translatorFor(locale)
+  const [settings, business] = await Promise.all([
+    withWorkspace(ctx, () => getSettings(ctx.orgId, ctx.demo)),
+    withWorkspace(ctx, () => getStorefrontBrand(ctx.orgId, ctx.demo)),
+  ])
   const canManage = canManageCommercial(ctx.role) && !ctx.demo
   const publicPath = `/p/${settings.slug}`
 
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Public page"
-        title="What a stranger sees before they call"
-        description="Your name, city, service areas and published work on one link you can put in a WhatsApp reply. Nothing on it reveals a client's price or contact number."
+        eyebrow={t('storefront.overview.eyebrow')}
+        title={t('storefront.overview.title')}
+        description={t('storefront.overview.description')}
         actions={
-          <Link
-            href={publicPath}
-            target="_blank"
-            className="btn btn-sm btn-primary"
-          >
-            Open public page
-          </Link>
+          <>
+            <Link href="/storefront/customise" className="btn btn-md btn-primary">
+              {t('storefront.overview.customise')}
+            </Link>
+            <Link
+              href={publicPath}
+              target="_blank"
+              className="btn btn-md btn-outline hover:bg-mint-subtle"
+            >
+              {t('storefront.overview.open')}
+            </Link>
+          </>
         }
       />
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <Card className="overflow-hidden">
-          <div className="h-2 w-full" style={{ backgroundColor: settings.settings.brandPrimary }} />
+          <div className="h-2 w-full" style={{ backgroundColor: business.primary }} />
           <CardContent className="space-y-4 pt-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="font-display text-2xl text-ink">{settings.name}</p>
                 <p className="mt-1 text-sm text-ink-muted">
-                  {settings.tagline ?? 'No tagline yet'}
+                  {settings.tagline ?? t('storefront.overview.noTagline')}
                 </p>
               </div>
               <Badge tone={settings.published ? 'success' : 'warning'}>
-                {settings.published ? 'Published' : 'Draft'}
+                {settings.published
+                  ? t('storefront.overview.published')
+                  : t('storefront.overview.draft')}
               </Badge>
             </div>
 
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <dt className="text-xs text-ink-muted">City</dt>
+                <dt className="text-xs text-ink-muted">{t('storefront.overview.city')}</dt>
                 <dd className="text-ink">
                   {settings.city ?? '—'}
                   {settings.district ? `, ${settings.district}` : ''}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-ink-muted">Phone</dt>
+                <dt className="text-xs text-ink-muted">{t('storefront.overview.phone')}</dt>
                 <dd className="text-ink">{settings.phone ?? '—'}</dd>
               </div>
-              <div className="col-span-2">
-                <dt className="text-xs text-ink-muted">Service areas</dt>
-                <dd className="mt-1 flex flex-wrap gap-1.5">
-                  {settings.settings.serviceAreas.length === 0 ? (
-                    <span className="text-ink-muted">Not set</span>
-                  ) : (
-                    settings.settings.serviceAreas.map((area) => (
-                      <span
-                        key={area}
-                        className="rounded-pill border border-hairline px-2 py-0.5 text-xs text-ink-muted"
-                      >
-                        {area}
-                      </span>
-                    ))
-                  )}
-                </dd>
+              <div>
+                <dt className="text-xs text-ink-muted">{t('storefront.overview.design')}</dt>
+                <dd className="text-ink capitalize">{business.theme}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-ink-muted">{t('storefront.overview.address')}</dt>
+                <dd className="truncate text-ink">{publicPath}</dd>
               </div>
             </dl>
 
             <div className="rounded-control bg-canvas p-3">
               <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">
-                Advance policy shown on quotes
+                {t('storefront.overview.advance')}
               </p>
               <p className="mt-1 text-sm text-ink">
-                {settings.settings.advancePct}% to confirm ·{' '}
-                {settings.settings.taxMode === 'inclusive' ? 'tax inclusive' : 'tax extra'}
+                {t('storefront.overview.advanceValue', {
+                  pct: settings.settings.advancePct,
+                  tax:
+                    settings.settings.taxMode === 'inclusive'
+                      ? t('storefront.overview.taxInclusive')
+                      : t('storefront.overview.taxExtra'),
+                })}
               </p>
-              <p className="mt-1 text-xs text-ink-muted">
-                Calculated on every quote from the real total, not on an example figure.
-              </p>
+              <p className="mt-1 text-xs text-ink-muted">{t('storefront.overview.advanceHint')}</p>
             </div>
           </CardContent>
         </Card>
@@ -102,26 +114,41 @@ export default async function StorefrontPage() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Publishing</CardTitle>
+              <CardTitle>{t('storefront.overview.publishing')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm leading-relaxed text-ink-muted">
-                A draft page returns 404. Published pages are readable by anyone with the link and
-                are safe to share; quotes inside them still need their own token.
+                {t('storefront.overview.publishingBody')}
               </p>
-              <form action={setPublished}>
-                <input type="hidden" name="published" value={settings.published ? '0' : '1'} />
-                <button
-                  type="submit"
-                  disabled={!canManage}
-                  className="inline-flex h-10 w-full items-center justify-center rounded-control border border-hairline bg-paper text-sm font-medium text-ink disabled:opacity-50"
-                >
-                  {settings.published ? 'Unpublish page' : 'Publish page'}
-                </button>
-              </form>
+              {/* Going live always publishes a snapshot; only taking the page
+                  offline is a plain flag flip, so the two never disagree. */}
+              {settings.published ? (
+                <form action={setPublished}>
+                  <input type="hidden" name="published" value="0" />
+                  <button
+                    type="submit"
+                    disabled={!canManage}
+                    className="inline-flex h-11 w-full items-center justify-center rounded-control border border-hairline bg-paper text-sm font-medium text-ink disabled:opacity-50"
+                  >
+                    {t('storefront.overview.unpublish')}
+                  </button>
+                </form>
+              ) : (
+                <form action={publishPage}>
+                  <button
+                    type="submit"
+                    disabled={!canManage}
+                    className="inline-flex h-11 w-full items-center justify-center rounded-control bg-forest text-sm font-medium text-white disabled:opacity-50"
+                  >
+                    {t('storefront.overview.publish')}
+                  </button>
+                </form>
+              )}
               {!canManage ? (
                 <p className="text-xs text-ink-muted">
-                  {ctx.demo ? 'Demo mode is read-only.' : 'Owner or manager only.'}
+                  {ctx.demo
+                    ? t('storefront.overview.readOnlyDemo')
+                    : t('storefront.overview.readOnlyRole')}
                 </p>
               ) : null}
             </CardContent>
@@ -129,17 +156,23 @@ export default async function StorefrontPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Edit the pieces</CardTitle>
+              <CardTitle>{t('storefront.overview.pieces')}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
+            <CardContent className="space-y-1 text-sm">
+              <Link
+                href="/storefront/customise"
+                className="block rounded-control px-1 py-1.5 font-medium text-forest hover:underline"
+              >
+                {t('storefront.overview.brandStudio')}
+              </Link>
               <Link href="/settings" className="block rounded-control px-1 py-1.5 text-forest hover:underline">
-                Business details and brand colour
+                {t('storefront.overview.details')}
               </Link>
               <Link href="/portfolio" className="block rounded-control px-1 py-1.5 text-forest hover:underline">
-                Portfolio entries
+                {t('storefront.overview.portfolio')}
               </Link>
               <Link href="/menu" className="block rounded-control px-1 py-1.5 text-forest hover:underline">
-                Menu board
+                {t('storefront.overview.menu')}
               </Link>
             </CardContent>
           </Card>

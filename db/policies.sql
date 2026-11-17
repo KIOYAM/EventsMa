@@ -81,6 +81,9 @@ begin
   foreach target in array array[
     'businesses',
     'business_services',
+    'storefront_sections',
+    'storefronts',
+    'storefront_versions',
     'events',
     'availability_blocks',
     'notifications'

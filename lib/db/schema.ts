@@ -124,7 +124,19 @@ export const businesses = pgTable(
         advancePct?: number
         quoteValidityDays?: number
         serviceAreas?: string[]
-        brand?: { primary?: string; font?: string }
+        /**
+         * `theme` and `font` are storefront design keys, `logoPath` points at the
+         * private image bucket. All resolved through `lib/domain/storefront.ts`.
+         */
+        brand?: {
+          primary?: string
+          font?: string
+          theme?: string
+          logoPath?: string
+          subtitle?: string
+        }
+        /** Free-form "about this business" paragraph on the public page. */
+        about?: string
         payment?: {
           instructions?: string
           upiVpa?: string
@@ -788,4 +800,80 @@ export const portfolioItems = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('portfolio_items_org_published_idx').on(t.orgId, t.published, t.eventDate)],
+)
+
+/**
+ * The storefront layout: one row per section the owner has customised.
+ *
+ * Order and visibility are data, not code paths — the public page renders
+ * whatever this table says, and a key with no row falls back to the canonical
+ * order in `lib/domain/storefront.ts`. `key` is constrained to the known set by
+ * the application, so adding a section type is a descriptor change plus a
+ * component, never a column.
+ */
+export const storefrontSections = pgTable(
+  'storefront_sections',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    position: integer('position').notNull().default(0),
+    visible: boolean('visible').notNull().default(true),
+    /** Owner override for the section heading. Null keeps the shipped wording. */
+    heading: text('heading'),
+    /** Hero photograph, stored in the private image bucket and signed on read. */
+    imagePath: text('image_path'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('storefront_sections_org_key_idx').on(t.orgId, t.key)],
+)
+
+/**
+ * One row per tenant: what is live, and which snapshot says so.
+ *
+ * The draft lives in `storefront_sections` and the brand fields inside
+ * `businesses.settings`; this table only points at the immutable version the
+ * public page is allowed to read. `publishedVersionId` is nullable on purpose so
+ * a tenant can be published in the workspace sense while still having no
+ * published snapshot (the pre-0012 state), which is what makes the migration
+ * non-breaking.
+ */
+export const storefronts = pgTable('storefronts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  orgId: uuid('org_id')
+    .notNull()
+    .unique()
+    .references(() => organisations.id, { onDelete: 'cascade' }),
+  status: text('status').notNull().default('draft'),
+  publishedVersionId: uuid('published_version_id'),
+  publishedAt: timestamp('published_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+/**
+ * An immutable published snapshot. Never updated in place; rollback writes a new
+ * row. `snapshot` is validated against `StorefrontSnapshot` on read, so a shape
+ * change needs a new `schemaVersion`, not a data migration.
+ */
+export const storefrontVersions = pgTable(
+  'storefront_versions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    storefrontId: uuid('storefront_id')
+      .notNull()
+      .references(() => storefronts.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    schemaVersion: integer('schema_version').notNull().default(1),
+    snapshot: jsonb('snapshot').$type<Record<string, unknown>>().notNull(),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('storefront_versions_unique_idx').on(t.storefrontId, t.version)],
 )

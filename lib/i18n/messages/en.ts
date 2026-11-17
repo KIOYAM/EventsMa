@@ -28,6 +28,8 @@ import { nav } from './en/nav'
 import { auth } from './en/auth'
 import { marketing } from './en/marketing'
 import { pdf } from './en/pdf'
+import { portfolio } from './en/portfolio'
+import { storefront } from './en/storefront'
 import { rule } from './en/rule'
 import { share } from './en/share'
 
@@ -50,6 +52,8 @@ export const en = {
   pdf,
   rule,
   share,
+  portfolio,
+  storefront,
 } as const
 
 /** Deep partial of the English catalogue: the shape every locale must fit. */

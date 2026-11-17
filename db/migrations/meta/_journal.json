@@ -78,6 +78,20 @@
       "when": 1794700000000,
       "tag": "0010_rate_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794854085552,
+      "tag": "0011_storefront_sections",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794858084636,
+      "tag": "0012_storefront_publishing",
+      "breakpoints": true
     }
   ]
 }

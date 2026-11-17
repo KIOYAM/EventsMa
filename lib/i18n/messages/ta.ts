@@ -25,8 +25,10 @@ import { nav } from './ta/nav'
 import { auth } from './ta/auth'
 import { marketing } from './ta/marketing'
 import { pdf } from './ta/pdf'
+import { portfolio } from './ta/portfolio'
 import { rule } from './ta/rule'
 import { share } from './ta/share'
+import { storefront } from './ta/storefront'
 import type { MessagesOverride } from './en'
 
 export const ta: MessagesOverride = {
@@ -48,4 +50,6 @@ export const ta: MessagesOverride = {
   pdf,
   rule,
   share,
+  portfolio,
+  storefront,
 }

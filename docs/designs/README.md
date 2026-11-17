@@ -25,6 +25,14 @@ transport and a deposit, reused by unit, integration and E2E tests.
 | [`2026-11-15-design-discovery.md`](2026-11-15-design-discovery.md) | Application-wide design audit: 48-route inventory, measured component duplication, findings F1–F12, three design directions with a recommendation, token/icon/asset plans, component matrix, roadmap | Discovery complete; implementation awaits approval |
 | [`2026-11-14-localization-rollout-guide.md`](2026-11-14-localization-rollout-guide.md) | How to translate the remaining surfaces, how to add a language, file ownership for parallel agents, the pitfalls we actually hit, verification checklist, ready-to-paste agent prompt | **Read before changing any UI copy** |
 
+## Storefront (shipped)
+
+| Design | Covers | Status |
+|---|---|---|
+| [`2026-11-16-storefront-builder.md`](2026-11-16-storefront-builder.md) | Section engine (order, visibility, headings), three designs as one markup tree, tenant brand colour injection, motion budget, verification | Shipped |
+| [`2026-11-16-storefront-customise.md`](2026-11-16-storefront-customise.md) | The brand studio: identity, logo, colour, wordmark type, section builder and the client share strip; storage decisions and what the prototype offered that the product cannot | Shipped |
+| [`2026-11-17-production-storefront.md`](2026-11-17-production-storefront.md) | Phase 0 audit of the real repository: 61 tables / 118 policies, existing enquiry and quote pipeline, capability status table, draft-vs-published snapshot architecture, migration `0012`, phased plan and blockers | Audit complete; **Phase 1 shipped** (migration `0012`, publish/rollback, isolation test) — see §10 |
+
 ## Template
 
 ```markdown
