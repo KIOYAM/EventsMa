@@ -212,6 +212,25 @@ test proving a draft edit never reaches the public page.
 | Browser, real session | “Nothing is published yet” → publish → “Published. Clients see this version now.”, `Version 1 · Live` |
 | Production build after a draft mutation | draft `DRAFT NAME 999` / `#c56e4e` while the page served `Kannan Events` / `--brand:#183d33`, no draft string in the HTML |
 
+### Per-tenant rendering check (2026-11-17)
+
+Asked directly: does each owner's real page render their own customisation and their own
+data? Checked against the live database and over HTTP (local + `eventsma.vercel.app`).
+
+| Tenant | Stored state | Public page |
+| --- | --- | --- |
+| `kannan-events` | published, snapshot v1, brand `#183d33` / editorial / serif | 200 — own name, own colour, initials mark, services + enquiry sections |
+| `tinu-eventer` | `published = true`, **no** storefront version (pre-0012 path) | 200 — own name, city and phone, default theme |
+| temporary `verify-showcase-*` | brand `#8a6524` / gallery / sans, subtitle, introduction, custom hero heading, catering + photography with three items, one portfolio entry, gallery hidden | 200 on both hosts — `--brand:#8a6524`, `font-sans`, own subtitle and introduction, custom hero heading, both categories with their items, gallery section absent; after publishing v2 with the gallery visible, the portfolio entry appeared |
+
+The temporary tenant was deleted afterwards (`organisations` back to 2, `storefront_sections`
+back to 0). Cross-tenant assertions on the rendered HTML: neither page contains the other's
+name, and `tinu-eventer`'s phone number appears on no other page.
+
+What the two real tenants show is limited by their **data**, not the engine: both have zero
+active catalogue items and zero published portfolio entries, so their pages are structurally
+correct but visually empty. That is expected until the owner adds catalogue and work.
+
 ### Known limitations
 
 - **Catalogue and portfolio are not versioned yet.** Only identity, brand and layout are
