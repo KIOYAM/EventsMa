@@ -254,6 +254,11 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
     logoPath: row.settings?.brand?.logoPath ?? null,
   }
 
+  // A storefront that has a published version we cannot read must not silently
+  // serve the draft: that is how an unpublished edit reaches a client. Only a
+  // genuinely absent table (`undefined`) keeps the pre-0012 draft fallback.
+  if (published === null) return null
+
   const ordered = published ? published.sections.filter((section) => section.visible) : visibleSections(layout)
   const hero = ordered.find((section) => section.key === 'hero')
   const [heroImageUrl, logoUrl] = await Promise.all([

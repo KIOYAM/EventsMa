@@ -24,6 +24,8 @@ import {
  * working from the draft) instead of rendering half a page.
  */
 export const STOREFRONT_SNAPSHOT_SCHEMA_VERSION = 1
+/** Versions this build can read. v2 only adds fields this renderer does not use. */
+const READABLE_SCHEMA_VERSIONS = [1, 2]
 
 export interface StorefrontSnapshotSection {
   key: SectionKey
@@ -121,7 +123,11 @@ export function parseStorefrontSnapshot(raw: unknown): StorefrontSnapshot | null
   if (typeof raw !== 'object' || raw === null) return null
   const value = raw as Record<string, unknown>
 
-  if (value.schemaVersion !== STOREFRONT_SNAPSHOT_SCHEMA_VERSION) return null
+  // v2 added per-section content (FAQ answers, team names). This build ignores
+  // the extra field but can still serve the identity, brand and known sections of
+  // a v2 snapshot. Rejecting it would fall back to the draft and let an
+  // unpublished edit go live.
+  if (!READABLE_SCHEMA_VERSIONS.includes(value.schemaVersion as number)) return null
   const identity = value.identity as Record<string, unknown> | undefined
   const brand = value.brand as Record<string, unknown> | undefined
   if (!identity || !brand || typeof identity.name !== 'string') return null

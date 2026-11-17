@@ -334,12 +334,24 @@ export async function listStorefrontVersions(
 }
 
 /**
- * The published snapshot for a tenant, or null when it has never published.
+ * The published snapshot for a tenant.
+ *
+ * Three outcomes, and the difference matters:
+ * - a snapshot: this is what a visitor may see.
+ * - `null`: the storefront exists and has never published, or its published
+ *   version cannot be read. The caller must 404 rather than quietly show the
+ *   draft.
+ * - `undefined`: we cannot tell (database not configured, or the table is absent
+ *   because a deploy landed before 0012 ran). Only this case may fall back to the
+ *   draft, which is the behaviour every live page had before publishing existed.
+ *
  * System client: a visitor has no session, so this must not depend on RLS, and
  * the caller has already resolved the tenant from a URL slug.
  */
-export async function getPublishedSnapshot(orgId: string): Promise<StorefrontSnapshot | null> {
-  if (!isDatabaseConfigured()) return null
+export async function getPublishedSnapshot(
+  orgId: string,
+): Promise<StorefrontSnapshot | null | undefined> {
+  if (!isDatabaseConfigured()) return undefined
 
   try {
     const [row] = await getSystemDb()
@@ -352,8 +364,9 @@ export async function getPublishedSnapshot(orgId: string): Promise<StorefrontSna
     return row ? parseStorefrontSnapshot(row.snapshot) : null
   } catch {
     // A public page must never go down because a deployment reached a database
-    // where 0012 has not been applied yet: no snapshot simply means "render the
-    // draft", which is exactly the pre-0012 behaviour clients already had.
-    return null
+    // where 0012 has not been applied yet: "cannot tell" renders the draft, which
+    // is exactly the pre-0012 behaviour clients already had. A tenant that simply
+    // has no version is a different answer (`null`) and is not served at all.
+    return undefined
   }
 }

@@ -226,8 +226,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <p className={look.cardTitle}>{service.label}</p>
                         <p className={look.count}>
-                          {service.itemCount}{' '}
-                          {pluralise(service.itemNoun, service.itemCount)}
+                          {service.itemCount > 0
+                            ? `${service.itemCount} ${pluralise(service.itemNoun, service.itemCount)}`
+                            : 'Catalogue on request'}
                         </p>
                       </div>
                       {service.items.length > 0 ? (
