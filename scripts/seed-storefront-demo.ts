@@ -32,7 +32,6 @@ import {
   DEMO_SECTION_ORDER,
   DEMO_SERVICES,
   DEMO_TEAM,
-  DEMO_TESTIMONIALS,
 } from './storefront-demo-content'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -170,22 +169,26 @@ try {
   }
 
   // ── Layout: order, content, headings ──────────────────────────────────────
+  // Testimonials are owner-authored proof: this demo seeder never invents client
+  // quotes. The section stays hidden (visible=false, empty config) until the
+  // owner writes their own in the studio and publishes.
   const config = {
     faq: DEMO_FAQ.map((item) => ({ id: crypto.randomUUID(), ...item })),
     team: DEMO_TEAM.map((member) => ({ id: crypto.randomUUID(), ...member })),
-    testimonials: DEMO_TESTIMONIALS.map((item) => ({ id: crypto.randomUUID(), ...item })),
   }
 
   for (const [position, key] of DEMO_SECTION_ORDER.entries()) {
-    const sectionConfig = key === 'faq' || key === 'team' || key === 'testimonials' ? config : null
+    const isTestimonials = key === 'testimonials'
+    const sectionConfig = key === 'faq' || key === 'team' ? config : null
     await sql`
       insert into storefront_sections (org_id, key, position, visible, config)
-      values (${orgId}, ${key}, ${position}, true, ${json(sectionConfig ?? {})})
+      values (${orgId}, ${key}, ${position}, ${!isTestimonials}, ${json(sectionConfig ?? {})})
       on conflict (org_id, key) do update set
         position = ${position},
-        visible = true,
+        visible = ${!isTestimonials},
         config = case
-          when ${key} in ('faq', 'team', 'testimonials') then ${json(config)}
+          when ${key} in ('faq', 'team') then ${json(config)}
+          when ${key} = 'testimonials' then '{}'::jsonb
           else storefront_sections.config
         end,
         updated_at = now()

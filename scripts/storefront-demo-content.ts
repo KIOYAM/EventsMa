@@ -262,13 +262,6 @@ export const DEMO_PORTFOLIO = [
   { title: 'Onam sadya for 400', venueName: 'Aluva', eventDate: '2025-09-06', description: 'Twenty-six dishes, five counters and a pookalam at the entrance.' },
 ]
 
-export const DEMO_TESTIMONIALS = [
-  { name: 'Meera and Karthik', context: 'Wedding · Fort Kochi', quote: 'They cooked for 480 guests and every plate reached the table hot. The banana leaf service was exactly what both our families asked for.' },
-  { name: 'Pranav Kumar', context: 'Corporate lunch · Kakkanad', quote: 'The team arrived at eight and served 220 people by half past twelve, with nothing left to clear. We have booked them again.' },
-  { name: 'Lakshmi Narayanan', context: 'Housewarming · Edappally', quote: 'They handled breakfast for ninety people in a house with one kitchen and no yard. The filter coffee alone was worth it.' },
-  { name: 'Rhea and Arjun', context: 'Reception · Marine Drive', quote: 'Same team on the stage, the camera and the food, so we made one call instead of four. The photographs arrived in three weeks.' },
-]
-
 export const DEMO_TEAM = [
   { name: 'Kannan R', role: 'Founder and head of kitchen' },
   { name: 'Anitha Menon', role: 'Head chef, sadya' },
