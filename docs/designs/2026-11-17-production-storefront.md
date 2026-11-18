@@ -287,6 +287,8 @@ offer the business may not make.
 | Same FAQ entry, public URL | absent on `localhost:3400/p/kannan-events` **and** `eventsma.vercel.app/p/kannan-events` (grep count 0) |
 | Cleanup | FAQ entry removed through the builder; config back to `{faq:[],team:[]}` |
 | `tinu-eventer` public page | 200 with its own contact block (phone, city); no empty sections |
+| `tinu-eventer` backfill | `flag = true`, `status = published`, `version 1` (schema v2), pointer set, 1 version, 0 draft rows; draft and snapshot compared field by field — **identical** (name, tagline, city, phone, editorial, `#183d33`, serif, no subtitle/about/logo) |
+| Same page after the backfill | identical markers on `localhost:3400` and `eventsma.vercel.app`: own name, city, phone, enquiry form, contact block — the backfill froze what was already being served |
 
 Known gaps: the public page still renders English only (it is prerendered; a locale
 cookie there would de-prerender every storefront), so the new copy sits in
