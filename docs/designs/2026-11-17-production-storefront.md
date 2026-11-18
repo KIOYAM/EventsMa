@@ -295,6 +295,40 @@ cookie there would de-prerender every storefront), so the new copy sits in
 `lib/i18n/messages/{en,ta}/storefront-public.ts` with the Tamil mirror written and unused.
 Packages show an indicative rate, never a computed quote.
 
+## 12. Phase 3 result — entitlement is not visibility (2026-11-17)
+
+The spec called this its most important requirement, and it was missing:
+`business_services.enabled` was the only flag, so a service appeared on the public
+page the moment the workspace activated it. The owner had no say over what a visitor
+is shown.
+
+- `0014_storefront_service_visibility.sql` adds `storefront_visible` to
+  `business_services` (default true, so no existing page changes). `enabled` stays the
+  entitlement; a revoked service disappears from the page immediately because the
+  public read intersects the snapshot against activated rows.
+- Snapshot **v3** freezes `services: [{verticalKey, visible}]`. v1/v2 snapshots carry
+  `null` and keep the behaviour they were published with ("everything enabled"), which
+  is why the live pages did not move when this shipped.
+- The brand studio gained a "Services on your storefront" card: one row per activated
+  service, `Shown`/`Hidden`, one form per toggle. Deactivated services are not offered
+  there at all — the studio cannot advertise something the business has not bought.
+- `setServiceVisible` updates only the caller's organisation and only rows that are
+  already enabled, and the change is a draft edit: it reaches visitors at publish time.
+
+Evidence:
+
+| Check | Result |
+| --- | --- |
+| `npx vitest run` (live DB) | **166 passed**, 19 files, 0 failed |
+| New integration test | publish → only the shown activated service; toggle decor on → page unchanged; publish v2 → both, in order; revoke entitlement → gone at once |
+| `npx tsc --noEmit` | 0 errors |
+| `npm run i18n:audit` | 465 (unchanged) |
+| Browser | studio shows "Services on your storefront → Catering & food service · Shown"; clicking **Hide from storefront** wrote `storefront_visible = false`, and `localhost` **and** `eventsma.vercel.app` still served "Catering & food service"; toggled back to Shown and verified the row again |
+
+The same run surfaced a real testing gap: `vitest.config.ts` had no timeout, so a live
+publish round trip occasionally hit the 5 s default and reported a network hiccup as a
+failure. It is now 30 s for tests and hooks; no assertion was relaxed.
+
 ### Known limitations
 
 - **Catalogue and portfolio are not versioned yet.** Only identity, brand and layout are

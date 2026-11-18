@@ -89,12 +89,6 @@ describe.skipIf(!LIVE)('public token isolation', () => {
       { orgId: orgB, name: `B Events ${suffix}`, published: false },
     ])
 
-    // A public page is served only from a published version, so both tenants get
-    // one here; the isolation assertions below are about whose data is returned,
-    // not about which publish path created it.
-    expect(await publishStorefront(orgA, null, db)).toMatchObject({ ok: true })
-    expect(await publishStorefront(orgB, null, db)).toMatchObject({ ok: true })
-
     await db.insert(businessServices).values([
       { orgId: orgA, verticalKey: 'catering', enabled: true, sortOrder: 0 },
       { orgId: orgB, verticalKey: 'catering', enabled: true, sortOrder: 0 },
@@ -218,6 +212,11 @@ describe.skipIf(!LIVE)('public token isolation', () => {
         expiresAt: new Date(Date.now() + 86_400_000),
       },
     ])
+
+    // Published last: a version freezes the services that exist at publish time,
+    // so this has to run after the catalogue rows, or the page has no services.
+    expect(await publishStorefront(orgA, null, db)).toMatchObject({ ok: true })
+    expect(await publishStorefront(orgB, null, db)).toMatchObject({ ok: true })
   })
 
   afterAll(async () => {

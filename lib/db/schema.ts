@@ -163,7 +163,14 @@ export const businessServices = pgTable(
       .notNull()
       .references(() => organisations.id, { onDelete: 'cascade' }),
     verticalKey: text('vertical_key').notNull(),
+    /** The entitlement: the workspace has activated this service at all. */
     enabled: boolean('enabled').notNull().default(true),
+    /**
+     * The storefront decision, separate from the entitlement: show this activated
+     * service to visitors. Only consulted while `enabled` is true, and frozen into
+     * the published snapshot so a toggle is a draft edit like any other.
+     */
+    storefrontVisible: boolean('storefront_visible').notNull().default(true),
     sortOrder: integer('sort_order').notNull().default(0),
     config: jsonb('config').$type<Record<string, string>>().notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

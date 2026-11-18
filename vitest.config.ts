@@ -18,5 +18,10 @@ export default defineConfig({
     environment: 'node',
     include: ['lib/**/*.test.ts'],
     reporters: 'default',
+    // The integration suites drive a live Supabase project: a publish round trip
+    // plus a public read is several seconds, and the default 5s measured the
+    // network rather than the behaviour. Assertions are unchanged.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 })

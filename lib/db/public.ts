@@ -192,15 +192,34 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
 
   if (!row) return null
 
+  // Read first: without a published version there is nothing a visitor may see,
+  // and every query below can be skipped rather than used as a fallback.
+  const published = await getPublishedSnapshot(row.orgId)
+  if (published === null) return null
+
   // Only the services this business adopted. An item belonging to a vertical the
   // workspace never enabled is not even loaded, so it cannot leak by accident.
   const adopted = await db
-    .select({ verticalKey: businessServices.verticalKey })
+    .select({
+      verticalKey: businessServices.verticalKey,
+      storefrontVisible: businessServices.storefrontVisible,
+    })
     .from(businessServices)
     .where(and(eq(businessServices.orgId, row.orgId), eq(businessServices.enabled, true)))
     .orderBy(businessServices.sortOrder)
 
-  const verticalKeys = adopted.map((service) => service.verticalKey)
+  // Which of them the published version shows. A v1/v2 snapshot has no service
+  // decision, so those pages keep showing everything enabled — the behaviour they
+  // were published with. Entitlement always wins: a service the workspace stopped
+  // offering is not rendered even if the snapshot says it was visible.
+  const verticalKeys = published?.services
+    ? published.services
+        .filter(
+          (choice) =>
+            choice.visible && adopted.some((service) => service.verticalKey === choice.verticalKey),
+        )
+        .map((choice) => choice.verticalKey)
+    : adopted.map((service) => service.verticalKey)
 
   const catalogue =
     verticalKeys.length === 0
@@ -275,7 +294,7 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
           .orderBy(servicePackages.verticalKey, servicePackages.name)
           .limit(6)
 
-  const [signed, layout, published] = await Promise.all([
+  const [signed, layout] = await Promise.all([
     signedPortfolioUrls(work.map((item) => item.coverPath)),
     db
       .select({
@@ -288,15 +307,7 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
       .from(storefrontSections)
       .where(eq(storefrontSections.orgId, row.orgId))
       .orderBy(storefrontSections.position),
-    getPublishedSnapshot(row.orgId),
   ])
-
-  // The storefront is marked published but has no version: nothing legitimate
-  // exists to serve, so the page is a 404. Showing the draft here is what let an
-  // edit go live without a publish — exactly the state 0013 removes. `undefined`
-  // (no table, no database) is the one case that still falls back, because there
-  // the snapshot genuinely cannot be read.
-  if (published === null) return null
 
   // Once a tenant has published, the snapshot is the only source of identity,
   // brand and layout. Draft rows are still read above (they are cheap and shared

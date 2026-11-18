@@ -70,6 +70,15 @@ export const storefront = {
       teamRoleExample: 'Head chef',
     },
   },
+  services: {
+    title: 'Services on your storefront',
+    body: 'These are the services your workspace has activated. Choose which ones a visitor sees; the rest stay available inside your workspace only. Changes go live when you publish.',
+    shown: 'Shown',
+    hidden: 'Hidden',
+    show: 'Show on storefront',
+    hide: 'Hide from storefront',
+    empty: 'No services are activated yet, so the public page has no catalogue to show.',
+  },
   share: {
     title: 'Share with clients',
     draftBody:

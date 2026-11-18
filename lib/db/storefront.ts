@@ -1,7 +1,7 @@
 import 'server-only'
 import { and, asc, eq } from 'drizzle-orm'
 import { getDb, isDatabaseConfigured } from './client'
-import { businesses, storefrontSections } from './schema'
+import { businesses, businessServices, storefrontSections } from './schema'
 import {
   DEFAULT_BRAND_COLOUR,
   SECTION_KEYS,
@@ -168,6 +168,34 @@ export async function getStorefrontSectionConfig(
     .limit(1)
 
   return sanitiseSectionConfig(row?.config)
+}
+
+/**
+ * The services this workspace has activated, and whether the owner shows each on
+ * the public page. Only activated rows are listed: the studio must not offer a
+ * service the business has not bought.
+ */
+export interface StorefrontServiceChoice {
+  verticalKey: string
+  visible: boolean
+}
+
+export async function getStorefrontServiceChoices(
+  orgId: string,
+  demo: boolean,
+): Promise<StorefrontServiceChoice[]> {
+  if (demo || !isDatabaseConfigured()) return []
+
+  const rows = await getDb()
+    .select({
+      verticalKey: businessServices.verticalKey,
+      visible: businessServices.storefrontVisible,
+    })
+    .from(businessServices)
+    .where(and(eq(businessServices.orgId, orgId), eq(businessServices.enabled, true)))
+    .orderBy(asc(businessServices.sortOrder), asc(businessServices.verticalKey))
+
+  return rows
 }
 
 /** Drops the tenant's customisation; the canonical order and page copy return. */

@@ -215,6 +215,7 @@ export const BUILDER_NOTICE: Record<string, string> = {
   demo: 'Demo mode is read-only.',
   section: 'That section does not exist.',
   limit: 'You can add up to 12 entries to a section.',
+  services: 'Service visibility saved. Publish to show it on the public page.',
   item: 'That entry is no longer there.',
   storage: 'Photo storage is not configured for this environment.',
   image: 'Use a WebP, JPEG or PNG under 400 KB.',

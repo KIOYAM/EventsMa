@@ -99,6 +99,13 @@
       "when": 1794879400000,
       "tag": "0013_storefront_section_config",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795019000000,
+      "tag": "0014_storefront_service_visibility",
+      "breakpoints": true
     }
   ]
 }

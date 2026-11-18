@@ -9,7 +9,13 @@ import { ThemePicker } from '@/components/storefront/theme-picker'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getSettings } from '@/lib/db/settings'
-import { getStorefrontBrand, getStorefrontSections } from '@/lib/db/storefront'
+import {
+  getStorefrontBrand,
+  getStorefrontSections,
+  getStorefrontServiceChoices,
+} from '@/lib/db/storefront'
+import { verticalDescriptor } from '@/lib/domain/verticals'
+import { setServiceVisible } from '../section-actions'
 import { getPublishState, listStorefrontVersions } from '@/lib/db/storefronts'
 import { appUrl } from '@/lib/app-url'
 import { BRAND_COLOURS, BRAND_FONTS, BUILDER_NOTICE, fontClass } from '@/lib/domain/storefront'
@@ -51,12 +57,13 @@ export default async function CustomiseStorefrontPage({
   const ctx = await requireWorkspace()
   const locale = await getLocale()
   const t = translatorFor(locale)
-  const [settings, brand, sections, publishState, versions] = await Promise.all([
+  const [settings, brand, sections, publishState, versions, serviceChoices] = await Promise.all([
     withWorkspace(ctx, () => getSettings(ctx.orgId, ctx.demo)),
     withWorkspace(ctx, () => getStorefrontBrand(ctx.orgId, ctx.demo)),
     withWorkspace(ctx, () => getStorefrontSections(ctx.orgId, ctx.demo)),
     withWorkspace(ctx, () => getPublishState(ctx.orgId, ctx.demo)),
     withWorkspace(ctx, () => listStorefrontVersions(ctx.orgId)),
+    withWorkspace(ctx, () => getStorefrontServiceChoices(ctx.orgId, ctx.demo)),
   ])
 
   const { saved, error } = await searchParams
@@ -65,7 +72,9 @@ export default async function CustomiseStorefrontPage({
       ? BUILDER_NOTICE.published
       : saved === 'restore'
         ? BUILDER_NOTICE.restored
-        : BUILDER_NOTICE.saved
+        : saved === 'services'
+          ? BUILDER_NOTICE.services
+          : BUILDER_NOTICE.saved
     : error
       ? BUILDER_NOTICE[error]
       : null
@@ -163,6 +172,51 @@ export default async function CustomiseStorefrontPage({
           missingVersion: t('storefront.publish.missingVersion'),
         }}
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('storefront.services.title')}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm leading-relaxed text-ink-muted">{t('storefront.services.body')}</p>
+          {serviceChoices.length === 0 ? (
+            <p className="text-sm text-ink-muted">{t('storefront.services.empty')}</p>
+          ) : (
+            <ul className="divide-y divide-hairline">
+              {serviceChoices.map((choice) => (
+                <li
+                  key={choice.verticalKey}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-ink">
+                      {verticalDescriptor(choice.verticalKey).label}
+                    </p>
+                    <Badge tone={choice.visible ? 'success' : 'outline'}>
+                      {choice.visible
+                        ? t('storefront.services.shown')
+                        : t('storefront.services.hidden')}
+                    </Badge>
+                  </div>
+                  <form action={setServiceVisible}>
+                    <input type="hidden" name="verticalKey" value={choice.verticalKey} />
+                    <input type="hidden" name="visible" value={choice.visible ? '0' : '1'} />
+                    <button
+                      type="submit"
+                      disabled={!canEdit}
+                      className="h-11 rounded-control border border-hairline bg-paper px-3 text-xs font-medium text-ink disabled:opacity-40"
+                    >
+                      {choice.visible
+                        ? t('storefront.services.hide')
+                        : t('storefront.services.show')}
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>

@@ -2,9 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { and, eq } from 'drizzle-orm'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
-import { isDatabaseConfigured } from '@/lib/db/client'
+import { getDb, isDatabaseConfigured } from '@/lib/db/client'
 import { withWorkspace } from '@/lib/db/workspace'
+import { businessServices } from '@/lib/db/schema'
 import { getStorefrontSectionConfig, setStorefrontSectionConfig } from '@/lib/db/storefront'
 import {
   SECTION_CONFIG_MAX_ITEMS,
@@ -113,6 +115,40 @@ export async function removeTeamMember(formData: FormData): Promise<void> {
   return mutate('team', (current) =>
     id ? { ...current, team: current.team.filter((member) => member.id !== id) } : current,
   )
+}
+
+/**
+ * Show or hide one activated service on the public storefront.
+ *
+ * This is the storefront decision, not the entitlement: the row must already be
+ * enabled for the business, and the update is scoped to the caller's organisation
+ * so a posted key can only ever name a service this tenant has.
+ */
+export async function setServiceVisible(formData: FormData): Promise<void> {
+  const verticalKey = text(formData, 'verticalKey', 40)
+  const visible = formData.get('visible') === '1'
+  const ctx = await requireWorkspace()
+  return withWorkspace(ctx, async () => {
+    if (!canManageCommercial(ctx.role)) redirect('/storefront/customise?error=permission')
+    if (ctx.demo || !isDatabaseConfigured()) redirect('/storefront/customise?error=demo')
+    if (!verticalKey) redirect('/storefront/customise?error=section')
+
+    await getDb()
+      .update(businessServices)
+      .set({ storefrontVisible: visible })
+      .where(
+        and(
+          eq(businessServices.orgId, ctx.orgId),
+          eq(businessServices.verticalKey, verticalKey),
+          eq(businessServices.enabled, true),
+        ),
+      )
+
+    revalidatePath('/storefront/customise')
+    revalidatePath('/storefront')
+    revalidatePath('/p', 'layout')
+    redirect('/storefront/customise?saved=services')
+  })
 }
 
 /** Used by the builder's empty state so a section with no config still saves. */

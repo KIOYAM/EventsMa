@@ -22,6 +22,10 @@ const draft = {
     { key: 'services', position: 1, visible: false, heading: null, imagePath: null },
     { key: 'hero', position: 0, visible: true, heading: 'Our day', imagePath: 'org/hero.png' },
   ]),
+  services: [
+    { verticalKey: 'catering', visible: true },
+    { verticalKey: 'decor', visible: false },
+  ],
 }
 
 describe('buildStorefrontSnapshot', () => {
@@ -112,6 +116,26 @@ describe('parseStorefrontSnapshot', () => {
 
     expect(parsed?.sections[0]?.key).toBe('faq')
     expect(parsed?.sections[0]?.config).toEqual({ faq: [], team: [] })
+  })
+
+  it('freezes which services the owner chose to show', () => {
+    const snapshot = buildStorefrontSnapshot(draft, '2026-11-17T00:00:00.000Z')
+    expect(snapshot.services).toEqual([
+      { verticalKey: 'catering', visible: true },
+      { verticalKey: 'decor', visible: false },
+    ])
+    expect(snapshotFingerprint(snapshot)).toContain('catering')
+  })
+
+  it('treats a v1/v2 snapshot as "no service decision"', () => {
+    const parsed = parseStorefrontSnapshot({
+      schemaVersion: 2,
+      identity: { name: 'Tenant' },
+      brand: {},
+      sections: [{ key: 'hero', position: 0, visible: true }],
+    })
+
+    expect(parsed?.services).toBeNull()
   })
 
   it('caps section content and replaces ids it cannot trust', () => {

@@ -1,7 +1,13 @@
 import 'server-only'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { getDb, getSystemDb, isDatabaseConfigured, type EventsMaDatabase } from './client'
-import { businesses, storefrontSections, storefrontVersions, storefronts } from './schema'
+import {
+  businesses,
+  businessServices,
+  storefrontSections,
+  storefrontVersions,
+  storefronts,
+} from './schema'
 import { orderSections } from '@/lib/domain/storefront'
 import {
   buildStorefrontSnapshot,
@@ -98,6 +104,18 @@ export async function readDraftSnapshot(
     .where(eq(storefrontSections.orgId, orgId))
     .orderBy(storefrontSections.position)
 
+  // Which activated services the owner wants visitors to see. Read from the same
+  // row the workspace enables, so a service that is no longer offered can never be
+  // frozen back into a version by a stale visibility flag.
+  const services = await client
+    .select({
+      verticalKey: businessServices.verticalKey,
+      visible: businessServices.storefrontVisible,
+    })
+    .from(businessServices)
+    .where(eq(businessServices.orgId, orgId))
+    .orderBy(businessServices.sortOrder, businessServices.verticalKey)
+
   const brand = row.settings?.brand ?? {}
 
   return buildStorefrontSnapshot({
@@ -112,6 +130,7 @@ export async function readDraftSnapshot(
     about: row.settings?.about ?? null,
     logoPath: brand.logoPath ?? null,
     sections: orderSections(layout),
+    services,
   })
 }
 

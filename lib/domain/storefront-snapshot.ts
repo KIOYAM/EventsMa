@@ -27,12 +27,19 @@ import {
  * working from the draft) instead of rendering half a page.
  */
 /**
- * v2 added per-section content (FAQ answers, team names). v1 snapshots are still
- * accepted on read: their sections simply carry empty config, so a page published
- * before the extra sections existed keeps rendering instead of 404-ing.
+ * v2 added per-section content (FAQ answers, team names); v3 froze which services
+ * the owner chose to show. Older versions are still accepted: their sections carry
+ * empty config and their `services` is null, which means "whatever the workspace
+ * has enabled" — the behaviour those pages were published with.
  */
-export const STOREFRONT_SNAPSHOT_SCHEMA_VERSION = 2
-const READABLE_SCHEMA_VERSIONS = [1, 2]
+export const STOREFRONT_SNAPSHOT_SCHEMA_VERSION = 3
+const READABLE_SCHEMA_VERSIONS = [1, 2, 3]
+
+/** One activated service and the owner's decision to show it publicly. */
+export interface SnapshotServiceChoice {
+  verticalKey: string
+  visible: boolean
+}
 
 export interface StorefrontSnapshotSection {
   key: SectionKey
@@ -60,6 +67,11 @@ export interface StorefrontSnapshot {
     logoPath: string | null
   }
   sections: StorefrontSnapshotSection[]
+  /**
+   * The services this version shows. `null` for v1/v2 snapshots, where the answer
+   * was "all enabled services" and must stay that way for a page already live.
+   */
+  services: SnapshotServiceChoice[] | null
   /** ISO timestamp, informational: the pointer in `storefronts` is authoritative. */
   publishedAt: string
 }
@@ -76,6 +88,8 @@ export interface SnapshotInput {
   about: string | null
   logoPath: string | null
   sections: readonly StorefrontSection[]
+  /** Activated services with the owner's storefront visibility choice. */
+  services: readonly SnapshotServiceChoice[]
 }
 
 function trimmed(value: unknown, max: number): string | null {
@@ -119,8 +133,25 @@ export function buildStorefrontSnapshot(
       imagePath: trimmed(section.imagePath, 400),
       config: sanitiseSectionConfig(section.config),
     })),
+    services: sanitiseServices(input.services),
     publishedAt,
   }
+}
+
+/** Keys are tenant-chosen strings, so they are checked, deduped and capped here. */
+function sanitiseServices(
+  raw: readonly SnapshotServiceChoice[],
+): SnapshotServiceChoice[] {
+  const seen = new Set<string>()
+  const out: SnapshotServiceChoice[] = []
+  for (const entry of raw) {
+    const key = typeof entry?.verticalKey === 'string' ? entry.verticalKey.trim().slice(0, 40) : ''
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push({ verticalKey: key, visible: entry.visible !== false })
+    if (out.length >= 20) break
+  }
+  return out
 }
 
 /**
@@ -158,8 +189,24 @@ export function parseStorefrontSnapshot(raw: unknown): StorefrontSnapshot | null
       config: section.config === undefined ? emptySectionConfig() : sanitiseSectionConfig(section.config),
     }))
 
+  const rawServices = Array.isArray(value.services) ? (value.services as unknown[]) : null
+
   return {
     schemaVersion: STOREFRONT_SNAPSHOT_SCHEMA_VERSION,
+    services: rawServices
+      ? sanitiseServices(
+          rawServices.map((entry) => {
+            const row = (typeof entry === 'object' && entry !== null ? entry : {}) as Record<
+              string,
+              unknown
+            >
+            return {
+              verticalKey: typeof row.verticalKey === 'string' ? row.verticalKey : '',
+              visible: row.visible !== false,
+            }
+          }),
+        )
+      : null,
     identity: {
       name: identity.name.trim().slice(0, 120) || 'Your business',
       tagline: trimmed(identity.tagline, 200),
@@ -189,5 +236,6 @@ export function snapshotFingerprint(snapshot: StorefrontSnapshot): string {
     identity: snapshot.identity,
     brand: snapshot.brand,
     sections: snapshot.sections,
+    services: snapshot.services,
   })
 }
