@@ -1,8 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { getSystemDb } from './client'
-import { businesses, organisations, storefrontSections } from './schema'
+import {
+  businesses,
+  organisations,
+  storefrontSections,
+  storefrontVersions,
+  storefronts,
+} from './schema'
 import { getPublicProfile } from './public'
 import {
   getPublishState,
@@ -34,8 +40,12 @@ describe.skipIf(!LIVE)('storefront publishing', () => {
   const suffix = randomUUID().slice(0, 8)
   const orgA = randomUUID()
   const orgB = randomUUID()
+  const orgC = randomUUID()
+  const orgD = randomUUID()
   const slugA = `publish-a-${suffix}`
   const slugB = `publish-b-${suffix}`
+  const slugC = `publish-c-${suffix}`
+  const slugD = `publish-d-${suffix}`
 
   const aboutV1 = `Published introduction ${suffix}`
   const headingV1 = `Published heading ${suffix}`
@@ -68,6 +78,58 @@ describe.skipIf(!LIVE)('storefront publishing', () => {
     ])
   }
 
+  async function seedWithSnapshot(
+    orgId: string,
+    slug: string,
+    name: string,
+    draftAbout: string,
+    draftHeading: string,
+    schemaVersion: number,
+    snapshot: Record<string, unknown>,
+  ) {
+    const db = getSystemDb()
+    await db.insert(organisations).values({
+      id: orgId,
+      name,
+      slug,
+      plan: 'trial',
+      status: 'active',
+    })
+    await db.insert(businesses).values({
+      orgId,
+      name,
+      published: true,
+      tagline: `Tagline ${slug}`,
+      city: 'Kochi',
+      settings: {
+        brand: { primary: '#8a6524', theme: 'editorial', font: 'serif' },
+        about: draftAbout,
+      },
+    })
+    await db.insert(storefrontSections).values([
+      { orgId, key: 'hero', position: 0, visible: true, heading: draftHeading },
+      { orgId, key: 'services', position: 1, visible: true },
+    ])
+
+    // storefronts and storefront_versions point at each other, so the pointer is
+    // written after the version exists.
+    const storefrontId = randomUUID()
+    const versionId = randomUUID()
+    await db.insert(storefronts).values({ id: storefrontId, orgId, status: 'published' })
+    await db.insert(storefrontVersions).values({
+      id: versionId,
+      orgId,
+      storefrontId,
+      version: 1,
+      schemaVersion,
+      snapshot,
+    })
+    await db
+      .update(storefronts)
+      .set({ publishedVersionId: versionId, publishedAt: new Date() })
+      .where(eq(storefronts.id, storefrontId))
+  }
+
   beforeAll(async () => {
     process.loadEnvFile('.env.local')
     await seedOrg(orgA, slugA, `Publish A ${suffix}`)
@@ -76,7 +138,7 @@ describe.skipIf(!LIVE)('storefront publishing', () => {
 
   afterAll(async () => {
     const db = getSystemDb()
-    await db.delete(organisations).where(sql`id in (${orgA}, ${orgB})`)
+    await db.delete(organisations).where(sql`id in (${orgA}, ${orgB}, ${orgC}, ${orgD})`)
   })
 
   it('publishes a version and serves it to the public', async () => {
@@ -197,5 +259,75 @@ describe.skipIf(!LIVE)('storefront publishing', () => {
     const afterB = await getPublishedSnapshot(orgB)
     expect(afterB?.identity.name).toBe(`Publish B ${suffix}`)
     expect(await listStorefrontVersions(orgB, 10, getSystemDb())).toHaveLength(1)
+  })
+
+  it('serves a v2 snapshot instead of the draft it was published from', async () => {
+    const draftAbout = `v2 draft introduction ${suffix}`
+    const draftHeading = `v2 draft heading ${suffix}`
+    const liveAbout = `v2 snapshot introduction ${suffix}`
+    const liveHeading = `v2 snapshot heading ${suffix}`
+
+    await seedWithSnapshot(orgC, slugC, `Publish C ${suffix}`, draftAbout, draftHeading, 2, {
+      schemaVersion: 2,
+      identity: {
+        name: `Publish C ${suffix}`,
+        tagline: `Tagline ${slugC}`,
+        city: 'Kochi',
+        phone: null,
+      },
+      brand: {
+        theme: 'editorial',
+        font: 'serif',
+        primary: '#123456',
+        subtitle: null,
+        about: liveAbout,
+        logoPath: null,
+      },
+      sections: [
+        {
+          key: 'hero',
+          position: 0,
+          visible: true,
+          heading: liveHeading,
+          imagePath: null,
+          config: { faq: [], team: [] },
+        },
+        {
+          key: 'services',
+          position: 1,
+          visible: true,
+          heading: null,
+          imagePath: null,
+          config: { faq: [], team: [] },
+        },
+      ],
+      publishedAt: new Date().toISOString(),
+    })
+
+    const page = await getPublicProfile(slugC)
+    expect(page?.about).toBe(liveAbout)
+    expect(page?.brandPrimary).toBe('#123456')
+    expect(page?.sections.find((section) => section.key === 'hero')?.heading).toBe(liveHeading)
+    expect(page?.about).not.toBe(draftAbout)
+    expect(page?.sections.find((section) => section.key === 'hero')?.heading).not.toBe(draftHeading)
+  })
+
+  it('does not serve the draft when the published version is unreadable', async () => {
+    await seedWithSnapshot(
+      orgD,
+      slugD,
+      `Publish D ${suffix}`,
+      `unreadable draft introduction ${suffix}`,
+      `unreadable draft heading ${suffix}`,
+      99,
+      {
+        schemaVersion: 99,
+        identity: { name: `Publish D ${suffix}` },
+        brand: {},
+        sections: [],
+      },
+    )
+
+    expect(await getPublicProfile(slugD)).toBeNull()
   })
 })
