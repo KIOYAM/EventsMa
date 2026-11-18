@@ -376,3 +376,77 @@ headings rendering as designed.
 - Publishing needs migration `0012` on whatever database the deployment uses. Local and the
   Supabase project are migrated; a separate production database needs `node db/setup.mjs`
   before the owner UI can publish.
+
+## 14. Testimonials, and a tenant with a real catalogue (2026-11-18)
+
+Reported: the public page still looked empty, had no client quotes, and the
+workspace had almost nothing to show — Kannan Events had one enabled service, zero
+catalogue items, zero packages, zero portfolio entries, no tagline, no introduction
+and no phone number. Two separate gaps again: one engine feature, one dataset.
+
+### Testimonials are a section, not a reviews system
+
+There is still no reviews table, no rating, no moderation queue. A testimonial
+here is a quote the business chose to publish about work it did, so it belongs
+with the section that shows it:
+
+- `SECTION_KEYS` gains `testimonials` (after `gallery`), with its own label and
+  hint so the builder can reorder and hide it like any other section.
+- `SectionConfig` gains `testimonials: [{ id, name, quote, context }]`, capped and
+  sanitised with the FAQ and team lists (`sanitiseSectionConfig`, 12 items, quote
+  required, name optional for an anonymous client).
+- Snapshot **v4** freezes it; v1–v3 snapshots stay readable and simply carry no
+  quotes, so live pages did not move.
+- The builder gets a fourth content editor (quote, client name, occasion) with the
+  same zero-JavaScript form pattern; `saveTestimonial` / `removeTestimonial` are
+  `section-actions.ts` mutations scoped by RLS.
+- The public page renders them as quote cards with the client's initials, their
+  name and the occasion.
+
+### Preview lists now cover every service
+
+`getPublicProfile` used to take the first six active packages in
+`vertical_key, name` order. With four adopted services that handed six slots to
+catering and decor and made the photographer and makeup artist invisible. It now
+takes up to two per service (eight total), ordered by the tenant's own rate, and
+the "from the catalogue" strip takes two entries per service instead of the first
+six rows overall — which for a caterer meant six drinks.
+
+### Importing a catalogue
+
+`scripts/seed-storefront-demo.ts` (+ `storefront-demo-content.ts`) writes sample
+content for one named tenant through the owner connection and then publishes using
+the real `buildStorefrontSnapshot`, so the snapshot is the production shape rather
+than a hand-written blob. It is idempotent (items/packages/work matched by
+name/title, sections upserted by key) and never deletes a row.
+
+```
+npx vite-node scripts/seed-storefront-demo.ts kannan-events
+```
+
+Result for `kannan-events`: catering, decor, photography and makeup activated and
+shown; 80 catalogue items across 42 dishes/drinks/counters and 38 service lines;
+13 packages; 6 published portfolio entries; 4 testimonials, 4 team members, 6 FAQ
+answers; tagline, descriptor and introduction set; published as version 3
+(schema 4).
+
+### Evidence
+
+| Check | Result |
+| --- | --- |
+| `npx vitest run` (live DB) | **166 passed**, 19 files, 0 failed |
+| `npx tsc --noEmit` | 0 errors |
+| `npm run i18n:audit` | 464 (unchanged; new copy added in en **and** ta) |
+| `GET /p/kannan-events` (dev) | 200 — 4 services, 12 service/dishes cards, 8 packages, 6 work tiles, 4 testimonials, 6 FAQ, enquiry form |
+| DOM measurement at 430px | hero 480px tall with `h1` inside it, no clipping; sections `services`/`menus`/`work`/`testimonials` present in order |
+
+### Known limits
+
+- **`businesses.phone` is still null for this tenant**, so the contact band and the
+  call button do not render, and the mobile bar shows only "Ask for a quote". That
+  needs the owner's real number; inventing one was not acceptable.
+- The sample content is for a demonstration tenant and lives in the normal tables —
+  edit or delete it in the studio and the page follows. It is not rendered from the
+  script at runtime.
+- There are still no photographs: card artwork is painted from the brand colour and
+  the item's initials. Real images need uploads to the private bucket.

@@ -45,6 +45,7 @@ describe('buildStorefrontSnapshot', () => {
       'about',
       'packages',
       'gallery',
+      'testimonials',
       'team',
       'faq',
       'contact',
@@ -115,7 +116,7 @@ describe('parseStorefrontSnapshot', () => {
     })
 
     expect(parsed?.sections[0]?.key).toBe('faq')
-    expect(parsed?.sections[0]?.config).toEqual({ faq: [], team: [] })
+    expect(parsed?.sections[0]?.config).toEqual({ faq: [], team: [], testimonials: [] })
   })
 
   it('freezes which services the owner chose to show', () => {

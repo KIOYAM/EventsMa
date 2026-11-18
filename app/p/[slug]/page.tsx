@@ -216,7 +216,14 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const sections =
     profile.sections.length > 0
       ? profile.sections
-      : [{ key: 'hero' as const, heading: null, imageUrl: null, config: { faq: [], team: [] } }]
+      : [
+          {
+            key: 'hero' as const,
+            heading: null,
+            imageUrl: null,
+            config: { faq: [], team: [], testimonials: [] },
+          },
+        ]
 
   // The About section owns the introduction once it is on the page; the hero only
   // repeats it when the owner has hidden that section.

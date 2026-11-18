@@ -23,7 +23,7 @@ import {
  * back. Nothing here trusts a posted id as ownership — the read is scoped to the
  * caller's organisation, so an id from another tenant simply is not found.
  */
-type ListKey = 'faq' | 'team'
+type ListKey = 'faq' | 'team' | 'testimonials'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -117,6 +117,39 @@ export async function removeTeamMember(formData: FormData): Promise<void> {
   )
 }
 
+/** Add a client quote, or update the one with this id. */
+export async function saveTestimonial(formData: FormData): Promise<void> {
+  const id = itemId(formData)
+  const name = text(formData, 'name', 80)
+  const quote = text(formData, 'quote', 400)
+  const context = text(formData, 'context', 80)
+
+  return mutate('testimonials', (current) => {
+    if (!quote) return current
+    const items = current.testimonials
+    if (id && items.some((item) => item.id === id)) {
+      return {
+        ...current,
+        testimonials: items.map((item) =>
+          item.id === id ? { id, name, quote, context } : item,
+        ),
+      }
+    }
+    if (items.length >= SECTION_CONFIG_MAX_ITEMS) return 'limit'
+    return {
+      ...current,
+      testimonials: [...items, { id: crypto.randomUUID(), name, quote, context }],
+    }
+  })
+}
+
+export async function removeTestimonial(formData: FormData): Promise<void> {
+  const id = itemId(formData)
+  return mutate('testimonials', (current) =>
+    id ? { ...current, testimonials: current.testimonials.filter((item) => item.id !== id) } : current,
+  )
+}
+
 /**
  * Show or hide one activated service on the public storefront.
  *
@@ -154,6 +187,7 @@ export async function setServiceVisible(formData: FormData): Promise<void> {
 /** Used by the builder's empty state so a section with no config still saves. */
 export async function clearSectionConfig(formData: FormData): Promise<void> {
   const key = text(formData, 'key', 20)
-  if (key !== 'faq' && key !== 'team') redirect('/storefront/customise?error=section')
+  if (key !== 'faq' && key !== 'team' && key !== 'testimonials')
+    redirect('/storefront/customise?error=section')
   return mutate(key, () => emptySectionConfig())
 }

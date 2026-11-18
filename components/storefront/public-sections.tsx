@@ -101,9 +101,14 @@ export function StorefrontSection({
 }: SectionProps) {
   const top = index === 0
   const tel = profile.phone ? `tel:${profile.phone.replace(/[^\d+]/g, '')}` : null
-  const dishes = profile.services.flatMap((service) =>
-    service.items.map((item) => ({ ...item, serviceLabel: service.label })),
-  )
+  // Two entries per service rather than the first six rows overall: a business
+  // that also decorates, photographs and does makeup should not show six drinks
+  // and nothing else.
+  const dishes = profile.services
+    .flatMap((service) =>
+      service.items.slice(0, 2).map((item) => ({ ...item, serviceLabel: service.label })),
+    )
+    .slice(0, 8)
 
   if (section.key === 'hero') {
     const lede =
@@ -256,7 +261,7 @@ export function StorefrontSection({
               />
             </div>
             <div className={look.gridWide}>
-              {dishes.slice(0, 6).map((item) => (
+              {dishes.map((item) => (
                 <article key={item.id} className={look.card}>
                   <div className={look.cardBody}>
                     <p className={look.count}>{item.serviceLabel}</p>
@@ -356,6 +361,57 @@ export function StorefrontSection({
                   {[item.eventDate, item.venueName].filter(Boolean).join(' · ')}
                 </p>
               </figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  if (section.key === 'testimonials') {
+    if (section.config.testimonials.length === 0) return null
+    return (
+      <section
+        id="testimonials"
+        aria-labelledby="storefront-testimonials"
+        className={look.section}
+      >
+        <SectionHead
+          look={look}
+          overline={copy.testimonials.overline}
+          title={section.heading ?? copy.testimonials.title}
+          sub={copy.testimonials.lede}
+        />
+        <div className={look.gridWide}>
+          {section.config.testimonials.map((item) => (
+            <figure key={item.id} className={look.card}>
+              <div className={look.cardBody}>
+                <span
+                  aria-hidden
+                  className="block text-4xl leading-none opacity-25"
+                  style={{ color: 'var(--brand)' }}
+                >
+                  &ldquo;
+                </span>
+                <blockquote className={`mt-1 text-sm leading-[1.85] ${look.muted}`}>
+                  {item.quote}
+                </blockquote>
+                <figcaption className="mt-4 flex items-center gap-3">
+                  <span
+                    aria-hidden
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-pill text-[11px] font-semibold text-white"
+                    style={{ backgroundColor: 'var(--brand)' }}
+                  >
+                    {initials(item.name || profile.name)}
+                  </span>
+                  <span>
+                    <span className="block text-sm font-medium">{item.name || profile.name}</span>
+                    {item.context ? (
+                      <span className={`block text-[11px] ${look.muted}`}>{item.context}</span>
+                    ) : null}
+                  </span>
+                </figcaption>
+              </div>
             </figure>
           ))}
         </div>

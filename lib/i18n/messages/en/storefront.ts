@@ -68,6 +68,13 @@ export const storefront = {
       faqAnswerExample: 'Yes - up to 600, with two service lines.',
       teamNameExample: 'Anitha',
       teamRoleExample: 'Head chef',
+      testimonialName: 'Client name',
+      testimonialQuote: 'What they said',
+      testimonialContext: 'Occasion',
+      testimonialNameExample: 'Meera & Karthik',
+      testimonialQuoteExample:
+        'Every dish reached the table hot and the banana leaf service was exactly as we asked.',
+      testimonialContextExample: 'Wedding · Fort Kochi',
     },
   },
   services: {

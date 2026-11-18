@@ -1,6 +1,6 @@
 import 'server-only'
 import { cache } from 'react'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import { getSystemDb, isDatabaseConfigured } from './client'
 import {
   businessServices,
@@ -36,6 +36,15 @@ import { getPublishedSnapshot } from './storefronts'
  * or build" without promising a rate that a quotation may change.
  */
 const CATALOGUE_PREVIEW = 8
+
+/**
+ * Packages are shown per service, not as one pool: sorting alphabetically by
+ * vertical and taking six rows would hand every slot to the first two services
+ * and leave a business that also decorates or photographs looking like it does
+ * not. Two per service, eight in total, keeps every adopted service visible.
+ */
+const PACKAGE_PREVIEW_PER_SERVICE = 2
+const PACKAGE_PREVIEW_TOTAL = 8
 
 /**
  * One service the business has adopted, with a taste of its catalogue.
@@ -270,7 +279,7 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
   // Packages the owner made active, in their own catalogue order. A package with
   // no advertised rate still appears with its inclusions: the quote carries the
   // number, the page carries the shape of what is on offer.
-  const packageRows =
+  const allPackages =
     verticalKeys.length === 0
       ? []
       : await db
@@ -291,8 +300,25 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
               inArray(servicePackages.verticalKey, verticalKeys),
             ),
           )
-          .orderBy(servicePackages.verticalKey, servicePackages.name)
-          .limit(6)
+          // Substantial first: a storefront teaser that opens with the cheapest
+          // corporate lunch undersells a business whose flagship is a wedding
+          // feast. Rate is the tenant's own number, not a ranking we invented.
+          .orderBy(
+            servicePackages.verticalKey,
+            desc(servicePackages.ratePaise),
+            servicePackages.name,
+          )
+          .limit(40)
+
+  const packageRows: typeof allPackages = []
+  const takenPerService = new Map<string, number>()
+  for (const pkg of allPackages) {
+    const taken = takenPerService.get(pkg.verticalKey) ?? 0
+    if (taken >= PACKAGE_PREVIEW_PER_SERVICE) continue
+    takenPerService.set(pkg.verticalKey, taken + 1)
+    packageRows.push(pkg)
+    if (packageRows.length >= PACKAGE_PREVIEW_TOTAL) break
+  }
 
   const [signed, layout] = await Promise.all([
     signedPortfolioUrls(work.map((item) => item.coverPath)),

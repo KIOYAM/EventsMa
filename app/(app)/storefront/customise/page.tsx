@@ -421,6 +421,9 @@ export default async function CustomiseStorefrontPage({
               faqAnswer: t('storefront.sections.labels.faqAnswer'),
               teamName: t('storefront.sections.labels.teamName'),
               teamRole: t('storefront.sections.labels.teamRole'),
+              testimonialName: t('storefront.sections.labels.testimonialName'),
+              testimonialQuote: t('storefront.sections.labels.testimonialQuote'),
+              testimonialContext: t('storefront.sections.labels.testimonialContext'),
               add: t('storefront.sections.labels.add'),
               save: t('storefront.sections.labels.save'),
               remove: t('storefront.sections.labels.remove'),
@@ -430,6 +433,9 @@ export default async function CustomiseStorefrontPage({
               faqAnswerExample: t('storefront.sections.labels.faqAnswerExample'),
               teamNameExample: t('storefront.sections.labels.teamNameExample'),
               teamRoleExample: t('storefront.sections.labels.teamRoleExample'),
+              testimonialNameExample: t('storefront.sections.labels.testimonialNameExample'),
+              testimonialQuoteExample: t('storefront.sections.labels.testimonialQuoteExample'),
+              testimonialContextExample: t('storefront.sections.labels.testimonialContextExample'),
             }}
           />
           <form action={resetLayout}>

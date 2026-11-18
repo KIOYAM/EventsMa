@@ -49,6 +49,11 @@ export const storefrontPublic = {
     title: 'Recent work',
     lede: 'Photographs the owner has published. Every one is a real event.',
   },
+  testimonials: {
+    overline: 'In their words',
+    title: 'What clients say',
+    lede: 'Quotes from families and teams this business has worked with.',
+  },
   enquiry: {
     kicker: 'Enquiry',
     title: 'Ask for a quote',
@@ -86,8 +91,7 @@ export const storefrontPublic = {
   team: {
     overline: 'Who you will meet',
     title: 'The people behind the work',
-  },
-  faq: {
+  },  faq: {
     overline: 'Before you ask',
     title: 'Questions clients ask',
   },

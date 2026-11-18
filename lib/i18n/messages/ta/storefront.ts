@@ -55,6 +55,13 @@ export const storefront: DeepPartial<typeof enStorefront> = {
       faqAnswerExample: 'ஆம் - இரண்டு சேவை வரிகளுடன் 600 வரை.',
       teamNameExample: 'அனிதா',
       teamRoleExample: 'தலைமை சமையல்காரர்',
+      testimonialName: 'வாடிக்கையாளர் பெயர்',
+      testimonialQuote: 'அவர்கள் கூறியது',
+      testimonialContext: 'நிகழ்வு',
+      testimonialNameExample: 'மீரா & கார்த்திக்',
+      testimonialQuoteExample:
+        'ஒவ்வொரு உணவும் சூடாக மேசைக்கு வந்தது, இலை சேவை நாங்கள் கேட்டபடியே இருந்தது.',
+      testimonialContextExample: 'திருமணம் · ஃபோர்ட் கொச்சி',
     },
   },
   publish: {

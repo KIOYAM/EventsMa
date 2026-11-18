@@ -11,8 +11,10 @@ import {
 import {
   removeFaqItem,
   removeTeamMember,
+  removeTestimonial,
   saveFaqItem,
   saveTeamMember,
+  saveTestimonial,
 } from '@/app/(app)/storefront/section-actions'
 
 /** Copy for the two sections whose content the owner writes here. */
@@ -21,6 +23,9 @@ export interface SectionConfigLabels {
   faqAnswer: string
   teamName: string
   teamRole: string
+  testimonialName: string
+  testimonialQuote: string
+  testimonialContext: string
   add: string
   save: string
   remove: string
@@ -30,6 +35,9 @@ export interface SectionConfigLabels {
   faqAnswerExample: string
   teamNameExample: string
   teamRoleExample: string
+  testimonialNameExample: string
+  testimonialQuoteExample: string
+  testimonialContextExample: string
 }
 
 interface Props {
@@ -322,6 +330,120 @@ export function SectionBuilder({ sections, canEdit, storageReady, labels }: Prop
                           maxLength={80}
                           disabled={!canEdit}
                           placeholder={labels.teamRoleExample}
+                          className={INPUT}
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        disabled={!canEdit}
+                        className="btn btn-sm btn-primary h-11 disabled:opacity-40"
+                      >
+                        {labels.add}
+                      </button>
+                    </form>
+                    <p className={SMALL}>{labels.limit}</p>
+                  </div>
+                ) : null}
+
+                {section.key === 'testimonials' ? (
+                  <div className="space-y-3">
+                    {section.config.testimonials.length === 0 ? (
+                      <p className={SMALL}>{labels.empty}</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {section.config.testimonials.map((item) => (
+                          <li
+                            key={item.id}
+                            className="rounded-control border border-hairline bg-paper p-3"
+                          >
+                            <form action={saveTestimonial} className="space-y-2">
+                              <input type="hidden" name="itemId" value={item.id} />
+                              <label className="block">
+                                <span className={SMALL}>{labels.testimonialQuote}</span>
+                                <textarea
+                                  name="quote"
+                                  defaultValue={item.quote}
+                                  maxLength={400}
+                                  rows={2}
+                                  disabled={!canEdit}
+                                  className={AREA}
+                                />
+                              </label>
+                              <label className="block">
+                                <span className={SMALL}>{labels.testimonialName}</span>
+                                <input
+                                  name="name"
+                                  defaultValue={item.name}
+                                  maxLength={80}
+                                  disabled={!canEdit}
+                                  className={INPUT}
+                                />
+                              </label>
+                              <label className="block">
+                                <span className={SMALL}>{labels.testimonialContext}</span>
+                                <input
+                                  name="context"
+                                  defaultValue={item.context}
+                                  maxLength={80}
+                                  disabled={!canEdit}
+                                  className={INPUT}
+                                />
+                              </label>
+                              <button
+                                type="submit"
+                                disabled={!canEdit}
+                                className="btn btn-sm btn-outline h-11 disabled:opacity-40"
+                              >
+                                {labels.save}
+                              </button>
+                            </form>
+                            <form action={removeTestimonial} className="mt-2">
+                              <input type="hidden" name="itemId" value={item.id} />
+                              <button
+                                type="submit"
+                                disabled={!canEdit}
+                                className="h-11 rounded-control px-1 text-xs text-ink-muted underline-offset-2 hover:underline disabled:opacity-40"
+                              >
+                                {labels.remove}
+                              </button>
+                            </form>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <form
+                      action={saveTestimonial}
+                      className="space-y-2 rounded-control border border-dashed border-hairline p-3"
+                    >
+                      <label className="block">
+                        <span className={SMALL}>{labels.testimonialQuote}</span>
+                        <textarea
+                          name="quote"
+                          maxLength={400}
+                          rows={2}
+                          disabled={!canEdit}
+                          placeholder={labels.testimonialQuoteExample}
+                          className={AREA}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className={SMALL}>{labels.testimonialName}</span>
+                        <input
+                          name="name"
+                          maxLength={80}
+                          disabled={!canEdit}
+                          placeholder={labels.testimonialNameExample}
+                          className={INPUT}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className={SMALL}>{labels.testimonialContext}</span>
+                        <input
+                          name="context"
+                          maxLength={80}
+                          disabled={!canEdit}
+                          placeholder={labels.testimonialContextExample}
                           className={INPUT}
                         />
                       </label>

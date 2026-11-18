@@ -28,12 +28,14 @@ import {
  */
 /**
  * v2 added per-section content (FAQ answers, team names); v3 froze which services
- * the owner chose to show. Older versions are still accepted: their sections carry
- * empty config and their `services` is null, which means "whatever the workspace
- * has enabled" — the behaviour those pages were published with.
+ * the owner chose to show; v4 added client testimonials to that section content.
+ * Older versions are still accepted: their sections carry empty config (a v3
+ * snapshot simply has no testimonials) and their `services` is null, which means
+ * "whatever the workspace has enabled" — the behaviour those pages were published
+ * with.
  */
-export const STOREFRONT_SNAPSHOT_SCHEMA_VERSION = 3
-const READABLE_SCHEMA_VERSIONS = [1, 2, 3]
+export const STOREFRONT_SNAPSHOT_SCHEMA_VERSION = 4
+const READABLE_SCHEMA_VERSIONS = [1, 2, 3, 4]
 
 /** One activated service and the owner's decision to show it publicly. */
 export interface SnapshotServiceChoice {

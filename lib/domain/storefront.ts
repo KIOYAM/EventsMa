@@ -13,6 +13,7 @@ export const SECTION_KEYS = [
   'services',
   'packages',
   'gallery',
+  'testimonials',
   'team',
   'faq',
   'contact',
@@ -27,6 +28,7 @@ export const SECTION_LABEL: Record<SectionKey, string> = {
   services: 'Services & catalogue',
   packages: 'Packages',
   gallery: 'Recent work',
+  testimonials: 'Testimonials',
   team: 'Team',
   faq: 'Questions and answers',
   contact: 'Contact details',
@@ -39,6 +41,7 @@ export const SECTION_HINT: Record<SectionKey, string> = {
   services: 'Only the services this workspace has adopted, with their catalogue.',
   packages: 'Active packages with their rate basis, set up in the catalogue.',
   gallery: 'Published portfolio entries, newest first by your own order.',
+  testimonials: 'What past clients said, with the occasion you worked with them on.',
   team: 'Names and roles you add here. Nothing is taken from staff accounts.',
   faq: 'Questions you answer yourself. Rendered as a closed accordion.',
   contact: 'Phone, email and city from your business details.',
@@ -62,9 +65,27 @@ export interface StorefrontTeamMember {
   role: string
 }
 
+/**
+ * One client's words, as the owner recorded them.
+ *
+ * There is no reviews table and no rating: a testimonial is a quote the business
+ * chose to publish about work it actually did, so it is stored beside the section
+ * that shows it and is attributed by name and occasion. Nothing here is averaged,
+ * scored or ranked.
+ */
+export interface StorefrontTestimonial {
+  id: string
+  /** The client's name, as they agreed to be credited. */
+  name: string
+  quote: string
+  /** The occasion that makes the quote concrete: "Wedding · Fort Kochi". */
+  context: string
+}
+
 export interface SectionConfig {
   faq: StorefrontFaqItem[]
   team: StorefrontTeamMember[]
+  testimonials: StorefrontTestimonial[]
 }
 
 /** Twelve entries per section: enough for a real FAQ, small enough to read. */
@@ -73,7 +94,7 @@ export const SECTION_CONFIG_MAX_ITEMS = 12
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export function emptySectionConfig(): SectionConfig {
-  return { faq: [], team: [] }
+  return { faq: [], team: [], testimonials: [] }
 }
 
 function text(value: unknown, max: number): string {
@@ -100,6 +121,7 @@ export function sanitiseSectionConfig(raw: unknown): SectionConfig {
   const value = rowOf(raw)
   const faq = Array.isArray(value.faq) ? value.faq : []
   const team = Array.isArray(value.team) ? value.team : []
+  const testimonials = Array.isArray(value.testimonials) ? value.testimonials : []
 
   return {
     faq: faq
@@ -124,6 +146,20 @@ export function sanitiseSectionConfig(raw: unknown): SectionConfig {
         }
       })
       .filter((item) => item.name.length > 0),
+    testimonials: testimonials
+      .slice(0, SECTION_CONFIG_MAX_ITEMS)
+      .map((entry) => {
+        const item = rowOf(entry)
+        return {
+          id: idOf(item),
+          name: text(item.name, 80),
+          quote: text(item.quote, 400),
+          context: text(item.context, 80),
+        }
+      })
+      // A quote with no words is not a testimonial; the name may be blank for an
+      // anonymous client, so only the words are required.
+      .filter((item) => item.quote.length > 0),
   }
 }
 
