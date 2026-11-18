@@ -242,6 +242,14 @@ export function StorefrontSection({
                     ? `${service.itemCount} ${pluralise(service.itemNoun, service.itemCount)} on the catalogue`
                     : copy.services.empty}
                 </p>
+                {service.itemCount > 0 ? (
+                  <a
+                    href={`/p/${profile.slug}/services/${service.verticalKey}`}
+                    className={`mt-3 ${look.link}`}
+                  >
+                    View all {service.itemCount} {pluralise(service.itemNoun, service.itemCount)}
+                  </a>
+                ) : null}
                 <a href="#enquiry" className={`mt-3 ${look.link}`}>
                   {copy.services.ask}
                 </a>
@@ -265,7 +273,11 @@ export function StorefrontSection({
                 <article key={item.id} className={look.card}>
                   <div className={look.cardBody}>
                     <p className={look.count}>{item.serviceLabel}</p>
-                    <h3 className={`mt-1.5 ${look.cardTitle}`}>{item.name}</h3>
+                    <h3 className={`mt-1.5 ${look.cardTitle}`}>
+                      <a href={`/p/${profile.slug}/services/${item.id}`} className="hover:underline">
+                        {item.name}
+                      </a>
+                    </h3>
                     <p className={`mt-1 text-xs ${look.muted}`}>{item.unit}</p>
                     <a href="#enquiry" className={`mt-3 ${look.link}`}>
                       {copy.dishes.ask}

@@ -178,6 +178,152 @@ export function demoPublicProfile(): PublicProfile {
   }
 }
 
+/**
+ * One catalogue row as a visitor may see it on a service detail page.
+ *
+ * The public storefront never exposes cost or tax; only what a client would ask
+ * about. Prices stay indicative and are confirmed in a written quotation.
+ */
+export interface PublicCatalogueItem {
+  id: string
+  name: string
+  category: string | null
+  unit: string
+  description: string | null
+  dietary: string | null
+}
+
+/**
+ * Full, un-truncated catalogue for one adopted and storefront-visible service.
+ *
+ * Returns null when the tenant or the service is not publicly available, so a
+ * hidden, inactive or unentitled service cannot be reached by guessing its key.
+ * Items are filtered to `active = true`; the service itself must be in the
+ * published snapshot's adopted+visible set.
+ */
+export async function getPublicServiceItems(
+  slug: string,
+  verticalKey: string,
+): Promise<{ profile: PublicProfile; items: PublicCatalogueItem[] } | null> {
+  const profile = await getPublicProfile(slug)
+  if (!profile) return null
+  if (!profile.services.some((service) => service.verticalKey === verticalKey)) return null
+
+  if (isDemoEnvironment()) {
+    const items = demoItems
+      .filter((item) => item.verticalKey === verticalKey && item.active)
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        category: item.category ?? null,
+        unit: unitClassLabel(item.unitClass as UnitClass),
+        description: null,
+        dietary: null,
+      }))
+    return { profile, items }
+  }
+
+  const db = getSystemDb()
+  const rows = await db
+    .select({
+      id: serviceItems.id,
+      name: serviceItems.name,
+      category: serviceItems.category,
+      unitLabel: serviceItems.unitLabel,
+      unitClass: serviceItems.unitClass,
+      description: serviceItems.description,
+      dietary: serviceItems.dietary,
+    })
+    .from(serviceItems)
+    .where(
+      and(
+        eq(serviceItems.orgId, profile.orgId),
+        eq(serviceItems.verticalKey, verticalKey),
+        eq(serviceItems.active, true),
+      ),
+    )
+    .orderBy(serviceItems.sortOrder, serviceItems.name)
+
+  return {
+    profile,
+    items: rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      category: row.category,
+      unit: row.unitLabel?.trim() || unitClassLabel(row.unitClass as UnitClass),
+      description: row.description,
+      dietary: row.dietary,
+    })),
+  }
+}
+
+/**
+ * One active catalogue item, but only when its service is adopted and shown.
+ *
+ * Returns null for inactive, hidden or unentitled items so a stale link cannot
+ * leak a row the owner took off the public page.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export async function getPublicCatalogueItem(
+  slug: string,
+  itemId: string,
+): Promise<{ profile: PublicProfile; item: PublicCatalogueItem } | null> {
+  const profile = await getPublicProfile(slug)
+  if (!profile) return null
+
+  if (isDemoEnvironment()) {
+    const found = demoItems.find((item) => item.id === itemId && item.active)
+    if (!found) return null
+    if (!profile.services.some((service) => service.verticalKey === found.verticalKey)) return null
+    return {
+      profile,
+      item: {
+        id: found.id,
+        name: found.name,
+        category: found.category ?? null,
+        unit: unitClassLabel(found.unitClass as UnitClass),
+        description: null,
+        dietary: null,
+      },
+    }
+  }
+
+  if (!UUID_RE.test(itemId)) return null
+
+  const db = getSystemDb()
+  const [row] = await db
+    .select({
+      id: serviceItems.id,
+      name: serviceItems.name,
+      category: serviceItems.category,
+      verticalKey: serviceItems.verticalKey,
+      unitLabel: serviceItems.unitLabel,
+      unitClass: serviceItems.unitClass,
+      description: serviceItems.description,
+      dietary: serviceItems.dietary,
+      active: serviceItems.active,
+    })
+    .from(serviceItems)
+    .where(and(eq(serviceItems.id, itemId), eq(serviceItems.orgId, profile.orgId)))
+    .limit(1)
+
+  if (!row || !row.active) return null
+  if (!profile.services.some((service) => service.verticalKey === row.verticalKey)) return null
+
+  return {
+    profile,
+    item: {
+      id: row.id,
+      name: row.name,
+      category: row.category,
+      unit: row.unitLabel?.trim() || unitClassLabel(row.unitClass as UnitClass),
+      description: row.description,
+      dietary: row.dietary,
+    },
+  }
+}
+
 export const getPublicProfile = cache(async (slug: string): Promise<PublicProfile | null> => {
   if (isDemoEnvironment()) return demoPublicProfile()
   if (!isDatabaseConfigured()) return null
