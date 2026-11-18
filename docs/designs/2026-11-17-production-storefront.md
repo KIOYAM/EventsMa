@@ -329,6 +329,42 @@ The same run surfaced a real testing gap: `vitest.config.ts` had no timeout, so 
 publish round trip occasionally hit the 5 s default and reported a network hiccup as a
 failure. It is now 30 s for tests and hooks; no assertion was relaxed.
 
+## 13. The public page now looks like the prototype (2026-11-18)
+
+Reported: the app's storefront did not resemble the clickable prototype's
+`#storefront` scene — it showed a name, one service row and a form. Two separate
+causes:
+
+1. **The renderer was a card stack.** Narrow column, plain white hero card,
+sections announced by an 11px label, no artwork anywhere, no closing band, no
+footer. Nothing about it read as a designed page.
+2. **These tenants have almost no content.** `tagline` is null on both, `about` is
+empty, and both organisations have zero catalogue items, zero packages and zero
+portfolio entries. Every content section hides itself rather than invent an offer
+(§11's honesty rule), so a thin dataset produced a thin page — correctly, but
+ugly.
+
+What changed, in the prototype's own language:
+
+- **Hero**: full-bleed 30–34rem band, the owner's colour built into a gradient
+(the hero photo when one is uploaded), gold uppercase overline of city and
+services, serif name at 60px, lede, two actions, and the initials wordmark
+ghosted behind the text so a photograph-free hero still has an object in it.
+- **Sections**: centred overline → serif heading → brand rule → one sentence,
+then a card grid (4-up for services, 3-up for packages, dishes, team and work).
+- **Artwork instead of empty boxes**: every card's picture area is painted from
+the tenant's brand colour with the item's initials on it — decoration, never a
+claim about food or a venue.
+- **Closing band + enquiry + footer**: "Tell us what you're celebrating", the form
+in a centred card with the three steps beside it, then a dark footer bar.
+- Copy for all of it lives in `en/storefront-public.ts` and is mirrored in Tamil;
+`npm run i18n:audit` moved 465 → **464**.
+
+Evidence: `npx tsc --noEmit` clean, `npx next build` compiled (`/p/[slug]`
+built), and the running page was inspected at 430px and 1100px — 4-column
+service grid, 544px hero, no horizontal overflow, gold overline and serif
+headings rendering as designed.
+
 ### Known limitations
 
 - **Catalogue and portfolio are not versioned yet.** Only identity, brand and layout are

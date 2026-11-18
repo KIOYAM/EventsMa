@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge'
 import { pluralise } from '@/lib/domain/plural'
 import { fontClass } from '@/lib/domain/storefront'
 import type { StorefrontLook } from '@/lib/domain/storefront-look'
@@ -7,18 +6,67 @@ import { storefrontPublic as copy } from '@/lib/i18n/messages/en/storefront-publ
 
 /** Initials wordmark, used when no logo image is uploaded. */
 function initials(name: string): string {
-  return name
+  const words = name
     .split(/\s+/)
-    .filter(Boolean)
+    .filter((word) => /[a-z0-9]/i.test(word))
     .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? '')
-    .join('')
+  if (words.length === 0) return '·'
+  return words.map((word) => word[0]?.toUpperCase() ?? '').join('')
 }
 
 function fill(template: string, values: Record<string, string>): string {
   return Object.entries(values).reduce(
     (text, [key, value]) => text.replace(`{${key}}`, value),
     template,
+  )
+}
+
+/**
+ * The picture area of a card when the tenant has no photograph.
+ *
+ * A business on its first day has no uploads, and an empty grey box reads worse
+ * than no picture at all. This paints the owner's own colour into a soft, unique
+ * surface and sets the item's initials on it — decoration, not a claim about the
+ * food, the venue or the work.
+ */
+function Artwork({ label, tall = false }: { label: string; tall?: boolean }) {
+  return (
+    <div
+      aria-hidden
+      className={`relative w-full overflow-hidden ${tall ? 'aspect-[16/10]' : 'aspect-[16/9]'}`}
+      style={{
+        backgroundImage:
+          'radial-gradient(circle at 22% 24%, color-mix(in srgb, var(--brand) 26%, #ffffff) 0%, transparent 62%), linear-gradient(135deg, color-mix(in srgb, var(--brand) 14%, #f6f8f6) 0%, color-mix(in srgb, var(--brand) 52%, #dfe9e1) 100%)',
+      }}
+    >
+      <span className="absolute inset-0 grid place-items-center text-3xl font-semibold text-[color:var(--brand-ink)]/25">
+        {initials(label)}
+      </span>
+    </div>
+  )
+}
+
+/** A section's opening, in the centred editorial rhythm of the page. */
+function SectionHead({
+  look,
+  overline,
+  title,
+  sub,
+  align = 'center',
+}: {
+  look: StorefrontLook
+  overline: string
+  title: string
+  sub?: string | null
+  align?: 'center' | 'left'
+}) {
+  return (
+    <div className={align === 'center' ? look.headWrap : look.headLeft}>
+      <p className={look.overline}>{overline}</p>
+      <h2 className={look.heading}>{title}</h2>
+      <div aria-hidden className={look.rule} />
+      {sub ? <p className={look.subhead}>{sub}</p> : null}
+    </div>
   )
 }
 
@@ -38,6 +86,11 @@ interface SectionProps {
  * an empty list is worse than no section, and a storefront must never imply an
  * offer it cannot name. The enquiry form is the one exception — it lives in the
  * page, because it posts to a server action rather than reading content.
+ *
+ * What a branch may *not* do is look unfinished. A business with one service, no
+ * photographs and no introduction is the common case on day one, so every card
+ * carries its own artwork, the sections announce themselves the same way, and
+ * the page still reads as one designed piece.
  */
 export function StorefrontSection({
   section,
@@ -46,56 +99,97 @@ export function StorefrontSection({
   profile,
   hideHeroAbout,
 }: SectionProps) {
-  const onImage = profile.theme === 'gallery'
   const top = index === 0
-  const rule = (
-    <div
-      aria-hidden
-      className="mb-2 h-0.5 w-8 rounded-pill"
-      style={{ backgroundColor: 'var(--brand)' }}
-    />
+  const tel = profile.phone ? `tel:${profile.phone.replace(/[^\d+]/g, '')}` : null
+  const dishes = profile.services.flatMap((service) =>
+    service.items.map((item) => ({ ...item, serviceLabel: service.label })),
   )
 
   if (section.key === 'hero') {
+    const lede =
+      section.heading ??
+      profile.tagline ??
+      (hideHeroAbout ? profile.about : null) ??
+      copy.hero.lede
+
     return (
-      <header className={`${look.hero} ${top ? '' : 'mt-6'}`}>
-        {section.imageUrl ? <img src={section.imageUrl} alt="" className={look.image} /> : null}
-        {onImage && section.imageUrl ? (
-          <div aria-hidden className="absolute inset-0 bg-forest/55" />
-        ) : null}
+      <header id="top" className={`${look.hero} ${top ? '' : 'mt-6'}`}>
+        {section.imageUrl ? (
+          <>
+            <img src={section.imageUrl} alt="" className={look.heroPhoto} />
+            <div aria-hidden className={look.heroShade} />
+          </>
+        ) : (
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                look.heroTone === 'dark'
+                  ? 'linear-gradient(105deg, var(--brand-ink) 0%, color-mix(in srgb, var(--brand) 45%, #071b14) 65%, color-mix(in srgb, var(--brand) 30%, #071b14) 100%)'
+                  : 'linear-gradient(105deg, color-mix(in srgb, var(--brand) 8%, #ffffff) 0%, color-mix(in srgb, var(--brand) 26%, #f6f8f6) 100%)',
+            }}
+          />
+        )}
+
+        {/* The wordmark, oversized and almost invisible: an object to look at when
+            there is no photograph, without competing with the name. */}
+        <span
+          aria-hidden
+          className={`pointer-events-none absolute -right-4 -bottom-16 select-none text-[12rem] leading-none font-semibold sm:text-[18rem] ${
+            look.heroTone === 'dark' ? 'text-white/[0.06]' : 'text-forest/[0.05]'
+          }`}
+        >
+          {initials(profile.name)}
+        </span>
+
         <div className={look.heroBody}>
-          <p className={look.eyebrow}>{profile.city ?? copy.serviceArea}</p>
-          {profile.logoUrl ? (
-            <img
-              src={profile.logoUrl}
-              alt={`${profile.name} logo`}
-              className="mt-3 h-12 w-auto max-w-[180px] object-contain"
-            />
-          ) : (
-            <span
-              aria-hidden
-              className="mt-3 grid h-11 w-11 place-items-center rounded-card border border-hairline bg-paper/10 text-sm font-semibold"
-              style={{ color: onImage ? undefined : 'var(--brand-ink)' }}
-            >
-              {initials(profile.name)}
-            </span>
-          )}
+          <p className={look.overline}>
+            {[profile.city ?? copy.serviceArea, profile.services.map((s) => s.label).join(' · ')]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+
+          <div className="mt-5 flex items-center gap-3">
+            {profile.logoUrl ? (
+              <img
+                src={profile.logoUrl}
+                alt={`${profile.name} logo`}
+                className="h-12 w-auto max-w-[180px] object-contain"
+              />
+            ) : (
+              <span
+                aria-hidden
+                className={`grid h-11 w-11 place-items-center rounded-card border text-sm font-semibold ${
+                  look.heroTone === 'dark' ? 'border-white/30 text-white/80' : 'border-forest/20 text-forest'
+                }`}
+              >
+                {initials(profile.name)}
+              </span>
+            )}
+            {profile.brandSubtitle ? (
+              <p className="text-[11px] tracking-[0.16em] uppercase opacity-75">
+                {profile.brandSubtitle}
+              </p>
+            ) : null}
+          </div>
+
           <h1 className={`${look.title} ${fontClass(profile.brandFont)}`}>{profile.name}</h1>
-          {profile.brandSubtitle ? (
-            <p className={`${look.eyebrow} mt-2`}>{profile.brandSubtitle}</p>
-          ) : null}
-          {(section.heading ?? profile.tagline) ? (
-            <p className={look.lede}>{section.heading ?? profile.tagline}</p>
-          ) : null}
-          {!hideHeroAbout && profile.about ? (
-            <p className={`${look.lede} mt-2`}>{profile.about}</p>
-          ) : null}
-          <div className="mt-4 flex flex-wrap gap-2">
-            {profile.services.map((service) => (
-              <Badge key={service.verticalKey} tone="mint">
-                {service.label}
-              </Badge>
-            ))}
+          {lede ? <p className={look.lede}>{lede}</p> : null}
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a href="#enquiry" className={look.ctaPrimary}>
+              {copy.hero.quote}
+            </a>
+            {tel ? (
+              <a href={tel} className={look.ctaGhost}>
+                {fill(copy.hero.call, { phone: profile.phone ?? '' })}
+              </a>
+            ) : (
+              <a href="#services" className={look.ctaGhost}>
+                {copy.hero.services}
+              </a>
+            )}
           </div>
         </div>
       </header>
@@ -105,12 +199,18 @@ export function StorefrontSection({
   if (section.key === 'about') {
     if (!profile.about) return null
     return (
-      <section aria-labelledby="storefront-about" className={top ? '' : look.section}>
-        {rule}
-        <h2 id="storefront-about" className={look.heading}>
-          {section.heading ?? fill(copy.about.title, { business: profile.name })}
-        </h2>
-        <p className={`${look.lede} mt-3 whitespace-pre-line`}>{profile.about}</p>
+      <section aria-labelledby="storefront-about" className={look.section}>
+        <SectionHead
+          look={look}
+          overline={copy.about.overline}
+          title={section.heading ?? fill(copy.about.title, { business: profile.name })}
+        />
+        <p
+          className={`mx-auto mt-6 max-w-2xl text-sm leading-[1.9] whitespace-pre-line sm:text-base ${look.muted}`}
+          style={{ textAlign: 'center' }}
+        >
+          {profile.about}
+        </p>
       </section>
     )
   }
@@ -118,38 +218,63 @@ export function StorefrontSection({
   if (section.key === 'services') {
     if (profile.services.length === 0) return null
     return (
-      <section aria-labelledby="storefront-services" className={top ? '' : look.section}>
-        {rule}
-        <h2 id="storefront-services" className={look.heading}>
-          {section.heading ?? copy.services.title}
-        </h2>
+      <section id="services" aria-labelledby="storefront-services" className={look.section}>
+        <SectionHead
+          look={look}
+          overline={copy.services.overline}
+          title={section.heading ?? copy.services.title}
+          sub={copy.services.lede}
+        />
+
         <div className={look.grid}>
           {profile.services.map((service) => (
-            <div key={service.verticalKey} className={look.card}>
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className={look.cardTitle}>{service.label}</p>
-                <p className={look.count}>
+            <article key={service.verticalKey} className={look.card}>
+              <Artwork label={service.label} />
+              <div className={look.cardBody}>
+                <h3 className={look.cardTitle}>{service.label}</h3>
+                <p className={`mt-1.5 text-xs ${look.muted}`}>
                   {service.itemCount > 0
-                    ? `${service.itemCount} ${pluralise(service.itemNoun, service.itemCount)}`
-                    : copy.services.catalogueOnRequest}
+                    ? `${service.itemCount} ${pluralise(service.itemNoun, service.itemCount)} on the catalogue`
+                    : copy.services.empty}
                 </p>
+                <a href="#enquiry" className={`mt-3 ${look.link}`}>
+                  {copy.services.ask}
+                </a>
               </div>
-              {service.items.length > 0 ? (
-                <ul className="mt-2 flex flex-wrap gap-1.5">
-                  {service.items.map((item) => (
-                    <li
-                      key={item.id}
-                      className="rounded-pill border border-hairline px-2 py-0.5 text-xs text-ink-muted"
-                    >
-                      {item.name} · {item.unit}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
+            </article>
           ))}
         </div>
-        <p className="mt-3 text-xs leading-relaxed text-ink-muted">{copy.services.note}</p>
+
+        {dishes.length > 0 ? (
+          <>
+            <div className="mt-14">
+              <SectionHead
+                look={look}
+                overline={copy.dishes.overline}
+                title={copy.dishes.title}
+                sub={copy.dishes.lede}
+              />
+            </div>
+            <div className={look.gridWide}>
+              {dishes.slice(0, 6).map((item) => (
+                <article key={item.id} className={look.card}>
+                  <div className={look.cardBody}>
+                    <p className={look.count}>{item.serviceLabel}</p>
+                    <h3 className={`mt-1.5 ${look.cardTitle}`}>{item.name}</h3>
+                    <p className={`mt-1 text-xs ${look.muted}`}>{item.unit}</p>
+                    <a href="#enquiry" className={`mt-3 ${look.link}`}>
+                      {copy.dishes.ask}
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
+        ) : null}
+
+        <p className={`mx-auto mt-8 max-w-xl text-center text-xs leading-relaxed ${look.muted}`}>
+          {copy.services.note}
+        </p>
       </section>
     )
   }
@@ -157,36 +282,42 @@ export function StorefrontSection({
   if (section.key === 'packages') {
     if (profile.packages.length === 0) return null
     return (
-      <section aria-labelledby="storefront-packages" className={top ? '' : look.section}>
-        {rule}
-        <h2 id="storefront-packages" className={look.heading}>
-          {section.heading ?? copy.packages.title}
-        </h2>
-        <div className={look.grid}>
+      <section id="menus" aria-labelledby="storefront-packages" className={look.section}>
+        <SectionHead
+          look={look}
+          overline={copy.packages.overline}
+          title={section.heading ?? copy.packages.title}
+          sub={copy.packages.lede}
+        />
+        <div className={look.gridWide}>
           {profile.packages.map((pkg) => (
-            <div key={pkg.id} className={look.card}>
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className={look.cardTitle}>{pkg.name}</p>
-                <p className={look.count}>{pkg.rate ?? copy.packages.onRequest}</p>
-              </div>
-              <p className="mt-0.5 text-xs text-ink-muted">
-                {pkg.serviceLabel} · {pkg.unit}
-              </p>
-              {pkg.inclusions.length > 0 ? (
-                <ul className="mt-2 space-y-1">
-                  {pkg.inclusions.map((line) => (
-                    <li key={line} className="text-xs leading-relaxed text-ink-muted">
-                      {line}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              {pkg.minQuantity ? (
-                <p className="mt-2 text-xs text-ink-muted">
-                  {fill(copy.packages.minimum, { n: String(pkg.minQuantity) })}
+            <article key={pkg.id} className={look.card}>
+              <Artwork label={pkg.name} tall />
+              <div className={look.cardBody}>
+                <p className={look.count}>
+                  {pkg.serviceLabel} · {pkg.unit}
                 </p>
-              ) : null}
-            </div>
+                <h3 className={`mt-1.5 ${look.cardTitle}`}>{pkg.name}</h3>
+                {pkg.inclusions.length > 0 ? (
+                  <p className={`mt-2 text-xs leading-relaxed ${look.muted}`}>
+                    {pkg.inclusions.join(' · ')}
+                  </p>
+                ) : null}
+                <div className="mt-4 flex items-end justify-between gap-3">
+                  <div>
+                    <p className={look.price}>{pkg.rate ?? copy.packages.onRequest}</p>
+                    {pkg.minQuantity ? (
+                      <p className={`mt-1 text-[11px] ${look.muted}`}>
+                        {fill(copy.packages.minimum, { n: String(pkg.minQuantity) })}
+                      </p>
+                    ) : null}
+                  </div>
+                  <a href="#enquiry" className={look.link}>
+                    {copy.packages.ask}
+                  </a>
+                </div>
+              </div>
+            </article>
           ))}
         </div>
       </section>
@@ -196,32 +327,34 @@ export function StorefrontSection({
   if (section.key === 'gallery') {
     if (profile.portfolio.length === 0) return null
     return (
-      <section aria-labelledby="storefront-work" className={top ? '' : look.section}>
-        {rule}
-        <h2 id="storefront-work" className={look.heading}>
-          {section.heading ?? copy.gallery.title}
-        </h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {profile.portfolio.map((item) => (
-            <figure key={item.id} className="card-surface lift overflow-hidden">
+      <section id="work" aria-labelledby="storefront-work" className={look.section}>
+        <SectionHead
+          look={look}
+          overline={copy.gallery.overline}
+          title={section.heading ?? copy.gallery.title}
+          sub={copy.gallery.lede}
+        />
+        <div className="mt-9 grid auto-rows-[10rem] grid-cols-2 gap-3 sm:auto-rows-[12rem] sm:grid-cols-3">
+          {profile.portfolio.map((item, position) => (
+            <figure
+              key={item.id}
+              className={`${look.tile} ${position === 0 ? 'col-span-2 row-span-2' : ''}`}
+            >
               {item.photoUrl ? (
                 <img
                   src={item.photoUrl}
                   alt={item.title}
                   loading="lazy"
-                  className="aspect-[4/3] w-full object-cover"
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
                 />
-              ) : null}
-              <figcaption className="p-3">
-                <p className="text-sm font-medium text-ink">{item.title}</p>
-                <p className="mt-0.5 text-xs text-ink-muted">
+              ) : (
+                <Artwork label={item.title} />
+              )}
+              <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-night/85 to-transparent p-4 text-white">
+                <p className="text-sm font-semibold">{item.title}</p>
+                <p className="mt-0.5 text-[11px] text-white/75">
                   {[item.eventDate, item.venueName].filter(Boolean).join(' · ')}
                 </p>
-                {item.description ? (
-                  <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">
-                    {item.description}
-                  </p>
-                ) : null}
               </figcaption>
             </figure>
           ))}
@@ -233,18 +366,28 @@ export function StorefrontSection({
   if (section.key === 'team') {
     if (section.config.team.length === 0) return null
     return (
-      <section aria-labelledby="storefront-team" className={top ? '' : look.section}>
-        {rule}
-        <h2 id="storefront-team" className={look.heading}>
-          {section.heading ?? copy.team.title}
-        </h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <section id="team" aria-labelledby="storefront-team" className={look.section}>
+        <SectionHead
+          look={look}
+          overline={copy.team.overline}
+          title={section.heading ?? copy.team.title}
+        />
+        <div className={look.gridWide}>
           {section.config.team.map((member) => (
-            <div key={member.id} className="card-surface p-4">
-              <p className="text-sm font-medium text-ink">{member.name}</p>
-              {member.role ? (
-                <p className="mt-0.5 text-xs text-ink-muted">{member.role}</p>
-              ) : null}
+            <div key={member.id} className={look.card}>
+              <div className={`flex items-center gap-3 ${look.cardBody}`}>
+                <span
+                  aria-hidden
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-pill text-sm font-semibold text-white"
+                  style={{ backgroundColor: 'var(--brand)' }}
+                >
+                  {initials(member.name)}
+                </span>
+                <div>
+                  <p className={look.cardTitle}>{member.name}</p>
+                  {member.role ? <p className={`text-xs ${look.muted}`}>{member.role}</p> : null}
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -255,18 +398,18 @@ export function StorefrontSection({
   if (section.key === 'faq') {
     if (section.config.faq.length === 0) return null
     return (
-      <section aria-labelledby="storefront-faq" className={top ? '' : look.section}>
-        {rule}
-        <h2 id="storefront-faq" className={look.heading}>
-          {section.heading ?? copy.faq.title}
-        </h2>
-        <div className="mt-3 divide-y divide-hairline">
+      <section id="faq" aria-labelledby="storefront-faq" className={look.section}>
+        <SectionHead look={look} overline={copy.faq.overline} title={section.heading ?? copy.faq.title} />
+        <div className={`mx-auto mt-6 max-w-2xl ${look.divider}`}>
           {section.config.faq.map((item) => (
-            <details key={item.id} className="group py-3">
-              <summary className="cursor-pointer list-none text-sm font-medium text-ink marker:hidden">
-                {item.question}
+            <details key={item.id} className="group py-4">
+              <summary className={`flex cursor-pointer list-none items-start justify-between gap-4 marker:hidden ${look.cardTitle}`}>
+                <span>{item.question}</span>
+                <span aria-hidden className={`shrink-0 text-lg leading-none ${look.muted}`}>
+                  +
+                </span>
               </summary>
-              <p className="mt-2 text-sm leading-relaxed whitespace-pre-line text-ink-muted">
+              <p className={`mt-2 text-sm leading-relaxed whitespace-pre-line ${look.muted}`}>
                 {item.answer}
               </p>
             </details>
@@ -279,24 +422,25 @@ export function StorefrontSection({
   if (section.key === 'contact') {
     if (!profile.phone) return null
     return (
-      <section aria-labelledby="storefront-contact" className={top ? '' : look.section}>
-        {rule}
-        <h2 id="storefront-contact" className={look.heading}>
-          {section.heading ?? copy.contact.title}
-        </h2>
-        <div className="mt-3 space-y-1 text-sm">
-          <p>
-            <a
-              href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`}
-              className="font-medium text-ink underline-offset-2 hover:underline"
-            >
-              {fill(copy.contact.call, { phone: profile.phone })}
+      <section id="contact" aria-labelledby="storefront-contact" className={look.section}>
+        <div className={look.band}>
+          <p className={look.overline}>{section.heading ?? copy.contact.overline}</p>
+          <h2 className={look.bandTitle}>
+            <a href={tel ?? '#enquiry'} className="underline-offset-8 hover:underline">
+              {profile.phone}
             </a>
+          </h2>
+          <p className={look.bandMuted}>
+            {[profile.city ? fill(copy.contact.based, { city: profile.city }) : null, copy.contact.replies]
+              .filter(Boolean)
+              .join(' · ')}
           </p>
-          {profile.city ? (
-            <p className="text-ink-muted">{fill(copy.contact.based, { city: profile.city })}</p>
-          ) : null}
-          <p className="text-xs text-ink-muted">{copy.contact.form}</p>
+          <a
+            href="#enquiry"
+            className="mt-6 inline-flex items-center justify-center rounded-control bg-white px-5 py-3 text-sm font-semibold text-[color:var(--brand-ink)] transition hover:bg-white/90"
+          >
+            {copy.hero.quote}
+          </a>
         </div>
       </section>
     )
