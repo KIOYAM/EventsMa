@@ -1,9 +1,12 @@
 import {
   DEFAULT_BRAND_COLOUR,
   SECTION_KEYS,
+  emptySectionConfig,
   orderSections,
   resolveStorefrontFont,
   resolveStorefrontTheme,
+  sanitiseSectionConfig,
+  type SectionConfig,
   type SectionKey,
   type StorefrontFontKey,
   type StorefrontSection,
@@ -23,7 +26,13 @@ import {
  * understand, so an old version degrades to "no snapshot" (the page keeps
  * working from the draft) instead of rendering half a page.
  */
-export const STOREFRONT_SNAPSHOT_SCHEMA_VERSION = 1
+/**
+ * v2 added per-section content (FAQ answers, team names). v1 snapshots are still
+ * accepted on read: their sections simply carry empty config, so a page published
+ * before the extra sections existed keeps rendering instead of 404-ing.
+ */
+export const STOREFRONT_SNAPSHOT_SCHEMA_VERSION = 2
+const READABLE_SCHEMA_VERSIONS = [1, 2]
 
 export interface StorefrontSnapshotSection {
   key: SectionKey
@@ -31,6 +40,7 @@ export interface StorefrontSnapshotSection {
   visible: boolean
   heading: string | null
   imagePath: string | null
+  config: SectionConfig
 }
 
 export interface StorefrontSnapshot {
@@ -107,6 +117,7 @@ export function buildStorefrontSnapshot(
       visible: section.visible,
       heading: trimmed(section.heading, 120),
       imagePath: trimmed(section.imagePath, 400),
+      config: sanitiseSectionConfig(section.config),
     })),
     publishedAt,
   }
@@ -121,7 +132,7 @@ export function parseStorefrontSnapshot(raw: unknown): StorefrontSnapshot | null
   if (typeof raw !== 'object' || raw === null) return null
   const value = raw as Record<string, unknown>
 
-  if (value.schemaVersion !== STOREFRONT_SNAPSHOT_SCHEMA_VERSION) return null
+  if (!READABLE_SCHEMA_VERSIONS.includes(Number(value.schemaVersion))) return null
   const identity = value.identity as Record<string, unknown> | undefined
   const brand = value.brand as Record<string, unknown> | undefined
   if (!identity || !brand || typeof identity.name !== 'string') return null
@@ -144,6 +155,7 @@ export function parseStorefrontSnapshot(raw: unknown): StorefrontSnapshot | null
       visible: section.visible !== false,
       heading: trimmed(section.heading, 120),
       imagePath: trimmed(section.imagePath, 400),
+      config: section.config === undefined ? emptySectionConfig() : sanitiseSectionConfig(section.config),
     }))
 
   return {

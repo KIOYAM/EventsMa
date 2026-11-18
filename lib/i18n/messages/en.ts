@@ -30,6 +30,7 @@ import { marketing } from './en/marketing'
 import { pdf } from './en/pdf'
 import { portfolio } from './en/portfolio'
 import { storefront } from './en/storefront'
+import { storefrontPublic } from './en/storefront-public'
 import { rule } from './en/rule'
 import { share } from './en/share'
 
@@ -54,6 +55,7 @@ export const en = {
   share,
   portfolio,
   storefront,
+  storefrontPublic,
 } as const
 
 /** Deep partial of the English catalogue: the shape every locale must fit. */

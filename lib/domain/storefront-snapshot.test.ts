@@ -38,7 +38,12 @@ describe('buildStorefrontSnapshot', () => {
     expect(snapshot.sections.map((section) => section.key)).toEqual([
       'hero',
       'services',
+      'about',
+      'packages',
       'gallery',
+      'team',
+      'faq',
+      'contact',
       'enquiry',
     ])
     const [first, second] = snapshot.sections
@@ -95,6 +100,44 @@ describe('parseStorefrontSnapshot', () => {
 
     expect(parsed?.sections.map((section) => section.key)).toEqual(['hero'])
     expect(parsed?.brand.primary).toBe('#123456')
+  })
+
+  it('still reads a v1 snapshot, with empty section content', () => {
+    const parsed = parseStorefrontSnapshot({
+      schemaVersion: 1,
+      identity: { name: 'Tenant' },
+      brand: {},
+      sections: [{ key: 'faq', position: 0, visible: true }],
+    })
+
+    expect(parsed?.sections[0]?.key).toBe('faq')
+    expect(parsed?.sections[0]?.config).toEqual({ faq: [], team: [] })
+  })
+
+  it('caps section content and replaces ids it cannot trust', () => {
+    const faq = Array.from({ length: 20 }, (_, index) => ({
+      id: `hand-edited-${index}`,
+      question: `Question ${index}`,
+      answer: `Answer ${index}`,
+    }))
+
+    const parsed = parseStorefrontSnapshot({
+      schemaVersion: 2,
+      identity: { name: 'Tenant' },
+      brand: {},
+      sections: [
+        {
+          key: 'faq',
+          position: 0,
+          visible: true,
+          config: { faq: [...faq, { question: '   ', answer: 'orphan' }] },
+        },
+      ],
+    })
+
+    const items = parsed?.sections[0]?.config.faq ?? []
+    expect(items).toHaveLength(12)
+    expect(items.every((item) => /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(item.id))).toBe(true)
   })
 })
 

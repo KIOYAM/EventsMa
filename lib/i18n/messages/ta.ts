@@ -29,6 +29,7 @@ import { portfolio } from './ta/portfolio'
 import { rule } from './ta/rule'
 import { share } from './ta/share'
 import { storefront } from './ta/storefront'
+import { storefrontPublic } from './ta/storefront-public'
 import type { MessagesOverride } from './en'
 
 export const ta: MessagesOverride = {
@@ -52,4 +53,5 @@ export const ta: MessagesOverride = {
   share,
   portfolio,
   storefront,
+  storefrontPublic,
 }

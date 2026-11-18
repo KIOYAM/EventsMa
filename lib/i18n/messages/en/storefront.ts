@@ -54,6 +54,21 @@ export const storefront = {
     title: 'Sections and order',
     body: 'Move a section up or down, hide what you are not ready to show, or give one its own heading. The public page follows this order immediately.',
     reset: 'Reset layout to the default',
+    labels: {
+      faqQuestion: 'Question',
+      faqAnswer: 'Answer',
+      teamName: 'Name',
+      teamRole: 'Role',
+      add: 'Add',
+      save: 'Save',
+      remove: 'Remove',
+      empty: 'Nothing added yet.',
+      limit: 'Up to 12 entries, shown in this order.',
+      faqQuestionExample: 'Do you cook for 500 guests?',
+      faqAnswerExample: 'Yes - up to 600, with two service lines.',
+      teamNameExample: 'Anitha',
+      teamRoleExample: 'Head chef',
+    },
   },
   share: {
     title: 'Share with clients',
@@ -84,6 +99,8 @@ export const storefront = {
     empty: 'No versions yet.',
     version: 'Version {n}',
     restoreHint: 'Restoring copies that version back into your draft and publishes it as a new version.',
+    missingVersion:
+      'This page is marked as published, but no published version exists, so the public link returns 404. Publish to make it work again.',
   },
   overview: {
     eyebrow: 'Public page',

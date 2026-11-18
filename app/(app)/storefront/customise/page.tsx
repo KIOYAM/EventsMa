@@ -70,6 +70,9 @@ export default async function CustomiseStorefrontPage({
       ? BUILDER_NOTICE[error]
       : null
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
+  // Liveness is a version, not a flag: a page marked published with no version
+  // 404s, and calling it "Live" here would hide that from its owner.
+  const isLive = publishState.publishedVersion !== null
   const storageReady = isPortfolioStorageConfigured()
   const publicUrl = `${appUrl()}/p/${settings.slug}`
   const mark = initials(brand.name || t('storefront.preview.initials'))
@@ -129,10 +132,8 @@ export default async function CustomiseStorefrontPage({
                 {brand.city ? ` · ${brand.city}` : ''}
               </p>
             </div>
-            <Badge tone={settings.published ? 'success' : 'warning'}>
-              {settings.published
-                ? t('storefront.preview.live')
-                : t('storefront.preview.draft')}
+            <Badge tone={isLive ? 'success' : 'warning'}>
+              {isLive ? t('storefront.preview.live') : t('storefront.preview.draft')}
             </Badge>
           </div>
           <p className="max-w-2xl text-sm leading-relaxed text-ink-muted">
@@ -159,6 +160,7 @@ export default async function CustomiseStorefrontPage({
           empty: t('storefront.publish.empty'),
           version: t('storefront.publish.version'),
           restoreHint: t('storefront.publish.restoreHint'),
+          missingVersion: t('storefront.publish.missingVersion'),
         }}
       />
 
@@ -356,7 +358,26 @@ export default async function CustomiseStorefrontPage({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm leading-relaxed text-ink-muted">{t('storefront.sections.body')}</p>
-          <SectionBuilder sections={sections} canEdit={canEdit} storageReady={storageReady} />
+          <SectionBuilder
+            sections={sections}
+            canEdit={canEdit}
+            storageReady={storageReady}
+            labels={{
+              faqQuestion: t('storefront.sections.labels.faqQuestion'),
+              faqAnswer: t('storefront.sections.labels.faqAnswer'),
+              teamName: t('storefront.sections.labels.teamName'),
+              teamRole: t('storefront.sections.labels.teamRole'),
+              add: t('storefront.sections.labels.add'),
+              save: t('storefront.sections.labels.save'),
+              remove: t('storefront.sections.labels.remove'),
+              empty: t('storefront.sections.labels.empty'),
+              limit: t('storefront.sections.labels.limit'),
+              faqQuestionExample: t('storefront.sections.labels.faqQuestionExample'),
+              faqAnswerExample: t('storefront.sections.labels.faqAnswerExample'),
+              teamNameExample: t('storefront.sections.labels.teamNameExample'),
+              teamRoleExample: t('storefront.sections.labels.teamRoleExample'),
+            }}
+          />
           <form action={resetLayout}>
             <button
               type="submit"
@@ -374,7 +395,7 @@ export default async function CustomiseStorefrontPage({
           <CardTitle>{t('storefront.share.title')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {settings.published ? (
+          {isLive ? (
             <ShareLinks
               url={publicUrl}
               message={t('storefront.share.message', {

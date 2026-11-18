@@ -231,6 +231,68 @@ What the two real tenants show is limited by their **data**, not the engine: bot
 active catalogue items and zero published portfolio entries, so their pages are structurally
 correct but visually empty. That is expected until the owner adds catalogue and work.
 
+## 11. Phase 2 result — five more sections, and an honest publish state (2026-11-17)
+
+Two things shipped together, because the second could not be trusted while the first
+was lying.
+
+### The state that lied
+
+`tinu-eventer` carried `businesses.published = true` with no published version, so the
+public route fell back to the draft: saved edits were visible to visitors without a
+publish. The cause was a second publish switch — `/settings` had a form that flipped the
+flag on its own.
+
+What changed:
+
+- `setPublished` now calls `publishStorefront` when publishing, and only flips the flag
+  (plus the storefront status) when hiding. One button can no longer create the state.
+- `getPublishedSnapshot` distinguishes three outcomes: a snapshot, `null` (the storefront
+  exists and has never published) and `undefined` (no table/database, so the pre-0012
+  fallback still applies). `getPublicProfile` returns 404 for `null`.
+- `PublishState` gained `businessPublished`; the overview, the studio badge and the share
+  strip now report liveness from `publishedVersion`, never from the flag, and the publish
+  panel says so in words when a flag has no version behind it.
+- The flagged tenant was given the version its flag claimed (`v1`, built from its own
+  live draft), so nothing went offline. Both tenants now read `flag = true, version 1`.
+
+### The sections
+
+| Section | Content source |
+| --- | --- |
+| About | `businesses.settings.about`, frozen in the snapshot |
+| Packages | `service_packages` — active rows for adopted verticals, rate server-formatted |
+| Team | owner-authored names and roles, stored on the section |
+| FAQ | owner-authored question/answer pairs, rendered as a closed accordion |
+| Contact | phone and city from the snapshot identity |
+
+`0013_storefront_section_config.sql` adds `storefront_sections.config jsonb`; FAQ and team
+entries live there because they are content for one section, not records with their own
+lifecycle. Every read and write goes through `sanitiseSectionConfig` (12 items, trimmed,
+UUID-checked ids), the shape moved to snapshot **v2**, and v1 snapshots are still readable
+with empty config so pages published last week keep rendering.
+
+Each section renders nothing when its data is empty — a heading over no content claims an
+offer the business may not make.
+
+### Evidence
+
+| Check | Result |
+| --- | --- |
+| `npx vitest run` (live DB) | **160 passed**, 0 failed |
+| New integration tests | flag-without-version is not served then is after publish; FAQ + team draft edits absent from the public profile until publish v2 |
+| `npx tsc --noEmit` / `npx next build` | 0 errors / build clean |
+| `npm run i18n:audit` | **465** (baseline 473) |
+| Browser, signed in as Kannan Events | builder lists all 9 sections with editors; a FAQ entry added in the UI saved to the draft (`storefront_sections.faq.config`) |
+| Same FAQ entry, public URL | absent on `localhost:3400/p/kannan-events` **and** `eventsma.vercel.app/p/kannan-events` (grep count 0) |
+| Cleanup | FAQ entry removed through the builder; config back to `{faq:[],team:[]}` |
+| `tinu-eventer` public page | 200 with its own contact block (phone, city); no empty sections |
+
+Known gaps: the public page still renders English only (it is prerendered; a locale
+cookie there would de-prerender every storefront), so the new copy sits in
+`lib/i18n/messages/{en,ta}/storefront-public.ts` with the Tamil mirror written and unused.
+Packages show an indicative rate, never a computed quote.
+
 ### Known limitations
 
 - **Catalogue and portfolio are not versioned yet.** Only identity, brand and layout are

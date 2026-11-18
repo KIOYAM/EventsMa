@@ -41,6 +41,21 @@ export const storefront: DeepPartial<typeof enStorefront> = {
   sections: {
     title: 'பிரிவுகள் மற்றும் வரிசை',
     reset: 'வடிவமைப்பை இயல்புநிலைக்குத் திரும்பு',
+    labels: {
+      faqQuestion: 'கேள்வி',
+      faqAnswer: 'பதில்',
+      teamName: 'பெயர்',
+      teamRole: 'பங்கு',
+      add: 'சேர்',
+      save: 'சேமி',
+      remove: 'நீக்கு',
+      empty: 'இன்னும் எதுவும் சேர்க்கப்படவில்லை.',
+      limit: 'அதிகபட்சம் 12 உருப்படிகள், இதே வரிசையில்.',
+      faqQuestionExample: '500 விருந்தினர்களுக்கு சமைப்பீர்களா?',
+      faqAnswerExample: 'ஆம் - இரண்டு சேவை வரிகளுடன் 600 வரை.',
+      teamNameExample: 'அனிதா',
+      teamRoleExample: 'தலைமை சமையல்காரர்',
+    },
   },
   publish: {
     title: 'வெளியீடு',
@@ -50,6 +65,8 @@ export const storefront: DeepPartial<typeof enStorefront> = {
     live: 'நேரலை',
     restore: 'இந்தப் பதிப்பை மீட்டெடு',
     empty: 'இன்னும் பதிப்புகள் இல்லை.',
+    missingVersion:
+      'இந்தப் பக்கம் வெளியிடப்பட்டதாகக் குறிக்கப்பட்டுள்ளது, ஆனால் வெளியிடப்பட்ட பதிப்பு இல்லை, எனவே பொது இணைப்பு 404 தருகிறது. மீண்டும் வெளியிட்டு அதைச் செயல்படுத்துங்கள்.',
   },
   share: {
     title: 'வாடிக்கையாளர்களுடன் பகிர்',

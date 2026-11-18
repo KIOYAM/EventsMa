@@ -8,6 +8,7 @@ import {
   organisations,
   portfolioItems,
   serviceItems,
+  servicePackages,
   storefrontSections,
 } from './schema'
 import { signedPortfolioUrls } from '@/lib/storage/portfolio-images'
@@ -15,10 +16,13 @@ import { isDemoEnvironment } from '@/lib/environment'
 import { demoBusiness, demoItems, demoServices } from '@/lib/demo/data'
 import { verticalDescriptor } from '@/lib/domain/verticals'
 import { unitClassLabel, type UnitClass } from '@/lib/domain/units'
+import { formatINR } from '@/lib/domain/money'
 import {
+  emptySectionConfig,
   resolveStorefrontFont,
   resolveStorefrontTheme,
   visibleSections,
+  type SectionConfig,
   type SectionKey,
   type StorefrontFontKey,
   type StorefrontThemeKey,
@@ -47,6 +51,29 @@ export interface PublicService {
   items: { id: string; name: string; unit: string }[]
 }
 
+/**
+ * A package a visitor may see. Rates are formatted on the server: a package whose
+ * rate is zero is shown as "on request" rather than as a free service, because
+ * the real number is negotiated in the quotation.
+ */
+export interface PublicPackage {
+  id: string
+  name: string
+  serviceLabel: string
+  rate: string | null
+  unit: string
+  inclusions: string[]
+  minQuantity: number | null
+}
+
+/** One visible section, in the owner's order, with its own content. */
+export interface PublicSection {
+  key: SectionKey
+  heading: string | null
+  imageUrl: string | null
+  config: SectionConfig
+}
+
 export interface PublicProfile {
   orgId: string
   slug: string
@@ -67,12 +94,14 @@ export interface PublicProfile {
   /** Signed logo URL; the initials wordmark stands in when absent. */
   logoUrl: string | null
   services: PublicService[]
+  /** Active packages from the tenant's own catalogue, never an example price. */
+  packages: PublicPackage[]
   /**
    * The visible sections in the owner's own order. Empty only when every section
    * has been hidden; the page then falls back to the opening block so a storefront
    * is never a blank page.
    */
-  sections: { key: SectionKey; heading: string | null; imageUrl: string | null }[]
+  sections: PublicSection[]
   /**
    * Published work, newest first by the owner's own order. `photoUrl` is a signed,
    * expiring URL — the bucket is private, so a hidden entry cannot be reached by
@@ -129,11 +158,12 @@ export function demoPublicProfile(): PublicProfile {
             })),
         ),
       ),
+    packages: [],
     sections: [
-      { key: 'hero', heading: null, imageUrl: null },
-      { key: 'services', heading: null, imageUrl: null },
-      { key: 'gallery', heading: null, imageUrl: null },
-      { key: 'enquiry', heading: null, imageUrl: null },
+      { key: 'hero', heading: null, imageUrl: null, config: emptySectionConfig() },
+      { key: 'services', heading: null, imageUrl: null, config: emptySectionConfig() },
+      { key: 'gallery', heading: null, imageUrl: null, config: emptySectionConfig() },
+      { key: 'enquiry', heading: null, imageUrl: null, config: emptySectionConfig() },
     ],
     portfolio: [],
   }
@@ -218,6 +248,33 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
     .orderBy(portfolioItems.sortOrder, portfolioItems.eventDate)
     .limit(12)
 
+  // Packages the owner made active, in their own catalogue order. A package with
+  // no advertised rate still appears with its inclusions: the quote carries the
+  // number, the page carries the shape of what is on offer.
+  const packageRows =
+    verticalKeys.length === 0
+      ? []
+      : await db
+          .select({
+            id: servicePackages.id,
+            verticalKey: servicePackages.verticalKey,
+            name: servicePackages.name,
+            unitClass: servicePackages.unitClass,
+            ratePaise: servicePackages.ratePaise,
+            minQuantity: servicePackages.minQuantity,
+            inclusions: servicePackages.inclusions,
+          })
+          .from(servicePackages)
+          .where(
+            and(
+              eq(servicePackages.orgId, row.orgId),
+              eq(servicePackages.active, true),
+              inArray(servicePackages.verticalKey, verticalKeys),
+            ),
+          )
+          .orderBy(servicePackages.verticalKey, servicePackages.name)
+          .limit(6)
+
   const [signed, layout, published] = await Promise.all([
     signedPortfolioUrls(work.map((item) => item.coverPath)),
     db
@@ -233,6 +290,13 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
       .orderBy(storefrontSections.position),
     getPublishedSnapshot(row.orgId),
   ])
+
+  // The storefront is marked published but has no version: nothing legitimate
+  // exists to serve, so the page is a 404. Showing the draft here is what let an
+  // edit go live without a publish — exactly the state 0013 removes. `undefined`
+  // (no table, no database) is the one case that still falls back, because there
+  // the snapshot genuinely cannot be read.
+  if (published === null) return null
 
   // Once a tenant has published, the snapshot is the only source of identity,
   // brand and layout. Draft rows are still read above (they are cheap and shared
@@ -277,10 +341,20 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
     services: verticalKeys.map((key) =>
       preview(verticalDescriptor(key), byVertical.get(key) ?? []),
     ),
+    packages: packageRows.map((pkg) => ({
+      id: pkg.id,
+      name: pkg.name,
+      serviceLabel: verticalDescriptor(pkg.verticalKey).label,
+      rate: pkg.ratePaise > 0 ? formatINR(pkg.ratePaise) : null,
+      unit: unitClassLabel(pkg.unitClass as UnitClass),
+      inclusions: (pkg.inclusions ?? []).filter((line) => line.trim().length > 0).slice(0, 5),
+      minQuantity: pkg.minQuantity > 0 ? pkg.minQuantity : null,
+    })),
     sections: ordered.map((section) => ({
       key: section.key,
       heading: section.heading,
       imageUrl: section.key === 'hero' ? heroImageUrl : null,
+      config: section.config,
     })),
     portfolio: work.map((item) => ({
       id: item.id,

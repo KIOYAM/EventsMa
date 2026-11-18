@@ -22,6 +22,7 @@ interface Props {
     empty: string
     version: string
     restoreHint: string
+    missingVersion: string
   }
 }
 
@@ -52,6 +53,14 @@ export function PublishPanel({ state, versions, canEdit, labels }: Props) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm leading-relaxed text-ink-muted">{labels.body}</p>
+
+        {/* The one state that must never be quiet: the workspace believes the
+            page is live, but there is no version, so the public URL 404s. */}
+        {state.businessPublished && state.publishedVersion === null ? (
+          <p className="card-flat bg-terracotta-subtle px-3 py-2 text-sm text-ink">
+            {labels.missingVersion}
+          </p>
+        ) : null}
 
         <form action={publishPage} className="flex flex-wrap items-center gap-3">
           <button

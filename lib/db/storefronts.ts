@@ -33,6 +33,12 @@ export interface PublishState {
   publishedVersion: number | null
   publishedAt: string | null
   hasUnpublishedChanges: boolean
+  /**
+   * The workspace's own "published" flag. It can disagree with the version
+   * pointer on rows written before publishing existed (or by an older build), so
+   * the UI reports liveness from `publishedVersion`, never from this alone.
+   */
+  businessPublished: boolean
 }
 
 export interface VersionSummary {
@@ -84,6 +90,9 @@ export async function readDraftSnapshot(
       visible: storefrontSections.visible,
       heading: storefrontSections.heading,
       imagePath: storefrontSections.imagePath,
+      // FAQ answers and team names are section content, so they are part of what
+      // a publish freezes; without this read they would never reach a snapshot.
+      config: storefrontSections.config,
     })
     .from(storefrontSections)
     .where(eq(storefrontSections.orgId, orgId))
@@ -147,6 +156,7 @@ export async function getPublishState(
     publishedVersion: null,
     publishedAt: null,
     hasUnpublishedChanges: true,
+    businessPublished: false,
   }
   if (demo || !isDatabaseConfigured()) return idle
 
@@ -163,6 +173,12 @@ export async function getPublishState(
     .where(eq(storefronts.orgId, orgId))
     .limit(1)
 
+  const [business] = await client
+    .select({ published: businesses.published })
+    .from(businesses)
+    .where(eq(businesses.orgId, orgId))
+    .limit(1)
+
   const draft = await readDraftSnapshot(orgId, db)
   const published = row?.snapshot ? parseStorefrontSnapshot(row.snapshot) : null
 
@@ -172,6 +188,7 @@ export async function getPublishState(
     publishedAt: row?.publishedAt ? row.publishedAt.toISOString() : null,
     hasUnpublishedChanges:
       !published || !draft || snapshotFingerprint(published) !== snapshotFingerprint(draft),
+    businessPublished: business?.published ?? false,
   }
 }
 
@@ -291,6 +308,7 @@ export async function restoreStorefrontVersion(
         visible: section.visible,
         heading: section.heading,
         imagePath: section.imagePath,
+        config: section.config as unknown as Record<string, unknown>,
       })),
     )
   }
@@ -334,12 +352,23 @@ export async function listStorefrontVersions(
 }
 
 /**
- * The published snapshot for a tenant, or null when it has never published.
+ * The published snapshot for a tenant.
+ *
+ * Three outcomes, and the difference matters:
+ * - a snapshot: this is what a visitor may see.
+ * - `null`: the storefront exists and has never published, so there is nothing
+ *   legitimate to serve. The caller must 404 rather than quietly show the draft.
+ * - `undefined`: we cannot tell (database not configured, or the table is absent
+ *   because a deploy landed before 0012 ran). Only this case may fall back to the
+ *   draft, which is the behaviour every live page had before publishing existed.
+ *
  * System client: a visitor has no session, so this must not depend on RLS, and
  * the caller has already resolved the tenant from a URL slug.
  */
-export async function getPublishedSnapshot(orgId: string): Promise<StorefrontSnapshot | null> {
-  if (!isDatabaseConfigured()) return null
+export async function getPublishedSnapshot(
+  orgId: string,
+): Promise<StorefrontSnapshot | null | undefined> {
+  if (!isDatabaseConfigured()) return undefined
 
   try {
     const [row] = await getSystemDb()
@@ -352,8 +381,9 @@ export async function getPublishedSnapshot(orgId: string): Promise<StorefrontSna
     return row ? parseStorefrontSnapshot(row.snapshot) : null
   } catch {
     // A public page must never go down because a deployment reached a database
-    // where 0012 has not been applied yet: no snapshot simply means "render the
-    // draft", which is exactly the pre-0012 behaviour clients already had.
-    return null
+    // where 0012 has not been applied yet: "cannot tell" renders the draft, which
+    // is exactly the pre-0012 behaviour clients already had. A tenant that simply
+    // has no version is a different answer (`null`) and is not served at all.
+    return undefined
   }
 }

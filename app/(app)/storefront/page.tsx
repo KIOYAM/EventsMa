@@ -6,6 +6,7 @@ import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getSettings } from '@/lib/db/settings'
 import { getStorefrontBrand } from '@/lib/db/storefront'
+import { getPublishState } from '@/lib/db/storefronts'
 import { getLocale, translatorFor } from '@/lib/i18n/server'
 import { setPublished } from '../settings/actions'
 import { publishPage } from './actions'
@@ -24,11 +25,15 @@ export default async function StorefrontPage() {
   const ctx = await requireWorkspace()
   const locale = await getLocale()
   const t = translatorFor(locale)
-  const [settings, business] = await Promise.all([
+  const [settings, business, publishState] = await Promise.all([
     withWorkspace(ctx, () => getSettings(ctx.orgId, ctx.demo)),
     withWorkspace(ctx, () => getStorefrontBrand(ctx.orgId, ctx.demo)),
+    withWorkspace(ctx, () => getPublishState(ctx.orgId, ctx.demo)),
   ])
   const canManage = canManageCommercial(ctx.role) && !ctx.demo
+  // A published version, not the flag: the flag alone is what left a workspace
+  // claiming to be live while the public URL served an unpublished draft.
+  const isLive = publishState.publishedVersion !== null
   const publicPath = `/p/${settings.slug}`
 
   return (
@@ -64,10 +69,8 @@ export default async function StorefrontPage() {
                   {settings.tagline ?? t('storefront.overview.noTagline')}
                 </p>
               </div>
-              <Badge tone={settings.published ? 'success' : 'warning'}>
-                {settings.published
-                  ? t('storefront.overview.published')
-                  : t('storefront.overview.draft')}
+              <Badge tone={isLive ? 'success' : 'warning'}>
+                {isLive ? t('storefront.overview.published') : t('storefront.overview.draft')}
               </Badge>
             </div>
 
@@ -122,7 +125,7 @@ export default async function StorefrontPage() {
               </p>
               {/* Going live always publishes a snapshot; only taking the page
                   offline is a plain flag flip, so the two never disagree. */}
-              {settings.published ? (
+              {isLive ? (
                 <form action={setPublished}>
                   <input type="hidden" name="published" value="0" />
                   <button

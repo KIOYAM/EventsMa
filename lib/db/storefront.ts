@@ -8,6 +8,8 @@ import {
   orderSections,
   resolveStorefrontFont,
   resolveStorefrontTheme,
+  sanitiseSectionConfig,
+  type SectionConfig,
   type SectionKey,
   type StorefrontFontKey,
   type StorefrontSection,
@@ -28,6 +30,7 @@ const COLUMNS = {
   visible: storefrontSections.visible,
   heading: storefrontSections.heading,
   imagePath: storefrontSections.imagePath,
+  config: storefrontSections.config,
 }
 
 export async function getStorefrontSections(
@@ -102,7 +105,12 @@ export async function moveStorefrontSection(
 async function updateSection(
   orgId: string,
   key: SectionKey,
-  values: Partial<{ visible: boolean; heading: string | null; imagePath: string | null }>,
+  values: Partial<{
+    visible: boolean
+    heading: string | null
+    imagePath: string | null
+    config: Record<string, unknown>
+  }>,
 ): Promise<void> {
   await ensureStorefrontSections(orgId)
   await getDb()
@@ -133,6 +141,33 @@ export async function setStorefrontSectionImage(
   imagePath: string | null,
 ): Promise<void> {
   await updateSection(orgId, key, { imagePath })
+}
+
+/**
+ * Owner-authored content for one section (FAQ answers, team names). The caller
+ * validates and caps it; this writes exactly what it is given, so the builder's
+ * read-modify-write stays in one place.
+ */
+export async function setStorefrontSectionConfig(
+  orgId: string,
+  key: SectionKey,
+  config: SectionConfig,
+): Promise<void> {
+  await updateSection(orgId, key, { config: config as unknown as Record<string, unknown> })
+}
+
+/** Current content for one section, sanitised, whether or not a row exists yet. */
+export async function getStorefrontSectionConfig(
+  orgId: string,
+  key: SectionKey,
+): Promise<SectionConfig> {
+  const [row] = await getDb()
+    .select({ config: storefrontSections.config })
+    .from(storefrontSections)
+    .where(and(eq(storefrontSections.orgId, orgId), eq(storefrontSections.key, key)))
+    .limit(1)
+
+  return sanitiseSectionConfig(row?.config)
 }
 
 /** Drops the tenant's customisation; the canonical order and page copy return. */

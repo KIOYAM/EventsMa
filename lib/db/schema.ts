@@ -825,6 +825,12 @@ export const storefrontSections = pgTable(
     heading: text('heading'),
     /** Hero photograph, stored in the private image bucket and signed on read. */
     imagePath: text('image_path'),
+    /**
+     * Owner-authored section content (FAQ answers, team names). Layout content,
+     * not a record with its own lifecycle, so it lives with the section. Validated
+     * by `sanitiseSectionConfig` on write and on every read.
+     */
+    config: jsonb('config').$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

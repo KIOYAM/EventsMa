@@ -8,12 +8,42 @@ import {
   toggleSection,
   uploadSectionImage,
 } from '@/app/(app)/storefront/actions'
+import {
+  removeFaqItem,
+  removeTeamMember,
+  saveFaqItem,
+  saveTeamMember,
+} from '@/app/(app)/storefront/section-actions'
+
+/** Copy for the two sections whose content the owner writes here. */
+export interface SectionConfigLabels {
+  faqQuestion: string
+  faqAnswer: string
+  teamName: string
+  teamRole: string
+  add: string
+  save: string
+  remove: string
+  empty: string
+  limit: string
+  faqQuestionExample: string
+  faqAnswerExample: string
+  teamNameExample: string
+  teamRoleExample: string
+}
 
 interface Props {
   sections: StorefrontSection[]
   canEdit: boolean
   storageReady: boolean
+  labels: SectionConfigLabels
 }
+
+const INPUT =
+  'mt-1 h-11 w-full rounded-control border border-hairline bg-paper px-3 text-sm text-ink disabled:opacity-60'
+const AREA =
+  'mt-1 w-full rounded-control border border-hairline bg-paper px-3 py-2 text-sm text-ink disabled:opacity-60'
+const SMALL = 'text-xs text-ink-muted'
 
 /**
  * The storefront layout editor.
@@ -22,7 +52,7 @@ interface Props {
  * That keeps the builder working on a phone with a bad connection and means the
  * order lives in Postgres, not in a browser store that a refresh forgets.
  */
-export function SectionBuilder({ sections, canEdit, storageReady }: Props) {
+export function SectionBuilder({ sections, canEdit, storageReady, labels }: Props) {
   return (
     <ol className="divide-y divide-hairline">
       {sections.map((section, index) => {
@@ -101,7 +131,7 @@ export function SectionBuilder({ sections, canEdit, storageReady }: Props) {
                 <form action={saveSectionHeading} className="flex flex-wrap items-end gap-2">
                   <input type="hidden" name="key" value={section.key} />
                   <label className="min-w-0 flex-1" htmlFor={`heading-${section.key}`}>
-                    <span className="text-xs text-ink-muted">Heading</span>
+                    <span className={SMALL}>Heading</span>
                     <input
                       id={`heading-${section.key}`}
                       name="heading"
@@ -109,7 +139,7 @@ export function SectionBuilder({ sections, canEdit, storageReady }: Props) {
                       maxLength={80}
                       placeholder="Leave empty for the default wording"
                       disabled={!canEdit}
-                      className="mt-1 h-11 w-full rounded-control border border-hairline bg-paper px-3 text-sm text-ink disabled:opacity-60"
+                      className={INPUT}
                     />
                   </label>
                   <button
@@ -121,12 +151,198 @@ export function SectionBuilder({ sections, canEdit, storageReady }: Props) {
                   </button>
                 </form>
 
+                {section.key === 'faq' ? (
+                  <div className="space-y-3">
+                    {section.config.faq.length === 0 ? (
+                      <p className={SMALL}>{labels.empty}</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {section.config.faq.map((item) => (
+                          <li
+                            key={item.id}
+                            className="rounded-control border border-hairline bg-paper p-3"
+                          >
+                            <form action={saveFaqItem} className="space-y-2">
+                              <input type="hidden" name="itemId" value={item.id} />
+                              <label className="block">
+                                <span className={SMALL}>{labels.faqQuestion}</span>
+                                <input
+                                  name="question"
+                                  defaultValue={item.question}
+                                  maxLength={160}
+                                  disabled={!canEdit}
+                                  className={INPUT}
+                                />
+                              </label>
+                              <label className="block">
+                                <span className={SMALL}>{labels.faqAnswer}</span>
+                                <textarea
+                                  name="answer"
+                                  defaultValue={item.answer}
+                                  maxLength={600}
+                                  rows={2}
+                                  disabled={!canEdit}
+                                  className={AREA}
+                                />
+                              </label>
+                              <button
+                                type="submit"
+                                disabled={!canEdit}
+                                className="btn btn-sm btn-outline h-11 disabled:opacity-40"
+                              >
+                                {labels.save}
+                              </button>
+                            </form>
+                            <form action={removeFaqItem} className="mt-2">
+                              <input type="hidden" name="itemId" value={item.id} />
+                              <button
+                                type="submit"
+                                disabled={!canEdit}
+                                className="h-11 rounded-control px-1 text-xs text-ink-muted underline-offset-2 hover:underline disabled:opacity-40"
+                              >
+                                {labels.remove}
+                              </button>
+                            </form>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <form
+                      action={saveFaqItem}
+                      className="space-y-2 rounded-control border border-dashed border-hairline p-3"
+                    >
+                      <label className="block">
+                        <span className={SMALL}>{labels.faqQuestion}</span>
+                        <input
+                          name="question"
+                          maxLength={160}
+                          disabled={!canEdit}
+                          placeholder={labels.faqQuestionExample}
+                          className={INPUT}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className={SMALL}>{labels.faqAnswer}</span>
+                        <textarea
+                          name="answer"
+                          maxLength={600}
+                          rows={2}
+                          disabled={!canEdit}
+                          placeholder={labels.faqAnswerExample}
+                          className={AREA}
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        disabled={!canEdit}
+                        className="btn btn-sm btn-primary h-11 disabled:opacity-40"
+                      >
+                        {labels.add}
+                      </button>
+                    </form>
+                    <p className={SMALL}>{labels.limit}</p>
+                  </div>
+                ) : null}
+
+                {section.key === 'team' ? (
+                  <div className="space-y-3">
+                    {section.config.team.length === 0 ? (
+                      <p className={SMALL}>{labels.empty}</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {section.config.team.map((member) => (
+                          <li
+                            key={member.id}
+                            className="rounded-control border border-hairline bg-paper p-3"
+                          >
+                            <form action={saveTeamMember} className="space-y-2">
+                              <input type="hidden" name="itemId" value={member.id} />
+                              <label className="block">
+                                <span className={SMALL}>{labels.teamName}</span>
+                                <input
+                                  name="name"
+                                  defaultValue={member.name}
+                                  maxLength={80}
+                                  disabled={!canEdit}
+                                  className={INPUT}
+                                />
+                              </label>
+                              <label className="block">
+                                <span className={SMALL}>{labels.teamRole}</span>
+                                <input
+                                  name="role"
+                                  defaultValue={member.role}
+                                  maxLength={80}
+                                  disabled={!canEdit}
+                                  className={INPUT}
+                                />
+                              </label>
+                              <button
+                                type="submit"
+                                disabled={!canEdit}
+                                className="btn btn-sm btn-outline h-11 disabled:opacity-40"
+                              >
+                                {labels.save}
+                              </button>
+                            </form>
+                            <form action={removeTeamMember} className="mt-2">
+                              <input type="hidden" name="itemId" value={member.id} />
+                              <button
+                                type="submit"
+                                disabled={!canEdit}
+                                className="h-11 rounded-control px-1 text-xs text-ink-muted underline-offset-2 hover:underline disabled:opacity-40"
+                              >
+                                {labels.remove}
+                              </button>
+                            </form>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <form
+                      action={saveTeamMember}
+                      className="space-y-2 rounded-control border border-dashed border-hairline p-3"
+                    >
+                      <label className="block">
+                        <span className={SMALL}>{labels.teamName}</span>
+                        <input
+                          name="name"
+                          maxLength={80}
+                          disabled={!canEdit}
+                          placeholder={labels.teamNameExample}
+                          className={INPUT}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className={SMALL}>{labels.teamRole}</span>
+                        <input
+                          name="role"
+                          maxLength={80}
+                          disabled={!canEdit}
+                          placeholder={labels.teamRoleExample}
+                          className={INPUT}
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        disabled={!canEdit}
+                        className="btn btn-sm btn-primary h-11 disabled:opacity-40"
+                      >
+                        {labels.add}
+                      </button>
+                    </form>
+                    <p className={SMALL}>{labels.limit}</p>
+                  </div>
+                ) : null}
+
                 {section.key === 'hero' ? (
                   <div className="flex flex-wrap items-end gap-2">
                     <form action={uploadSectionImage} className="flex flex-wrap items-end gap-2">
                       <input type="hidden" name="key" value="hero" />
                       <label className="min-w-0">
-                        <span className="text-xs text-ink-muted">Opening photograph</span>
+                        <span className={SMALL}>Opening photograph</span>
                         <input
                           type="file"
                           name="image"

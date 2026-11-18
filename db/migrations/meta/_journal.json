@@ -92,6 +92,13 @@
       "when": 1794858084636,
       "tag": "0012_storefront_publishing",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794879400000,
+      "tag": "0013_storefront_section_config",
+      "breakpoints": true
     }
   ]
 }

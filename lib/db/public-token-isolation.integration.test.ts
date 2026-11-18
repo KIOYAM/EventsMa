@@ -17,6 +17,7 @@ import {
 import { shareLinks } from './schema-share'
 import { getSharePortal } from './share-portal'
 import { getPublicProfile } from './public'
+import { publishStorefront } from './storefronts'
 import { getPublicQuoteDocument } from './queries'
 
 /**
@@ -84,9 +85,15 @@ describe.skipIf(!LIVE)('public token isolation', () => {
     ])
 
     await db.insert(businesses).values([
-      { orgId: orgA, name: `A Events ${suffix}`, published: true },
-      { orgId: orgB, name: `B Events ${suffix}`, published: true },
+      { orgId: orgA, name: `A Events ${suffix}`, published: false },
+      { orgId: orgB, name: `B Events ${suffix}`, published: false },
     ])
+
+    // A public page is served only from a published version, so both tenants get
+    // one here; the isolation assertions below are about whose data is returned,
+    // not about which publish path created it.
+    expect(await publishStorefront(orgA, null, db)).toMatchObject({ ok: true })
+    expect(await publishStorefront(orgB, null, db)).toMatchObject({ ok: true })
 
     await db.insert(businessServices).values([
       { orgId: orgA, verticalKey: 'catering', enabled: true, sortOrder: 0 },

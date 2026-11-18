@@ -6,7 +6,8 @@ import { redirect } from 'next/navigation'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { getDb, isDatabaseConfigured } from '@/lib/db/client'
 import { withWorkspace } from '@/lib/db/workspace'
-import { businesses, organisations } from '@/lib/db/schema'
+import { businesses, organisations, storefronts } from '@/lib/db/schema'
+import { publishStorefront } from '@/lib/db/storefronts'
 
 const FONTS = ['Inter', 'Playfair Display', 'system-ui'] as const
 
@@ -91,6 +92,15 @@ export async function updateSettings(formData: FormData): Promise<void> {
   })
 }
 
+/**
+ * Taking the page offline, and the settings screen's own publish button.
+ *
+ * Publishing from here goes through `publishStorefront`, the same path the brand
+ * studio uses, because flipping `businesses.published` on its own is what put a
+ * workspace into "marks itself live while serving an unpublished draft". Hiding
+ * the page is a plain flag flip with the storefront status kept in step, so the
+ * public URL stops responding on the next request.
+ */
 export async function setPublished(formData: FormData): Promise<void> {
   const ctx = await requireWorkspace()
   return withWorkspace(ctx, async () => {
@@ -99,10 +109,23 @@ export async function setPublished(formData: FormData): Promise<void> {
 
     const published = formData.get('published') === '1'
 
-    await getDb()
-      .update(businesses)
-      .set({ published, updatedAt: new Date() })
-      .where(eq(businesses.orgId, ctx.orgId))
+    if (published) {
+      const result = await publishStorefront(ctx.orgId, ctx.userId)
+      if (!result.ok) {
+        redirect(`/settings?error=${result.error === 'empty-name' ? 'name' : 'publish'}`)
+      }
+    } else {
+      await getDb()
+        .update(businesses)
+        .set({ published: false, updatedAt: new Date() })
+        .where(eq(businesses.orgId, ctx.orgId))
+      // The version pointer stays: republishing restores the same page, and the
+      // public read path already refuses to serve anything while the flag is off.
+      await getDb()
+        .update(storefronts)
+        .set({ status: 'draft', updatedAt: new Date() })
+        .where(eq(storefronts.orgId, ctx.orgId))
+    }
 
     revalidatePath('/settings')
     revalidatePath('/storefront')
