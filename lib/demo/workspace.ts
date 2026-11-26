@@ -5,6 +5,7 @@
  * badge from the shell, and every server action refuses to write.
  */
 
+import type { AuditRow } from '@/lib/domain/audit'
 import type {
   AcceptedQuoteOption,
   ClientDetail,
@@ -430,6 +431,8 @@ export const demoPortfolio: PortfolioRow[] = [
     venueName: 'Sree Lakshmi Mahal, Peelamedu',
     description: 'Banana leaf service, four live counters, stage florals in marigold.',
     published: true,
+    coverPath: null,
+    sortOrder: 0,
   },
   {
     id: '00000000-0000-4000-8000-0000000000b9',
@@ -438,6 +441,8 @@ export const demoPortfolio: PortfolioRow[] = [
     venueName: 'Le Meridien, Avinashi Road',
     description: 'Buffet for 220, two counters, AV and stage lighting.',
     published: true,
+    coverPath: null,
+    sortOrder: 1,
   },
   {
     id: '00000000-0000-4000-8000-0000000000c9',
@@ -446,6 +451,66 @@ export const demoPortfolio: PortfolioRow[] = [
     venueName: 'Family residence, R.S. Puram',
     description: 'Breakfast function for 140 with a traditional menu.',
     published: false,
+    coverPath: null,
+    sortOrder: 2,
+  },
+]
+
+/**
+ * The audit viewer's fixtures. Actions and payloads mirror what the real writers
+ * store, so the screen is exercised against its production shape.
+ */
+export const demoAuditEvents: AuditRow[] = [
+  {
+    id: '00000000-0000-4000-8000-0000000000d1',
+    actorName: 'Meera S.',
+    action: 'payment.recorded',
+    entity: 'invoice',
+    entityId: '00000000-0000-4000-8000-0000000000f1',
+    before: null,
+    after: { amountPaise: 5535000, mode: 'upi', reference: 'UPI 4471' },
+    createdAt: '2026-11-18T09:15:00.000Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-0000000000d2',
+    actorName: 'Kannan R.',
+    action: 'invoice.created',
+    entity: 'invoice',
+    entityId: '00000000-0000-4000-8000-0000000000f1',
+    before: null,
+    after: { quotationId: '00000000-0000-4000-8000-0000000000f2', amountPaise: 18450000 },
+    createdAt: '2026-11-18T06:40:00.000Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-0000000000d3',
+    // No signed-in actor: the client accepted from the public quote link.
+    actorName: null,
+    action: 'quote.accepted',
+    entity: 'quotation',
+    entityId: '00000000-0000-4000-8000-0000000000f2',
+    before: null,
+    after: { acceptedByEmail: 'meera@example.com' },
+    createdAt: '2026-11-17T05:05:00.000Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-0000000000d4',
+    actorName: 'Arun K.',
+    action: 'team.invitation_accepted',
+    entity: 'invitation',
+    entityId: '00000000-0000-4000-8000-0000000000f3',
+    before: null,
+    after: { email: 'arun@annapoorna.example', role: 'employee' },
+    createdAt: '2026-11-16T11:20:00.000Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-0000000000d5',
+    actorName: 'Kannan R.',
+    action: 'invoice.voided',
+    entity: 'invoice',
+    entityId: '00000000-0000-4000-8000-0000000000f4',
+    before: null,
+    after: null,
+    createdAt: '2026-11-14T04:30:00.000Z',
   },
 ]
 

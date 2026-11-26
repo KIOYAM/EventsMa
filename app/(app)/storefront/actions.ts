@@ -13,6 +13,7 @@ import {
   moveStorefrontSection,
   resetStorefrontSections,
   setStorefrontBrand,
+  setStorefrontDesign,
   setStorefrontSectionHeading,
   setStorefrontSectionImage,
   setStorefrontSectionVisible,
@@ -26,7 +27,8 @@ import {
   resolveStorefrontTheme,
   type SectionKey,
 } from '@/lib/domain/storefront'
-import { organisations } from '@/lib/db/schema'
+import { resolveDesign } from '@/lib/domain/storefront-design'
+import { businesses, organisations } from '@/lib/db/schema'
 
 /**
  * The storefront builder's writes.
@@ -167,6 +169,45 @@ export async function saveIdentity(formData: FormData): Promise<void> {
   })
 }
 
+/**
+ * Search overrides are draft data like everything else here: they reach a crawler
+ * only when `publishPage` freezes them into a version.
+ */
+export async function saveSeo(formData: FormData): Promise<void> {
+  const title = text(formData, 'title', 60)
+  const description = text(formData, 'description', 160)
+  const noindex = formData.get('noindex') === '1'
+
+  const ctx = await requireWorkspace()
+  return withWorkspace(ctx, async () => {
+    if (!canManageCommercial(ctx.role)) redirect('/storefront/customise?error=permission')
+    if (ctx.demo || !isDatabaseConfigured()) redirect('/storefront/customise?error=demo')
+
+    const db = getDb()
+    const [row] = await db
+      .select({ settings: businesses.settings })
+      .from(businesses)
+      .where(eq(businesses.orgId, ctx.orgId))
+      .limit(1)
+    if (!row) redirect('/storefront/customise?error=publish')
+
+    await db
+      .update(businesses)
+      .set({
+        // Replace only the `seo` key: tax, payment and brand tokens belong to
+        // other screens and a read-modify-write of the whole blob would race them.
+        settings: {
+          ...(row.settings ?? {}),
+          seo: { title: title || undefined, description: description || undefined, noindex },
+        },
+        updatedAt: new Date(),
+      })
+      .where(eq(businesses.orgId, ctx.orgId))
+
+    back()
+  })
+}
+
 /** Colour, wordmark style and the paragraph under the name. */
 export async function saveBrand(formData: FormData): Promise<void> {
   const colour = text(formData, 'primary', 7)
@@ -298,6 +339,38 @@ export async function resetLayout(): Promise<void> {
     if (!canManageCommercial(ctx.role)) redirect('/storefront?error=permission')
     if (ctx.demo || !isDatabaseConfigured()) redirect('/storefront?error=demo')
     await resetStorefrontSections(ctx.orgId)
+    back()
+  })
+}
+
+/**
+ * Fine design tokens and contact channels, saved together.
+ *
+ * Nothing posted here is trusted: `resolveDesign` checks the accent hex, clamps
+ * both pieces of wording, turns a pasted Instagram URL into a handle and keeps
+ * only dialable WhatsApp digits. Empty means "use the shipped look".
+ */
+export async function saveDesign(formData: FormData): Promise<void> {
+  const ctx = await requireWorkspace()
+  return withWorkspace(ctx, async () => {
+    if (!canManageCommercial(ctx.role)) redirect('/storefront/customise?error=permission')
+    if (ctx.demo || !isDatabaseConfigured()) redirect('/storefront/customise?error=demo')
+
+    await setStorefrontDesign(
+      ctx.orgId,
+      resolveDesign({
+        accent: formData.get('themeAccent') === '1' ? null : String(formData.get('accent') ?? ''),
+        surface: formData.get('surface'),
+        corners: formData.get('corners'),
+        spacing: formData.get('spacing'),
+        heroHeight: formData.get('heroHeight'),
+        ctaLabel: formData.get('ctaLabel'),
+        announcement: formData.get('announcement'),
+        whatsapp: formData.get('whatsapp'),
+        instagram: formData.get('instagram'),
+        email: formData.get('email'),
+      }),
+    )
     back()
   })
 }

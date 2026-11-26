@@ -7,6 +7,8 @@ import { withWorkspace } from '@/lib/db/workspace'
 import { getSettings } from '@/lib/db/settings'
 import { getStorefrontBrand } from '@/lib/db/storefront'
 import { getPublishState } from '@/lib/db/storefronts'
+import { getStorefrontAnalytics } from '@/lib/db/storefront-analytics'
+import { SECTION_LABEL } from '@/lib/domain/storefront'
 import { getLocale, translatorFor } from '@/lib/i18n/server'
 import { setPublished } from '../settings/actions'
 import { publishPage } from './actions'
@@ -25,10 +27,11 @@ export default async function StorefrontPage() {
   const ctx = await requireWorkspace()
   const locale = await getLocale()
   const t = translatorFor(locale)
-  const [settings, business, publishState] = await Promise.all([
+  const [settings, business, publishState, analytics] = await Promise.all([
     withWorkspace(ctx, () => getSettings(ctx.orgId, ctx.demo)),
     withWorkspace(ctx, () => getStorefrontBrand(ctx.orgId, ctx.demo)),
     withWorkspace(ctx, () => getPublishState(ctx.orgId, ctx.demo)),
+    withWorkspace(ctx, () => getStorefrontAnalytics(ctx.orgId, ctx.demo)),
   ])
   const canManage = canManageCommercial(ctx.role) && !ctx.demo
   // A published version, not the flag: the flag alone is what left a workspace
@@ -154,6 +157,45 @@ export default async function StorefrontPage() {
                     : t('storefront.overview.readOnlyRole')}
                 </p>
               ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('storefront.overview.analytics')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-control bg-canvas p-3">
+                  <p className="font-display text-2xl tabular-nums text-ink">{analytics.views}</p>
+                  <p className="text-xs text-ink-muted">{t('storefront.overview.views')}</p>
+                </div>
+                <div className="rounded-control bg-canvas p-3">
+                  <p className="font-display text-2xl tabular-nums text-ink">
+                    {analytics.enquiries}
+                  </p>
+                  <p className="text-xs text-ink-muted">{t('storefront.overview.enquiries')}</p>
+                </div>
+              </div>
+              {analytics.sections.length > 0 ? (
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+                    {t('storefront.overview.sections')}
+                  </p>
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {analytics.sections.map((row) => (
+                      <li key={row.section} className="flex items-center justify-between gap-3">
+                        <span className="truncate text-ink-muted">{SECTION_LABEL[row.section]}</span>
+                        <span className="tabular-nums text-ink">{row.count}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="text-xs text-ink-muted">
+                  {t('storefront.overview.noEnquiries')}
+                </p>
+              )}
             </CardContent>
           </Card>
 

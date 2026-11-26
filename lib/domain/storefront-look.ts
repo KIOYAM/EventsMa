@@ -23,7 +23,8 @@ export const STOREFRONT_LOOK = {
     heroPhoto: 'absolute inset-0 h-full w-full object-cover',
     heroShade: 'absolute inset-0 bg-gradient-to-r from-night/95 via-night/70 to-night/10',
     heroBody: 'relative w-full px-6 py-12 sm:px-12 sm:py-16',
-    overline: 'text-[10px] font-bold tracking-[0.22em] text-gold uppercase',
+    overline:
+      'text-[10px] font-bold tracking-[0.22em] text-[color:var(--brand-accent,#8a6524)] uppercase',
     title: 'mt-4 max-w-2xl text-[2.5rem] leading-[1.03] tracking-[-0.02em] sm:text-6xl',
     lede: 'mt-4 max-w-xl text-sm leading-[1.8] text-white/80 sm:text-base',
     meta: 'mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-white/70',
@@ -65,7 +66,8 @@ export const STOREFRONT_LOOK = {
     heroPhoto: 'absolute inset-0 h-full w-full object-cover opacity-25',
     heroShade: 'absolute inset-0 bg-gradient-to-r from-paper via-paper/90 to-paper/40',
     heroBody: 'relative w-full px-6 py-10 sm:px-10 sm:py-12',
-    overline: 'text-[10px] font-bold tracking-[0.2em] text-terracotta uppercase',
+    overline:
+      'text-[10px] font-bold tracking-[0.2em] text-[color:var(--brand-accent,#c56e4e)] uppercase',
     title: 'mt-3 font-[family-name:var(--font-display)] text-[2rem] leading-[1.05] text-forest sm:text-5xl',
     lede: 'mt-3 max-w-xl text-sm leading-relaxed text-ink-muted',
     meta: 'mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-ink-muted',
@@ -107,7 +109,8 @@ export const STOREFRONT_LOOK = {
     heroPhoto: 'absolute inset-0 h-full w-full object-cover',
     heroShade: 'absolute inset-0 bg-gradient-to-r from-night/95 via-night/70 to-night/20',
     heroBody: 'relative w-full px-6 py-12 sm:px-10 sm:py-16',
-    overline: 'text-[10px] font-bold tracking-[0.22em] text-gold uppercase',
+    overline:
+      'text-[10px] font-bold tracking-[0.22em] text-[color:var(--brand-accent,#8a6524)] uppercase',
     title: 'mt-4 max-w-2xl text-[2.6rem] leading-[1.02] sm:text-6xl',
     lede: 'mt-4 max-w-xl text-sm leading-[1.8] text-white/70 sm:text-base',
     meta: 'mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-white/55',

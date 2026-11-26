@@ -423,6 +423,9 @@ export interface PortfolioRow {
   venueName: string | null
   description: string | null
   published: boolean
+  /** Storage object path; the URL is signed when the page renders. */
+  coverPath: string | null
+  sortOrder: number
 }
 
 export interface StaffOption {

@@ -235,7 +235,9 @@ export default async function SubmissionsPage({
 
                 {canEdit ? (
                   <div className="flex flex-wrap items-center gap-2">
-                    {(['reviewed', 'quoted', 'closed'] as const).map((status) => (
+                    {/* No `quoted` button: that badge comes from the quote link, so a
+                        manual form would let the label disagree with the record. */}
+                    {(['reviewed', 'closed'] as const).map((status) => (
                       <form key={status} action={setSubmissionStatus}>
                         <input type="hidden" name="id" value={submission.id} />
                         <input type="hidden" name="status" value={status} />

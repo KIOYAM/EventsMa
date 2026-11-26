@@ -135,6 +135,25 @@ export const businesses = pgTable(
           logoPath?: string
           subtitle?: string
         }
+        /** Search and sharing overrides, frozen into a published version. */
+        seo?: {
+          title?: string
+          description?: string
+          noindex?: boolean
+        }
+        /** Fine storefront design tokens; resolved by `lib/domain/storefront-design.ts`. */
+        design?: {
+          accent?: string
+          surface?: string
+          corners?: string
+          spacing?: string
+          heroHeight?: string
+          ctaLabel?: string
+          announcement?: string
+          whatsapp?: string
+          instagram?: string
+          email?: string
+        }
         /** Free-form "about this business" paragraph on the public page. */
         about?: string
         payment?: {
@@ -317,6 +336,13 @@ export const enquiries = pgTable(
     message: text('message'),
     status: enquiryStatus('status').notNull().default('new'),
     source: text('source'),
+    /** Storefront section the visitor acted in; null for other channels. */
+    landingSection: text('landing_section'),
+    /** Host of the referring page, never the full URL. */
+    referrerHost: text('referrer_host'),
+    utmSource: text('utm_source'),
+    utmMedium: text('utm_medium'),
+    utmCampaign: text('utm_campaign'),
     nextFollowUpAt: timestamp('next_follow_up_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -842,6 +868,38 @@ export const storefrontSections = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex('storefront_sections_org_key_idx').on(t.orgId, t.key)],
+)
+
+/**
+ * A daily counter for the public storefront.
+ *
+ * Not an event log: one row per (org, day, bucket) with a running count, so a
+ * popular page costs one upsert a view and the owner's seven-day report is a
+ * range scan. `bucket` is the sanitised path + referring host + UTM set; no IP,
+ * cookie or user agent is stored, and nothing here joins back to a visitor.
+ */
+export const storefrontViews = pgTable(
+  'storefront_views',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organisations.id, { onDelete: 'cascade' }),
+    day: date('day').notNull(),
+    bucket: text('bucket').notNull(),
+    path: text('path').notNull(),
+    referrerHost: text('referrer_host').notNull().default(''),
+    utmSource: text('utm_source').notNull().default(''),
+    utmMedium: text('utm_medium').notNull().default(''),
+    utmCampaign: text('utm_campaign').notNull().default(''),
+    views: integer('views').notNull().default(1),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('storefront_views_day_bucket_key').on(t.orgId, t.day, t.bucket),
+    index('storefront_views_org_day_idx').on(t.orgId, t.day),
+  ],
 )
 
 /**

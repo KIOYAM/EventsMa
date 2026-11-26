@@ -69,6 +69,7 @@ export function buildServiceNavigation(enabled: readonly EnabledService[]): read
     { key: 'services', path: '/services', label: 'Services', icon: 'Layers', group: 'business' },
     { key: 'portfolio', path: '/portfolio', label: 'Portfolio', icon: 'Images', group: 'business' },
     { key: 'storefront', path: '/storefront', label: 'Storefront', icon: 'Store', group: 'business' },
+    { key: 'audit', path: '/audit', label: 'Activity', icon: 'History', group: 'business' },
     { key: 'settings', path: '/settings', label: 'Settings', icon: 'Settings', group: 'business' },
   )
 

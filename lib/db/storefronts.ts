@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, lte, sql } from 'drizzle-orm'
 import { getDb, getSystemDb, isDatabaseConfigured, type EventsMaDatabase } from './client'
 import {
   businesses,
@@ -9,6 +9,7 @@ import {
   storefronts,
 } from './schema'
 import { orderSections } from '@/lib/domain/storefront'
+import { seoFromSettings } from '@/lib/domain/storefront-seo'
 import {
   buildStorefrontSnapshot,
   parseStorefrontSnapshot,
@@ -33,6 +34,9 @@ import {
  * session, and the tenant is resolved from the URL slug on the server.
  */
 type Db = EventsMaDatabase
+
+/** Versions kept per storefront; older ones are pruned when a new one publishes. */
+const VERSION_RETENTION = 20
 
 export interface PublishState {
   status: 'draft' | 'published' | 'suspended'
@@ -131,6 +135,8 @@ export async function readDraftSnapshot(
     logoPath: brand.logoPath ?? null,
     sections: orderSections(layout),
     services,
+    seo: seoFromSettings(row.settings),
+    design: row.settings?.design,
   })
 }
 
@@ -251,6 +257,19 @@ export async function publishStorefront(
     .set({ status: 'published', publishedVersionId: inserted.id, publishedAt: now, updatedAt: now })
     .where(eq(storefronts.orgId, orgId))
 
+  // Retention: keep the newest 20 version numbers. Versions are monotonic and the
+  // live one is always the newest, so `<= version - 20` is stale by definition and
+  // can never name the version the pointer serves. One statement, no read of
+  // history the UI never shows (it lists 10).
+  await client
+    .delete(storefrontVersions)
+    .where(
+      and(
+        eq(storefrontVersions.storefrontId, storefront.id),
+        lte(storefrontVersions.version, version - VERSION_RETENTION),
+      ),
+    )
+
   await client
     .update(businesses)
     .set({ published: true, updatedAt: now })
@@ -305,12 +324,16 @@ export async function restoreStorefrontVersion(
       // without disturbing the keys this feature does not own.
       settings: sql`jsonb_set(
         jsonb_set(
-          coalesce(${businesses.settings}, '{}'::jsonb),
-          '{brand}',
-          ${JSON.stringify(brand)}::jsonb
+          jsonb_set(
+            coalesce(${businesses.settings}, '{}'::jsonb),
+            '{brand}',
+            ${JSON.stringify(brand)}::jsonb
+          ),
+          '{about}',
+          ${JSON.stringify(snapshot.brand.about)}::jsonb
         ),
-        '{about}',
-        ${JSON.stringify(snapshot.brand.about)}::jsonb
+        '{seo}',
+        ${JSON.stringify(snapshot.seo)}::jsonb
       )`,
       updatedAt: now,
     })

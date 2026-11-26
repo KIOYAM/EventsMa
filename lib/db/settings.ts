@@ -88,10 +88,13 @@ export async function getPortfolio(orgId: string, demo: boolean): Promise<Portfo
       venueName: portfolioItems.venueName,
       description: portfolioItems.description,
       published: portfolioItems.published,
+      coverPath: portfolioItems.coverPath,
+      sortOrder: portfolioItems.sortOrder,
     })
     .from(portfolioItems)
     .where(eq(portfolioItems.orgId, orgId))
-    .orderBy(desc(portfolioItems.eventDate), asc(portfolioItems.sortOrder))
+    // Manual order first: the owner's chosen sequence, not the calendar's.
+    .orderBy(asc(portfolioItems.sortOrder), desc(portfolioItems.eventDate))
     .limit(60)
 }
 

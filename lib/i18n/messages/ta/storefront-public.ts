@@ -3,6 +3,16 @@ import type { storefrontPublic as english } from '../en/storefront-public'
 
 /** SEED — unreviewed. Mirrors `en/storefront-public.ts`; no page reads it yet. */
 export const storefrontPublic: DeepPartial<typeof english> = {
+  preview: {
+    label: 'முன்னோட்டம்',
+    note: 'இந்த வரைவைத் திருத்துகிறீர்கள். வெளியிடும் வரை பார்வையாளர்கள் வெளியிட்ட பதிப்பையே காண்பர்.',
+    sharedLabel: 'வாடிக்கையாளர் முன்னோட்டம்',
+    sharedNote: 'மதிப்பாய்வுக்காகப் பகிரப்பட்ட வரைவு. இது வெளியிடப்படவில்லை; விசாரணைகள் நிறுத்தப்பட்டுள்ளன, இந்த இணைப்பு காலாவதியாகும்.',
+    back: 'திருத்திக்குத் திரும்பு',
+    published: 'வெளியிட்ட பக்கம்',
+    formOff:
+      'முன்னோட்டத்தில் விசாரணைப் படிவம் முடக்கப்பட்டுள்ளது. வாடிக்கையாளர்கள் அனுப்பும் விசாரணைகள் உங்கள் பணியிடத்திற்கு வரும்.',
+  },
   hero: {
     call: '{phone} அழைக்கவும்',
     quote: 'விலை கேட்க',
@@ -98,5 +108,9 @@ export const storefrontPublic: DeepPartial<typeof english> = {
   },
   footer: {
     poweredBy: 'EventsMa மூலம் இயக்கப்படுகிறது',
+  },
+  channels: {
+    whatsapp: 'WhatsApp',
+    email: 'மின்னஞ்சல்',
   },
 }

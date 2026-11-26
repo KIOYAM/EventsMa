@@ -1,3 +1,5 @@
+import { sanitiseSeo, type StorefrontSeo } from './storefront-seo'
+import { resolveDesign, type StorefrontDesign } from './storefront-design'
 import {
   DEFAULT_BRAND_COLOUR,
   SECTION_KEYS,
@@ -28,14 +30,18 @@ import {
  */
 /**
  * v2 added per-section content (FAQ answers, team names); v3 froze which services
- * the owner chose to show; v4 added client testimonials to that section content.
+ * the owner chose to show; v4 added client testimonials to that section content;
+ * v5 froze the owner's SEO overrides so a draft title cannot reach a crawler.
+ * v6 froze the per-tenant design tokens (accent, surface, corners, spacing, hero
+ * height, CTA wording, announcement and contact channels).
  * Older versions are still accepted: their sections carry empty config (a v3
- * snapshot simply has no testimonials) and their `services` is null, which means
- * "whatever the workspace has enabled" — the behaviour those pages were published
- * with.
+ * snapshot simply has no testimonials), their `services` is null, which means
+ * "whatever the workspace has enabled", their `seo` is empty, which keeps the
+ * derived defaults those pages were published with, and their `design` resolves
+ * to the shipped look.
  */
-export const STOREFRONT_SNAPSHOT_SCHEMA_VERSION = 4
-const READABLE_SCHEMA_VERSIONS = [1, 2, 3, 4]
+export const STOREFRONT_SNAPSHOT_SCHEMA_VERSION = 6
+const READABLE_SCHEMA_VERSIONS = [1, 2, 3, 4, 5, 6]
 
 /** One activated service and the owner's decision to show it publicly. */
 export interface SnapshotServiceChoice {
@@ -70,6 +76,13 @@ export interface StorefrontSnapshot {
   }
   sections: StorefrontSnapshotSection[]
   /**
+   * The owner's search overrides, frozen with this version. Empty for v1–v4
+   * snapshots, which keep the derived title and description they shipped with.
+   */
+  seo: StorefrontSeo
+  /** The owner's fine design choices; defaults for v1–v5 snapshots. */
+  design: StorefrontDesign
+  /**
    * The services this version shows. `null` for v1/v2 snapshots, where the answer
    * was "all enabled services" and must stay that way for a page already live.
    */
@@ -92,6 +105,10 @@ export interface SnapshotInput {
   sections: readonly StorefrontSection[]
   /** Activated services with the owner's storefront visibility choice. */
   services: readonly SnapshotServiceChoice[]
+  /** Optional so a caller that does not manage SEO still publishes correctly. */
+  seo?: StorefrontSeo
+  /** Optional so a caller that does not manage design still publishes correctly. */
+  design?: unknown
 }
 
 function trimmed(value: unknown, max: number): string | null {
@@ -136,6 +153,8 @@ export function buildStorefrontSnapshot(
       config: sanitiseSectionConfig(section.config),
     })),
     services: sanitiseServices(input.services),
+    seo: sanitiseSeo(input.seo),
+    design: resolveDesign(input.design),
     publishedAt,
   }
 }
@@ -224,6 +243,8 @@ export function parseStorefrontSnapshot(raw: unknown): StorefrontSnapshot | null
       logoPath: trimmed(brand.logoPath, 400),
     },
     sections,
+    seo: sanitiseSeo(value.seo),
+    design: resolveDesign(value.design),
     publishedAt: typeof value.publishedAt === 'string' ? value.publishedAt : new Date(0).toISOString(),
   }
 }
@@ -239,5 +260,7 @@ export function snapshotFingerprint(snapshot: StorefrontSnapshot): string {
     brand: snapshot.brand,
     sections: snapshot.sections,
     services: snapshot.services,
+    seo: snapshot.seo,
+    design: snapshot.design,
   })
 }

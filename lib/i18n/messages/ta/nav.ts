@@ -21,6 +21,7 @@ export const nav: DeepPartial<typeof enNav> = {
   services: 'சேவைகள்',
   portfolio: 'படைப்புகள்',
   storefront: 'கடை',
+  audit: 'செயல்பாடு',
   settings: 'அமைப்புகள்',
 
   recipes: 'சமையல் குறிப்புகள் & மூலப்பொருட்கள்',

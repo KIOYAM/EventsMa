@@ -11,7 +11,6 @@ import {
   servicePackages,
   storefrontSections,
 } from './schema'
-import { signedPortfolioUrls } from '@/lib/storage/portfolio-images'
 import { isDemoEnvironment } from '@/lib/environment'
 import { demoBusiness, demoItems, demoServices } from '@/lib/demo/data'
 import { verticalDescriptor } from '@/lib/domain/verticals'
@@ -27,8 +26,10 @@ import {
   type StorefrontFontKey,
   type StorefrontThemeKey,
 } from '@/lib/domain/storefront'
-import { signedStorefrontImage } from '@/lib/storage/storefront-image'
-import { getPublishedSnapshot } from './storefronts'
+import { storefrontImageUrl } from '@/lib/storage/image-url'
+import { emptySeo, type StorefrontSeo } from '@/lib/domain/storefront-seo'
+import { resolveDesign, type StorefrontDesign } from '@/lib/domain/storefront-design'
+import { getPublishedSnapshot, readDraftSnapshot } from './storefronts'
 
 /**
  * How much of a catalogue the public page shows. The storefront sells the
@@ -103,6 +104,10 @@ export interface PublicProfile {
   /** Signed logo URL; the initials wordmark stands in when absent. */
   logoUrl: string | null
   services: PublicService[]
+  /** Owner-authored search overrides; empty means "use the derived defaults". */
+  seo: StorefrontSeo
+  /** Fine design choices (accent, surface, rhythm, CTA, channels). */
+  design: StorefrontDesign
   /** Active packages from the tenant's own catalogue, never an example price. */
   packages: PublicPackage[]
   /**
@@ -112,9 +117,10 @@ export interface PublicProfile {
    */
   sections: PublicSection[]
   /**
-   * Published work, newest first by the owner's own order. `photoUrl` is a signed,
-   * expiring URL — the bucket is private, so a hidden entry cannot be reached by
-   * keeping an old link.
+   * Published work, newest first by the owner's own order. `photoUrl` is a signed
+   * proxy URL with a seven-day window: the bucket stays private, the URL stays
+   * stable long enough for the image optimizer to cache it, and a hidden entry's
+   * last emitted link stops working when that window closes.
    */
   portfolio: {
     id: string
@@ -153,6 +159,8 @@ export function demoPublicProfile(): PublicProfile {
     brandSubtitle: null,
     about: null,
     logoUrl: null,
+    seo: emptySeo(),
+    design: resolveDesign(null),
     services: demoServices
       .filter((service) => service.enabled)
       .map((service) =>
@@ -324,8 +332,35 @@ export async function getPublicCatalogueItem(
   }
 }
 
-export const getPublicProfile = cache(async (slug: string): Promise<PublicProfile | null> => {
-  if (isDemoEnvironment()) return demoPublicProfile()
+export const getPublicProfile = cache(async (slug: string): Promise<PublicProfile | null> =>
+  loadPublicProfile(slug, null),
+)
+
+/**
+ * The owner's draft, in the same shape the public page renders.
+ *
+ * Owner-only: the caller must prove the workspace owns this slug before using it
+ * (the preview route does). The published pointer is deliberately ignored, so the
+ * owner sees the version they are about to publish — including a storefront that
+ * has never been published and therefore has no public page at all.
+ */
+export async function getDraftPublicProfile(
+  slug: string,
+  orgId: string,
+): Promise<PublicProfile | null> {
+  if (isDemoEnvironment() || !isDatabaseConfigured()) return null
+  return loadPublicProfile(slug, orgId)
+}
+
+/**
+ * One loader for both readers. `previewOrgId` is present only for an authenticated
+ * owner preview; every other caller gets the published-snapshot rules unchanged.
+ */
+async function loadPublicProfile(
+  slug: string,
+  previewOrgId: string | null,
+): Promise<PublicProfile | null> {
+  if (isDemoEnvironment()) return previewOrgId ? null : demoPublicProfile()
   if (!isDatabaseConfigured()) return null
 
   const db = getSystemDb()
@@ -342,14 +377,22 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
     })
     .from(organisations)
     .innerJoin(businesses, eq(businesses.orgId, organisations.id))
-    .where(and(eq(organisations.slug, slug), eq(businesses.published, true)))
+    .where(
+      previewOrgId
+        ? eq(organisations.slug, slug)
+        : and(eq(organisations.slug, slug), eq(businesses.published, true)),
+    )
     .limit(1)
 
   if (!row) return null
+  if (previewOrgId && row.orgId !== previewOrgId) return null
 
   // Read first: without a published version there is nothing a visitor may see,
-  // and every query below can be skipped rather than used as a fallback.
-  const published = await getPublishedSnapshot(row.orgId)
+  // and every query below can be skipped rather than used as a fallback. A preview
+  // reads the draft instead, which always exists for a workspace with a business row.
+  const published = previewOrgId
+    ? await readDraftSnapshot(row.orgId, getSystemDb())
+    : await getPublishedSnapshot(row.orgId)
   if (published === null) return null
 
   // Only the services this business adopted. An item belonging to a vertical the
@@ -466,20 +509,17 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
     if (packageRows.length >= PACKAGE_PREVIEW_TOTAL) break
   }
 
-  const [signed, layout] = await Promise.all([
-    signedPortfolioUrls(work.map((item) => item.coverPath)),
-    db
-      .select({
-        key: storefrontSections.key,
-        position: storefrontSections.position,
-        visible: storefrontSections.visible,
-        heading: storefrontSections.heading,
-        imagePath: storefrontSections.imagePath,
-      })
-      .from(storefrontSections)
-      .where(eq(storefrontSections.orgId, row.orgId))
-      .orderBy(storefrontSections.position),
-  ])
+  const layout = await db
+    .select({
+      key: storefrontSections.key,
+      position: storefrontSections.position,
+      visible: storefrontSections.visible,
+      heading: storefrontSections.heading,
+      imagePath: storefrontSections.imagePath,
+    })
+    .from(storefrontSections)
+    .where(eq(storefrontSections.orgId, row.orgId))
+    .orderBy(storefrontSections.position)
 
   // Once a tenant has published, the snapshot is the only source of identity,
   // brand and layout. Draft rows are still read above (they are cheap and shared
@@ -503,10 +543,10 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
 
   const ordered = published ? published.sections.filter((section) => section.visible) : visibleSections(layout)
   const hero = ordered.find((section) => section.key === 'hero')
-  const [heroImageUrl, logoUrl] = await Promise.all([
-    signedStorefrontImage(hero?.imagePath),
-    signedStorefrontImage(brand.logoPath),
-  ])
+  // Pure URL construction: no storage round trip per render, and the same path
+  // produces the same URL inside its seven-day bucket.
+  const heroImageUrl = storefrontImageUrl(hero?.imagePath)
+  const logoUrl = storefrontImageUrl(brand.logoPath)
 
   return {
     orgId: row.orgId,
@@ -521,6 +561,8 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
     brandSubtitle: brand.subtitle,
     about: brand.about,
     logoUrl,
+    seo: published?.seo ?? emptySeo(),
+    design: resolveDesign(published?.design ?? row.settings?.design),
     services: verticalKeys.map((key) =>
       preview(verticalDescriptor(key), byVertical.get(key) ?? []),
     ),
@@ -545,7 +587,7 @@ export const getPublicProfile = cache(async (slug: string): Promise<PublicProfil
       venueName: item.venueName,
       eventDate: item.eventDate,
       description: item.description,
-      photoUrl: item.coverPath ? (signed.get(item.coverPath) ?? null) : null,
+      photoUrl: storefrontImageUrl(item.coverPath),
     })),
   }
-})
+}

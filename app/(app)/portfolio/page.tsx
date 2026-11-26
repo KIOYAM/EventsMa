@@ -1,14 +1,22 @@
+import { ArrowDown, ArrowUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, Input, Textarea } from '@/components/ui/input'
 import { EmptyState, PageHeader } from '@/components/ui/page-header'
+import { PhotoUpload } from '@/components/portfolio/photo-upload'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getPortfolio } from '@/lib/db/settings'
+import { createTranslator } from '@/lib/i18n'
+import { getLocale, translatorFor } from '@/lib/i18n/server'
+import { signedPortfolioUrls } from '@/lib/storage/portfolio-images'
 import { shortDate } from '@/lib/utils'
-import { addPortfolioItem, setPortfolioPublished } from './actions'
+import { addPortfolioItem, movePortfolioItem, removePortfolioPhoto, setPortfolioPublished } from './actions'
 
-export const metadata = { title: 'Portfolio' }
+export async function generateMetadata() {
+  const locale = await getLocale()
+  return { title: translatorFor(locale)('portfolio.title') }
+}
 
 const ERROR_COPY: Record<string, string> = {
   permission: 'Only an owner or manager can change the portfolio.',
@@ -23,10 +31,17 @@ export default async function PortfolioPage({
   searchParams: Promise<{ error?: string; saved?: string }>
 }) {
   const ctx = await requireWorkspace()
+  const locale = await getLocale()
+  const t = createTranslator(locale)
   const params = await searchParams
   const items = await withWorkspace(ctx, () => getPortfolio(ctx.orgId, ctx.demo))
   const canEdit = canManageCommercial(ctx.role) && !ctx.demo
   const publishedCount = items.filter((item) => item.published).length
+
+  // Signed, expiring URLs: the bucket is private, so the page never leaks a
+  // permanent public path to a client's event.
+  const signed = await signedPortfolioUrls(items.map((item) => item.coverPath))
+  const withPhoto = items.filter((item) => item.coverPath && signed.has(item.coverPath)).length
 
   return (
     <div className="space-y-6">
@@ -52,7 +67,7 @@ export default async function PortfolioPage({
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-ink">Entries</h2>
             <p className="text-xs text-ink-muted">
-              {publishedCount} of {items.length} published
+              {publishedCount} of {items.length} published · {withPhoto} with a photo
             </p>
           </div>
 
@@ -63,38 +78,106 @@ export default async function PortfolioPage({
             />
           ) : (
             <div className="space-y-3">
-              {items.map((item) => (
-                <article key={item.id} className="card-surface p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-ink">{item.title}</p>
-                      <p className="mt-0.5 text-xs text-ink-muted">
-                        {item.eventDate ? shortDate(item.eventDate) : 'Undated'}
-                        {item.venueName ? ` · ${item.venueName}` : ''}
-                      </p>
+              {items.map((item, index) => {
+                const photo = item.coverPath ? signed.get(item.coverPath) : undefined
+                return (
+                  <article key={item.id} className="card-surface p-4">
+                    <div className="flex flex-wrap gap-4">
+                      {photo ? (
+                        <img
+                          src={photo}
+                          alt=""
+                          loading="lazy"
+                          className="h-20 w-28 shrink-0 rounded-control object-cover"
+                        />
+                      ) : (
+                        <div className="grid h-20 w-28 shrink-0 place-items-center rounded-control border border-dashed border-hairline px-3 text-center text-[11px] text-ink-muted">
+                          No photo
+                        </div>
+                      )}
+
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-ink">{item.title}</p>
+                            <p className="mt-0.5 text-xs text-ink-muted">
+                              {item.eventDate ? shortDate(item.eventDate) : 'Undated'}
+                              {item.venueName ? ` · ${item.venueName}` : ''}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge tone={item.published ? 'success' : 'outline'}>
+                              {item.published ? 'Public' : 'Hidden'}
+                            </Badge>
+                            <div className="flex items-center gap-1">
+                              <form action={movePortfolioItem}>
+                                <input type="hidden" name="id" value={item.id} />
+                                <input type="hidden" name="direction" value="up" />
+                                <button
+                                  type="submit"
+                                  disabled={!canEdit || index === 0}
+                                  aria-label={`${t('portfolio.order.up')} — ${item.title}`}
+                                  className="grid h-9 w-9 place-items-center rounded-control border border-hairline text-ink-muted hover:bg-mint-subtle disabled:opacity-40"
+                                >
+                                  <ArrowUp className="h-4 w-4" aria-hidden />
+                                </button>
+                              </form>
+                              <form action={movePortfolioItem}>
+                                <input type="hidden" name="id" value={item.id} />
+                                <input type="hidden" name="direction" value="down" />
+                                <button
+                                  type="submit"
+                                  disabled={!canEdit || index === items.length - 1}
+                                  aria-label={`${t('portfolio.order.down')} — ${item.title}`}
+                                  className="grid h-9 w-9 place-items-center rounded-control border border-hairline text-ink-muted hover:bg-mint-subtle disabled:opacity-40"
+                                >
+                                  <ArrowDown className="h-4 w-4" aria-hidden />
+                                </button>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+
+                        {item.description ? (
+                          <p className="text-sm leading-relaxed text-ink-muted">{item.description}</p>
+                        ) : null}
+
+                        <div className="flex flex-wrap items-center gap-3">
+                          <PhotoUpload
+                            itemId={item.id}
+                            hasPhoto={Boolean(item.coverPath)}
+                            disabled={!canEdit}
+                            locale={locale}
+                          />
+                          {item.coverPath ? (
+                            <form action={removePortfolioPhoto}>
+                              <input type="hidden" name="id" value={item.id} />
+                              <button
+                                type="submit"
+                                disabled={!canEdit}
+                                className="text-xs text-terracotta underline underline-offset-2 disabled:opacity-50"
+                              >
+                                {t('portfolio.photo.remove')}
+                              </button>
+                            </form>
+                          ) : null}
+                          <form action={setPortfolioPublished}>
+                            <input type="hidden" name="id" value={item.id} />
+                            <input type="hidden" name="published" value={item.published ? '0' : '1'} />
+                            <button
+                              type="submit"
+                              disabled={!canEdit}
+                              className="text-xs text-forest underline-offset-2 hover:underline disabled:opacity-50"
+                            >
+                              {item.published ? 'Hide' : 'Publish'}
+                            </button>
+                          </form>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge tone={item.published ? 'success' : 'outline'}>
-                        {item.published ? 'Public' : 'Hidden'}
-                      </Badge>
-                      <form action={setPortfolioPublished}>
-                        <input type="hidden" name="id" value={item.id} />
-                        <input type="hidden" name="published" value={item.published ? '0' : '1'} />
-                        <button
-                          type="submit"
-                          disabled={!canEdit}
-                          className="text-xs text-forest underline-offset-2 hover:underline disabled:opacity-50"
-                        >
-                          {item.published ? 'Hide' : 'Publish'}
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                  {item.description ? (
-                    <p className="mt-2 text-sm leading-relaxed text-ink-muted">{item.description}</p>
-                  ) : null}
-                </article>
-              ))}
+                  </article>
+                )
+              })}
             </div>
           )}
         </div>
@@ -104,17 +187,35 @@ export default async function PortfolioPage({
             <CardTitle>Add an entry</CardTitle>
           </CardHeader>
           <CardContent>
+            <p className="mb-4 text-xs leading-relaxed text-ink-muted">
+              {t('portfolio.photo.hint')}
+            </p>
             <form action={addPortfolioItem} className="space-y-4">
               <Field label="Title" htmlFor="portfolioTitle">
-                <Input id="portfolioTitle" name="title" required maxLength={140} placeholder="Wedding at Malabar House" />
+                <Input
+                  id="portfolioTitle"
+                  name="title"
+                  required
+                  maxLength={140}
+                  placeholder="Wedding at Malabar House"
+                />
               </Field>
               <Field label="Date" htmlFor="portfolioDate">
                 <Input id="portfolioDate" name="eventDate" type="date" />
               </Field>
               <Field label="Venue" htmlFor="portfolioVenue">
-                <Input id="portfolioVenue" name="venueName" maxLength={140} placeholder="Malabar House, Kochi" />
+                <Input
+                  id="portfolioVenue"
+                  name="venueName"
+                  maxLength={140}
+                  placeholder="Malabar House, Kochi"
+                />
               </Field>
-              <Field label="What you did" htmlFor="portfolioDescription" hint="Guest count and format, not client names.">
+              <Field
+                label="What you did"
+                htmlFor="portfolioDescription"
+                hint="Guest count and format, not client names."
+              >
                 <Textarea
                   id="portfolioDescription"
                   name="description"

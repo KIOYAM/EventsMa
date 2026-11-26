@@ -41,6 +41,31 @@ Order is not taste. Each row's reason column explains why it cannot be shuffled 
 
 Sizes: S ≤ 1 day, M 2–4 days, L a week or more for one developer.
 
+### Status at 16 November 2026
+
+The table above is the 14 November snapshot and is kept as written. Since then, checked
+against the tree, not against a memory of it:
+
+- **G1 done** — `lib/db/public-token-isolation.integration.test.ts` proves each of the
+  four token paths cannot resolve another tenant's event, quote, page or invitation
+  (run with `TENANCY_LIVE_TEST=1`).
+- **G2 done** — `getSubmissionPrefill` feeds `quotes/new`; `/submissions` derives the
+  quoted badge from `submission.quoteNumber`.
+- **G3 done** — `lib/security/rate-limit.ts` plus `db/migrations/0010_rate_limits.sql`;
+  honeypot and per-IP/per-token limits on `/p/[slug]` and `/api/share/[slug]/submit`.
+- **G9 done** — portfolio upload with browser-side compression, quota, ordering,
+  publish gate and signed URLs.
+- **G4 done (19 Nov)** — the per-event operations tab plus `/audit`: an org-wide,
+  read-only list of `audit_events`, filterable by record type, cursor-paged, with each
+  row naming its actor and the `after` payload in readable form. Owners and managers
+  only, matching the table's own RLS policy. Formatter tests: `lib/domain/audit.test.ts`.
+- **G5, G6, G7, G8, G10–G14 remain open.** Their rows above are still accurate.
+
+Start the next slice at G5, not at G1.
+
+See [`2026-11-16-storefront-and-backlog-audit.md`](2026-11-16-storefront-and-backlog-audit.md)
+for the evidence behind each line and the storefront change that shipped with it.
+
 ## 3. Two rules for whoever picks this up
 
 1. **G1 first.** The authenticated path is proven, but the four token paths are the ones an outsider can call. Prove them before adding tables they would also have to defend.

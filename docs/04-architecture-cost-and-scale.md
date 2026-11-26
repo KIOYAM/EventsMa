@@ -25,6 +25,14 @@ The design is judged on three things: **tenant safety**, **field performance**, 
 | PDF | **`@react-pdf/renderer` in a Node route** | Pure JS, no browser; deterministic documents | Puppeteer/Playwright (too heavy for serverless free tier) |
 | Monitoring | **Sentry free + Vercel Analytics + Supabase logs** | Errors, Web Vitals, DB slow queries in one place | Datadog (cost) |
 
+**Error monitoring (free-tier note).** `@sentry/nextjs` is installed and stays inert
+until `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` are set. Sentry's Developer plan is free
+for one user with **5,000 errors/month** and email alerts; the trigger for Team
+($26/month) is exceeding that volume or a second person needing alert access. Source
+maps upload only when `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` are set.
+Every event passes a scrubber that masks emails, Indian mobile numbers and query
+strings before transport (`lib/observability/scrub.ts`).
+
 **DECISION — one runtime, not two.** Use Next.js route handlers for APIs and webhooks.
 Do not also write Supabase Edge Functions for business logic; two runtimes means two
 auth models, two deploy paths and two bug surfaces. Use Edge Functions only for

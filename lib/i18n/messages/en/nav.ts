@@ -18,6 +18,7 @@ export const nav = {
   services: 'Services',
   portfolio: 'Portfolio',
   storefront: 'Storefront',
+  audit: 'Activity',
   settings: 'Settings',
 
   // Destinations resolved from a vertical descriptor rather than the fixed list.

@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.1.6",
+    "@sentry/nextjs": "^11.16.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.1",
     "class-variance-authority": "^0.7.1",

@@ -8,6 +8,7 @@ import {
   Boxes,
   CalendarDays,
   FileText,
+  History,
   Send,
   Images,
   Inbox,
@@ -56,6 +57,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   BookOpen,
   LayoutGrid,
   Send,
+  History,
 }
 
 function iconFor(name: string): LucideIcon {
@@ -87,6 +89,7 @@ const LABEL_KEYS: Record<string, string> = {
   '/services': 'nav.services',
   '/portfolio': 'nav.portfolio',
   '/storefront': 'nav.storefront',
+  '/audit': 'nav.audit',
   '/settings': 'nav.settings',
 }
 

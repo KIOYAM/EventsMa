@@ -8,7 +8,7 @@ import { ReviseButton } from '@/components/quote/revise-button'
 import { requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getQuoteDocument } from '@/lib/db/queries'
-import { appUrl } from '@/lib/app-url'
+import { requestOrigin } from '@/lib/http/request-origin.server'
 import { createTranslator } from '@/lib/i18n'
 import { formatDateLocalised, formatPaiseLocalised } from '@/lib/i18n/format'
 import { getLocale, translatorFor } from '@/lib/i18n/server'
@@ -28,7 +28,10 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   if (!doc) notFound()
 
   const money = (paise: number) => formatPaiseLocalised(paise, locale)
-  const publicUrl = doc.publicToken ? `${appUrl()}/q/${doc.publicToken}` : null
+  // The owner copies this into WhatsApp: it must be the host they are on, not the
+  // deployment's configured one (a preview deployment or a non-default port).
+  const origin = await requestOrigin()
+  const publicUrl = doc.publicToken ? `${origin}/q/${doc.publicToken}` : null
   const shareText = encodeURIComponent(
     `${doc.businessName} - ${doc.title} - ${money(doc.totalPaise)} - ref ${doc.number}${
       publicUrl ? ` - ${publicUrl}` : ''

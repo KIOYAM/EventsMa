@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, asc, desc, eq, gte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, sql } from 'drizzle-orm'
 import { getDb, getSystemDb, isDatabaseConfigured, type EventsMaDatabase } from './client'
 import {
   businessServices,
@@ -595,6 +595,62 @@ export function serviceNavigation(enabled: readonly EnabledService[]) {
  */
 export type { ComposerPrefill } from '@/lib/domain/quote-prefill'
 
+/**
+ * The tax rate this workspace normally charges for each of `verticalKeys`.
+ *
+ * A customer's line outlives the catalogue row it was chosen from — `item_id` is
+ * `on delete set null` — so re-opening an old submission can find the join empty.
+ * A 0% line there would silently drop tax from a quote the customer already saw
+ * priced, so the workspace's own catalogue answers instead: the rate used by most
+ * of that service's active items. A vertical with nothing left in its catalogue
+ * falls back to the descriptor's default at the call site.
+ */
+async function standardTaxRates(
+  db: EventsMaDatabase,
+  orgId: string,
+  verticalKeys: readonly string[],
+): Promise<Map<string, number>> {
+  const rates = new Map<string, number>()
+  if (verticalKeys.length === 0) return rates
+
+  const rows = await db
+    .select({
+      verticalKey: serviceItems.verticalKey,
+      taxRateBp: serviceItems.taxRateBp,
+      uses: sql<number>`count(*)::int`,
+    })
+    .from(serviceItems)
+    .where(
+      and(
+        eq(serviceItems.orgId, orgId),
+        inArray(serviceItems.verticalKey, [...verticalKeys]),
+        eq(serviceItems.active, true),
+      ),
+    )
+    .groupBy(serviceItems.verticalKey, serviceItems.taxRateBp)
+
+  // Most-used rate wins; a tie goes to the higher one, because understating tax on
+  // a quote is the mistake that is harder to notice and harder to undo.
+  const best = new Map<string, { rate: number; uses: number }>()
+  for (const row of rows) {
+    const uses = Number(row.uses)
+    const current = best.get(row.verticalKey)
+    if (
+      !current ||
+      uses > current.uses ||
+      (uses === current.uses && row.taxRateBp > current.rate)
+    ) {
+      best.set(row.verticalKey, { rate: row.taxRateBp, uses })
+    }
+  }
+  for (const [key, value] of best) rates.set(key, value.rate)
+  return rates
+}
+
+/**
+ * Load a submission into the composer, keeping the workspace's standard tax rate
+ * on any line whose catalogue item has since been deleted.
+ */
 export async function getSubmissionPrefill(
   orgId: string,
   demo: boolean,
@@ -675,6 +731,13 @@ export async function getSubmissionPrefill(
   const sessionGuests = sessionRows.reduce((max, session) => Math.max(max, session.guests), 0)
   const guests = row.guests ?? sessionGuests
 
+  // Only lines whose catalogue row has gone since need a stand-in rate.
+  const orphanKeys = [
+    ...new Set(lineRows.filter((line) => line.taxRateBp === null).map((line) => line.serviceKey)),
+  ]
+  const standardRates =
+    orphanKeys.length > 0 ? await standardTaxRates(db, orgId, orphanKeys) : new Map<string, number>()
+
   return {
     submissionId: row.id,
     eventId: row.eventId,
@@ -689,7 +752,10 @@ export async function getSubmissionPrefill(
       unitClass: (line.unitClass ?? 'FLAT') as UnitClass,
       unitRatePaise: line.unitRatePaise,
       quantity: line.quantity,
-      taxRateBp: line.taxRateBp ?? 0,
+      taxRateBp:
+        line.taxRateBp ??
+        standardRates.get(line.serviceKey) ??
+        verticalDescriptor(line.serviceKey).defaultTaxRateBp,
       costPerUnitPaise: line.costPerUnitPaise ?? null,
     })),
   }

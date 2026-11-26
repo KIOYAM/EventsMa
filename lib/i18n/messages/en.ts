@@ -12,6 +12,7 @@
  *   2. `lib/i18n/messages/ta/<module>.ts` with the same shape
  *   3. register both here and in `ta.ts`
  */
+import { audit } from './en/audit'
 import { catering } from './en/catering'
 import { clients } from './en/clients'
 import { common } from './en/common'
@@ -35,6 +36,7 @@ import { rule } from './en/rule'
 import { share } from './en/share'
 
 export const en = {
+  audit,
   catering,
   clients,
   common,

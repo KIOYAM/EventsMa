@@ -3,20 +3,22 @@
 import { useState } from 'react'
 import { Check, Copy, MessageCircle } from 'lucide-react'
 
+export interface ShareLabels {
+  address: string
+  copy: string
+  copied: string
+  copyFailedHint: string
+  copiedHint: string
+  hint: string
+  whatsapp: string
+  open: string
+}
+
 interface Props {
   url: string
   /** Pre-formatted `Hi, here is …: <url>` text for the WhatsApp link. */
   message: string
-  labels: {
-    address: string
-    copy: string
-    copied: string
-    copyFailedHint: string
-    copiedHint: string
-    hint: string
-    whatsapp: string
-    open: string
-  }
+  labels: ShareLabels
 }
 
 /**

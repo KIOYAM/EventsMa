@@ -1,5 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
+
 export default function GlobalError({
   error,
   reset,
@@ -7,6 +10,12 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    // No-op when no DSN is configured; otherwise this is the browser half of the
+    // same error that `onRequestError` reports on the server.
+    Sentry.captureException(error)
+  }, [error])
+
   return (
     <html lang="en">
       <body className="min-h-dvh bg-[#f7f2e7] p-6 text-[#1d2a24]">

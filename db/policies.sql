@@ -449,6 +449,14 @@ create policy share_links_write on public.share_links
   for all using (public.has_org_role(org_id, array['owner','manager']))
   with check (public.has_org_role(org_id, array['owner','manager']));
 
+-- Storefront analytics are written only by the public route's owner connection.
+-- Staff read their own organisation's counters; there is no write policy, so no
+-- workspace role can rewrite a number it is being judged by.
+alter table public.storefront_views enable row level security;
+drop policy if exists storefront_views_select on public.storefront_views;
+create policy storefront_views_select on public.storefront_views
+  for select using (public.is_org_member(org_id));
+
 alter table public.share_submissions enable row level security;
 drop policy if exists share_submissions_select on public.share_submissions;
 create policy share_submissions_select on public.share_submissions

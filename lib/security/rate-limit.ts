@@ -24,7 +24,11 @@ export interface RateLimitVerdict {
 }
 
 /** Bucket names are constants at the call sites; keep them readable in the table. */
-export type RateLimitBucket = 'share-submit-ip' | 'share-submit-token' | 'enquiry-ip'
+export type RateLimitBucket =
+  | 'share-submit-ip'
+  | 'share-submit-token'
+  | 'enquiry-ip'
+  | 'storefront-view-ip'
 
 export async function consumeRateLimit({
   bucket,

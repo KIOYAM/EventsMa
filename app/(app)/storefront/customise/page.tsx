@@ -5,19 +5,25 @@ import { PageHeader } from '@/components/ui/page-header'
 import { PublishPanel } from '@/components/storefront/publish-panel'
 import { SectionBuilder } from '@/components/storefront/section-builder'
 import { ShareLinks } from '@/components/storefront/share-links'
+import { PreviewLinkCard } from '@/components/storefront/preview-link'
+import { SeoForm } from '@/components/storefront/seo-form'
+import { DesignForm } from '@/components/storefront/design-form'
 import { ThemePicker } from '@/components/storefront/theme-picker'
 import { canManageCommercial, requireWorkspace } from '@/lib/auth/session'
 import { withWorkspace } from '@/lib/db/workspace'
 import { getSettings } from '@/lib/db/settings'
 import {
   getStorefrontBrand,
+  getStorefrontDesign,
   getStorefrontSections,
+  getStorefrontSeo,
   getStorefrontServiceChoices,
 } from '@/lib/db/storefront'
 import { verticalDescriptor } from '@/lib/domain/verticals'
 import { setServiceVisible } from '../section-actions'
 import { getPublishState, listStorefrontVersions } from '@/lib/db/storefronts'
-import { appUrl } from '@/lib/app-url'
+import { requestOrigin } from '@/lib/http/request-origin.server'
+import { createPreviewToken } from '@/lib/security/storefront-preview-token'
 import { BRAND_COLOURS, BRAND_FONTS, BUILDER_NOTICE, fontClass } from '@/lib/domain/storefront'
 import { getLocale, translatorFor } from '@/lib/i18n/server'
 import { isPortfolioStorageConfigured } from '@/lib/storage/portfolio-images'
@@ -57,14 +63,17 @@ export default async function CustomiseStorefrontPage({
   const ctx = await requireWorkspace()
   const locale = await getLocale()
   const t = translatorFor(locale)
-  const [settings, brand, sections, publishState, versions, serviceChoices] = await Promise.all([
-    withWorkspace(ctx, () => getSettings(ctx.orgId, ctx.demo)),
-    withWorkspace(ctx, () => getStorefrontBrand(ctx.orgId, ctx.demo)),
-    withWorkspace(ctx, () => getStorefrontSections(ctx.orgId, ctx.demo)),
-    withWorkspace(ctx, () => getPublishState(ctx.orgId, ctx.demo)),
-    withWorkspace(ctx, () => listStorefrontVersions(ctx.orgId)),
-    withWorkspace(ctx, () => getStorefrontServiceChoices(ctx.orgId, ctx.demo)),
-  ])
+  const [settings, brand, design, sections, publishState, versions, serviceChoices, seo] =
+    await Promise.all([
+      withWorkspace(ctx, () => getSettings(ctx.orgId, ctx.demo)),
+      withWorkspace(ctx, () => getStorefrontBrand(ctx.orgId, ctx.demo)),
+      withWorkspace(ctx, () => getStorefrontDesign(ctx.orgId, ctx.demo)),
+      withWorkspace(ctx, () => getStorefrontSections(ctx.orgId, ctx.demo)),
+      withWorkspace(ctx, () => getPublishState(ctx.orgId, ctx.demo)),
+      withWorkspace(ctx, () => listStorefrontVersions(ctx.orgId)),
+      withWorkspace(ctx, () => getStorefrontServiceChoices(ctx.orgId, ctx.demo)),
+      withWorkspace(ctx, () => getStorefrontSeo(ctx.orgId, ctx.demo)),
+    ])
 
   const { saved, error } = await searchParams
   const notice = saved
@@ -83,8 +92,18 @@ export default async function CustomiseStorefrontPage({
   // 404s, and calling it "Live" here would hide that from its owner.
   const isLive = publishState.publishedVersion !== null
   const storageReady = isPortfolioStorageConfigured()
-  const publicUrl = `${appUrl()}/p/${settings.slug}`
-  const mark = initials(brand.name || t('storefront.preview.initials'))
+  // The link must open the page the owner is looking at, so it follows the address
+  // bar rather than the deploy's configured app URL (stale locally and on previews).
+  const origin = await requestOrigin()
+  const publicUrl = `${origin}/p/${settings.slug}`
+  // Draft links are signed, not stored. A demo tenant has no organisation row to
+  // preview, so it gets the explanatory text instead of a link that would 404.
+  const previewToken = ctx.demo
+    ? null
+    : createPreviewToken({ orgId: ctx.orgId, slug: settings.slug })
+  const previewUrl = previewToken ? `${publicUrl}/preview/${previewToken}` : null
+  const displayName = brand.name || t('storefront.preview.initials')
+  const mark = initials(displayName)
   // Signed here rather than in the data layer: the object is private, and the
   // preview needs the same short-lived URL the public page uses.
   const logoUrl = await signedStorefrontImage(brand.logoPath)
@@ -99,6 +118,12 @@ export default async function CustomiseStorefrontPage({
           <>
             <Link href="/storefront" className="btn btn-md btn-outline hover:bg-mint-subtle">
               {t('storefront.action.overview')}
+            </Link>
+            <Link
+              href={`/p/${settings.slug}/preview`}
+              className="btn btn-md btn-outline hover:bg-mint-subtle"
+            >
+              {t('storefront.action.preview')}
             </Link>
             <Link href={`/p/${settings.slug}`} target="_blank" className="btn btn-md btn-primary">
               {t('storefront.action.open')}
@@ -134,7 +159,7 @@ export default async function CustomiseStorefrontPage({
             )}
             <div className="min-w-0">
               <p className={`text-2xl leading-tight text-forest ${fontClass(brand.font)}`}>
-                {brand.name || t('storefront.preview.initials')}
+                {displayName}
               </p>
               <p className="mt-1 text-xs uppercase tracking-[0.14em] text-ink-muted">
                 {brand.subtitle ?? t('storefront.preview.noSubtitle')}
@@ -170,6 +195,71 @@ export default async function CustomiseStorefrontPage({
           version: t('storefront.publish.version'),
           restoreHint: t('storefront.publish.restoreHint'),
           missingVersion: t('storefront.publish.missingVersion'),
+        }}
+      />
+
+      <SeoForm
+        seo={seo}
+        defaults={{
+          title: brand.name,
+          description:
+            brand.tagline ?? `${brand.name}${brand.city ? ` in ${brand.city}` : ''}`,
+        }}
+        canEdit={canEdit}
+        labels={{
+          title: t('storefront.seo.title'),
+          body: t('storefront.seo.body'),
+          titleField: t('storefront.seo.titleField'),
+          titlePlaceholder: t('storefront.seo.titlePlaceholder'),
+          descriptionField: t('storefront.seo.descriptionField'),
+          descriptionPlaceholder: t('storefront.seo.descriptionPlaceholder'),
+          noindex: t('storefront.seo.noindex'),
+          noindexHint: t('storefront.seo.noindexHint'),
+          save: t('storefront.seo.save'),
+          hint: t('storefront.seo.hint'),
+        }}
+      />
+
+      <DesignForm
+        design={design}
+        canEdit={canEdit}
+        labels={{
+          title: t('storefront.design.title'),
+          body: t('storefront.design.body'),
+          look: t('storefront.design.look'),
+          accent: t('storefront.design.accent'),
+          accentHint: t('storefront.design.accentHint'),
+          themeAccent: t('storefront.design.themeAccent'),
+          surface: t('storefront.design.surface'),
+          surfaceTheme: t('storefront.design.surfaceTheme'),
+          surfaceCanvas: t('storefront.design.surfaceCanvas'),
+          surfacePaper: t('storefront.design.surfacePaper'),
+          corners: t('storefront.design.corners'),
+          cornersSharp: t('storefront.design.cornersSharp'),
+          cornersSoft: t('storefront.design.cornersSoft'),
+          cornersRound: t('storefront.design.cornersRound'),
+          spacing: t('storefront.design.spacing'),
+          spacingCompact: t('storefront.design.spacingCompact'),
+          spacingRegular: t('storefront.design.spacingRegular'),
+          spacingAiry: t('storefront.design.spacingAiry'),
+          heroHeight: t('storefront.design.heroHeight'),
+          heroShort: t('storefront.design.heroShort'),
+          heroMedium: t('storefront.design.heroMedium'),
+          heroTall: t('storefront.design.heroTall'),
+          cta: t('storefront.design.cta'),
+          ctaPlaceholder: t('storefront.design.ctaPlaceholder'),
+          announcement: t('storefront.design.announcement'),
+          announcementPlaceholder: t('storefront.design.announcementPlaceholder'),
+          channels: t('storefront.design.channels'),
+          channelsBody: t('storefront.design.channelsBody'),
+          whatsapp: t('storefront.design.whatsapp'),
+          whatsappPlaceholder: t('storefront.design.whatsappPlaceholder'),
+          instagram: t('storefront.design.instagram'),
+          instagramPlaceholder: t('storefront.design.instagramPlaceholder'),
+          email: t('storefront.design.email'),
+          emailPlaceholder: t('storefront.design.emailPlaceholder'),
+          save: t('storefront.design.save'),
+          hint: t('storefront.design.hint'),
         }}
       />
 
@@ -459,7 +549,7 @@ export default async function CustomiseStorefrontPage({
             <ShareLinks
               url={publicUrl}
               message={t('storefront.share.message', {
-                business: brand.name || t('storefront.preview.initials'),
+                business: displayName,
                 url: publicUrl,
               })}
               labels={{
@@ -485,6 +575,27 @@ export default async function CustomiseStorefrontPage({
           )}
         </CardContent>
       </Card>
+
+      <PreviewLinkCard
+        url={previewUrl}
+        message={t('storefront.previewLink.message', {
+          business: brand.name || t('storefront.preview.initials'),
+          url: previewUrl ?? '',
+        })}
+        labels={{
+          title: t('storefront.previewLink.title'),
+          body: t('storefront.previewLink.body'),
+          unavailable: t('storefront.previewLink.unavailable'),
+          address: t('storefront.previewLink.address'),
+          copy: t('storefront.previewLink.copy'),
+          copied: t('storefront.previewLink.copied'),
+          copiedHint: t('storefront.share.copiedHint'),
+          copyFailedHint: t('storefront.share.copyFailedHint'),
+          hint: t('storefront.previewLink.hint'),
+          whatsapp: t('storefront.previewLink.whatsapp'),
+          open: t('storefront.previewLink.open'),
+        }}
+      />
     </div>
   )
 }

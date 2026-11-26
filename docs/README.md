@@ -34,6 +34,12 @@ Supabase project, so migrations and RLS can execute before any of it is called w
 | — | [Design review](reviews/2026-10-24-elephant-self-review.md) | Adversarial review of these documents, the 14 findings and how each was resolved |
 
 Per-feature design documents (required before code) live in [`designs/`](designs/README.md).
+Platform architecture research — how Shopify, Wix, Webflow, BigCommerce, Salesforce and
+commercetools build and serve a storefront, and where our storefront stands — lives in
+[`architecture/`](architecture/README.md). Start with
+[the gap register](architecture/05-eventsma-gap-register.md) and
+[production readiness](architecture/06-production-readiness.md) if you are picking up
+storefront work.
 
 Original inputs kept untouched at the repository root:
 

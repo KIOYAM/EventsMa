@@ -2,6 +2,8 @@ import 'server-only'
 import { and, asc, eq } from 'drizzle-orm'
 import { getDb, isDatabaseConfigured } from './client'
 import { businesses, businessServices, storefrontSections } from './schema'
+import { emptySeo, seoFromSettings, type StorefrontSeo } from '@/lib/domain/storefront-seo'
+import { resolveDesign, type StorefrontDesign } from '@/lib/domain/storefront-design'
 import {
   DEFAULT_BRAND_COLOUR,
   SECTION_KEYS,
@@ -168,6 +170,70 @@ export async function getStorefrontSectionConfig(
     .limit(1)
 
   return sanitiseSectionConfig(row?.config)
+}
+
+/** The owner's fine design choices, resolved from the settings blob. */
+export async function getStorefrontDesign(
+  orgId: string,
+  demo: boolean,
+): Promise<StorefrontDesign> {
+  if (demo || !isDatabaseConfigured()) return resolveDesign(null)
+  const [row] = await getDb()
+    .select({ settings: businesses.settings })
+    .from(businesses)
+    .where(eq(businesses.orgId, orgId))
+    .limit(1)
+  return resolveDesign(row?.settings?.design)
+}
+
+/**
+ * One read-modify-write of the settings blob, so saving a design token cannot
+ * drop tax, payment details, SEO or brand fields written by another screen.
+ */
+export async function setStorefrontDesign(
+  orgId: string,
+  design: StorefrontDesign,
+): Promise<void> {
+  const db = getDb()
+  const [current] = await db
+    .select({ settings: businesses.settings })
+    .from(businesses)
+    .where(eq(businesses.orgId, orgId))
+    .limit(1)
+
+  const settings = current?.settings ?? {}
+  await db
+    .update(businesses)
+    .set({
+      settings: {
+        ...settings,
+        design: {
+          accent: design.accent ?? undefined,
+          surface: design.surface,
+          corners: design.corners,
+          spacing: design.spacing,
+          heroHeight: design.heroHeight,
+          ctaLabel: design.ctaLabel ?? undefined,
+          announcement: design.announcement ?? undefined,
+          whatsapp: design.whatsapp ?? undefined,
+          instagram: design.instagram ?? undefined,
+          email: design.email ?? undefined,
+        },
+      },
+      updatedAt: new Date(),
+    })
+    .where(eq(businesses.orgId, orgId))
+}
+
+/** The draft SEO overrides, or empty when the owner has not set any. */
+export async function getStorefrontSeo(orgId: string, demo: boolean): Promise<StorefrontSeo> {
+  if (demo || !isDatabaseConfigured()) return emptySeo()
+  const [row] = await getDb()
+    .select({ settings: businesses.settings })
+    .from(businesses)
+    .where(eq(businesses.orgId, orgId))
+    .limit(1)
+  return seoFromSettings(row?.settings)
 }
 
 /**

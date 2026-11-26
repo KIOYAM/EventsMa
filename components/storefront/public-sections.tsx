@@ -1,5 +1,13 @@
+import Image from 'next/image'
 import { pluralise } from '@/lib/domain/plural'
+import { heroImageAlt, logoImageAlt, portfolioImageAlt } from '@/lib/domain/storefront-image-alt'
 import { fontClass } from '@/lib/domain/storefront'
+import {
+  heroMinHeight,
+  instagramUrl,
+  spacingClass,
+  whatsappUrl,
+} from '@/lib/domain/storefront-design'
 import type { StorefrontLook } from '@/lib/domain/storefront-look'
 import type { PublicProfile, PublicSection } from '@/lib/db/public'
 import { storefrontPublic as copy } from '@/lib/i18n/messages/en/storefront-public'
@@ -101,6 +109,23 @@ export function StorefrontSection({
 }: SectionProps) {
   const top = index === 0
   const tel = profile.phone ? `tel:${profile.phone.replace(/[^\d+]/g, '')}` : null
+  // The owner's own wording for the one ask the page makes, with the shipped
+  // phrasing as the fallback so nothing here is an empty button.
+  const cta = profile.design.ctaLabel ?? copy.hero.quote
+  // `regular` keeps the theme's own responsive rhythm; compact and airy are
+  // deliberate overrides and arrive as important utilities.
+  const rhythm = spacingClass(profile.design)
+  const sectionClass = rhythm ? `${look.section} ${rhythm}` : look.section
+  const heroHeight = heroMinHeight(profile.design)
+  const channels = [
+    profile.design.whatsapp
+      ? { label: 'WhatsApp', href: whatsappUrl(profile.design.whatsapp) }
+      : null,
+    profile.design.instagram
+      ? { label: `@${profile.design.instagram}`, href: instagramUrl(profile.design.instagram) }
+      : null,
+    profile.design.email ? { label: profile.design.email, href: `mailto:${profile.design.email}` } : null,
+  ].filter((channel): channel is { label: string; href: string } => channel !== null)
   // Two entries per service rather than the first six rows overall: a business
   // that also decorates, photographs and does makeup should not show six drinks
   // and nothing else.
@@ -118,10 +143,21 @@ export function StorefrontSection({
       copy.hero.lede
 
     return (
-      <header id="top" className={`${look.hero} ${top ? '' : 'mt-6'}`}>
+      <header
+        id="top"
+        className={`${look.hero} ${top ? '' : 'mt-6'}`}
+        style={heroHeight ? { minHeight: heroHeight } : undefined}
+      >
         {section.imageUrl ? (
           <>
-            <img src={section.imageUrl} alt="" className={look.heroPhoto} />
+            <Image
+              src={section.imageUrl}
+              alt={heroImageAlt(profile)}
+              fill
+              sizes="100vw"
+              priority={top}
+              className={look.heroPhoto}
+            />
             <div aria-hidden className={look.heroShade} />
           </>
         ) : (
@@ -157,9 +193,12 @@ export function StorefrontSection({
 
           <div className="mt-5 flex items-center gap-3">
             {profile.logoUrl ? (
-              <img
+              <Image
                 src={profile.logoUrl}
-                alt={`${profile.name} logo`}
+                alt={logoImageAlt(profile.name)}
+                width={180}
+                height={48}
+                sizes="180px"
                 className="h-12 w-auto max-w-[180px] object-contain"
               />
             ) : (
@@ -184,7 +223,7 @@ export function StorefrontSection({
 
           <div className="mt-8 flex flex-wrap gap-3">
             <a href="#enquiry" className={look.ctaPrimary}>
-              {copy.hero.quote}
+              {cta}
             </a>
             {tel ? (
               <a href={tel} className={look.ctaGhost}>
@@ -204,7 +243,7 @@ export function StorefrontSection({
   if (section.key === 'about') {
     if (!profile.about) return null
     return (
-      <section aria-labelledby="storefront-about" className={look.section}>
+      <section aria-labelledby="storefront-about" className={sectionClass}>
         <SectionHead
           look={look}
           overline={copy.about.overline}
@@ -223,7 +262,7 @@ export function StorefrontSection({
   if (section.key === 'services') {
     if (profile.services.length === 0) return null
     return (
-      <section id="services" aria-labelledby="storefront-services" className={look.section}>
+      <section id="services" aria-labelledby="storefront-services" className={sectionClass}>
         <SectionHead
           look={look}
           overline={copy.services.overline}
@@ -299,7 +338,7 @@ export function StorefrontSection({
   if (section.key === 'packages') {
     if (profile.packages.length === 0) return null
     return (
-      <section id="menus" aria-labelledby="storefront-packages" className={look.section}>
+      <section id="menus" aria-labelledby="storefront-packages" className={sectionClass}>
         <SectionHead
           look={look}
           overline={copy.packages.overline}
@@ -344,7 +383,7 @@ export function StorefrontSection({
   if (section.key === 'gallery') {
     if (profile.portfolio.length === 0) return null
     return (
-      <section id="work" aria-labelledby="storefront-work" className={look.section}>
+      <section id="work" aria-labelledby="storefront-work" className={sectionClass}>
         <SectionHead
           look={look}
           overline={copy.gallery.overline}
@@ -358,11 +397,16 @@ export function StorefrontSection({
               className={`${look.tile} ${position === 0 ? 'col-span-2 row-span-2' : ''}`}
             >
               {item.photoUrl ? (
-                <img
+                <Image
                   src={item.photoUrl}
-                  alt={item.title}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+                  alt={portfolioImageAlt(item)}
+                  fill
+                  sizes={
+                    position === 0
+                      ? '(max-width: 640px) 100vw, 66vw'
+                      : '(max-width: 640px) 50vw, 33vw'
+                  }
+                  className="object-cover transition duration-500 group-hover:scale-[1.04]"
                 />
               ) : (
                 <Artwork label={item.title} />
@@ -386,7 +430,7 @@ export function StorefrontSection({
       <section
         id="testimonials"
         aria-labelledby="storefront-testimonials"
-        className={look.section}
+        className={sectionClass}
       >
         <SectionHead
           look={look}
@@ -434,7 +478,7 @@ export function StorefrontSection({
   if (section.key === 'team') {
     if (section.config.team.length === 0) return null
     return (
-      <section id="team" aria-labelledby="storefront-team" className={look.section}>
+      <section id="team" aria-labelledby="storefront-team" className={sectionClass}>
         <SectionHead
           look={look}
           overline={copy.team.overline}
@@ -466,7 +510,7 @@ export function StorefrontSection({
   if (section.key === 'faq') {
     if (section.config.faq.length === 0) return null
     return (
-      <section id="faq" aria-labelledby="storefront-faq" className={look.section}>
+      <section id="faq" aria-labelledby="storefront-faq" className={sectionClass}>
         <SectionHead look={look} overline={copy.faq.overline} title={section.heading ?? copy.faq.title} />
         <div className={`mx-auto mt-6 max-w-2xl ${look.divider}`}>
           {section.config.faq.map((item) => (
@@ -488,26 +532,47 @@ export function StorefrontSection({
   }
 
   if (section.key === 'contact') {
-    if (!profile.phone) return null
+    // A channel is enough: an owner who only takes bookings on WhatsApp should
+    // not lose the whole contact band for want of a landline.
+    if (!profile.phone && channels.length === 0) return null
     return (
-      <section id="contact" aria-labelledby="storefront-contact" className={look.section}>
+      <section id="contact" aria-labelledby="storefront-contact" className={sectionClass}>
         <div className={look.band}>
           <p className={look.overline}>{section.heading ?? copy.contact.overline}</p>
           <h2 className={look.bandTitle}>
-            <a href={tel ?? '#enquiry'} className="underline-offset-8 hover:underline">
-              {profile.phone}
-            </a>
+            {profile.phone && tel ? (
+              <a href={tel} className="underline-offset-8 hover:underline">
+                {profile.phone}
+              </a>
+            ) : (
+              profile.name
+            )}
           </h2>
           <p className={look.bandMuted}>
             {[profile.city ? fill(copy.contact.based, { city: profile.city }) : null, copy.contact.replies]
               .filter(Boolean)
               .join(' · ')}
           </p>
+          {channels.length > 0 ? (
+            <div className={`mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-sm ${look.bandMuted}`}>
+              {channels.map((channel) => (
+                <a
+                  key={channel.href}
+                  href={channel.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline-offset-4 hover:underline"
+                >
+                  {channel.label}
+                </a>
+              ))}
+            </div>
+          ) : null}
           <a
             href="#enquiry"
             className="mt-6 inline-flex items-center justify-center rounded-control bg-white px-5 py-3 text-sm font-semibold text-[color:var(--brand-ink)] transition hover:bg-white/90"
           >
-            {copy.hero.quote}
+            {cta}
           </a>
         </div>
       </section>

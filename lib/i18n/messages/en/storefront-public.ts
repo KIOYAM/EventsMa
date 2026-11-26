@@ -11,6 +11,18 @@
  * `overline` strings are the small uppercase label above each section heading.
  */
 export const storefrontPublic = {
+  /** The owner-only draft preview that wraps this page. */
+  preview: {
+    label: 'Preview',
+    note: 'You are editing this draft. Visitors still see the published version until you publish.',
+    sharedLabel: 'Client preview',
+    sharedNote:
+      'A draft shared for review. It is not published or indexed, enquiries are paused, and this link expires.',
+    back: 'Back to editor',
+    published: 'Published page',
+    formOff:
+      'The enquiry form is disabled in preview. Enquiries sent by clients still arrive in your workspace.',
+  },
   hero: {
     call: 'Call {phone}',
     quote: 'Ask for a quote',
@@ -105,5 +117,9 @@ export const storefrontPublic = {
   },
   footer: {
     poweredBy: 'Powered by EventsMa',
+  },
+  channels: {
+    whatsapp: 'WhatsApp',
+    email: 'Email',
   },
 } as const

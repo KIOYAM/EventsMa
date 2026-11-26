@@ -178,4 +178,53 @@ describe('snapshotFingerprint', () => {
     const edited = buildStorefrontSnapshot({ ...draft, primary: '#c56e4e' }, '2026-01-01T00:00:00.000Z')
     expect(snapshotFingerprint(base)).not.toBe(snapshotFingerprint(edited))
   })
+
+  it('changes when a design token changes', () => {
+    const base = buildStorefrontSnapshot(draft, '2026-01-01T00:00:00.000Z')
+    const edited = buildStorefrontSnapshot(
+      { ...draft, design: { spacing: 'airy', announcement: 'December is filling up' } },
+      '2026-01-01T00:00:00.000Z',
+    )
+    expect(snapshotFingerprint(base)).not.toBe(snapshotFingerprint(edited))
+  })
+})
+
+describe('design across schema versions', () => {
+  it('freezes the owner’s fine design choices', () => {
+    const snapshot = buildStorefrontSnapshot(
+      { ...draft, design: { accent: '#AA5511', corners: 'round', instagram: '@tinueventer' } },
+      '2026-01-01T00:00:00.000Z',
+    )
+
+    expect(snapshot.design.accent).toBe('#AA5511')
+    expect(snapshot.design.corners).toBe('round')
+    expect(snapshot.design.instagram).toBe('tinueventer')
+    expect(parseStorefrontSnapshot(JSON.parse(JSON.stringify(snapshot)))?.design).toEqual(
+      snapshot.design,
+    )
+  })
+
+  it('gives a v5 snapshot the shipped look instead of rejecting it', () => {
+    const snapshot = buildStorefrontSnapshot(draft, '2026-01-01T00:00:00.000Z')
+    const legacy: Record<string, unknown> = {
+      ...JSON.parse(JSON.stringify(snapshot)),
+      schemaVersion: 5,
+    }
+    delete legacy.design
+
+    const parsed = parseStorefrontSnapshot(legacy)
+    expect(parsed).not.toBeNull()
+    expect(parsed?.design).toEqual({
+      accent: null,
+      surface: 'theme',
+      corners: 'soft',
+      spacing: 'regular',
+      heroHeight: 'medium',
+      ctaLabel: null,
+      announcement: null,
+      whatsapp: null,
+      instagram: null,
+      email: null,
+    })
+  })
 })

@@ -40,9 +40,12 @@ export async function uploadStorefrontImage(
   return { path, bytes: check.bytes }
 }
 
-/** A private object becomes a short-lived URL, or null when it cannot be signed. */
-export async function signedStorefrontImage(
+/** One minute: long enough for the proxy to fetch, short enough to stay private. */
+const PROXY_SIGNED_URL_TTL_SECONDS = 60
+
+async function signStorefrontObject(
   path: string | null | undefined,
+  ttlSeconds: number,
 ): Promise<string | null> {
   const trimmed = path?.trim()
   const env = imageStorageEnv()
@@ -52,12 +55,29 @@ export async function signedStorefrontImage(
     const client = createClient(env.url, env.key, { auth: { persistSession: false } })
     const { data, error } = await client.storage
       .from(env.bucket)
-      .createSignedUrl(trimmed, SIGNED_URL_TTL_SECONDS)
+      .createSignedUrl(trimmed, ttlSeconds)
     if (error || !data?.signedUrl) return null
     return data.signedUrl
   } catch {
     return null
   }
+}
+
+/** A private object becomes a short-lived URL, or null when it cannot be signed. */
+export async function signedStorefrontImage(
+  path: string | null | undefined,
+): Promise<string | null> {
+  return signStorefrontObject(path, SIGNED_URL_TTL_SECONDS)
+}
+
+/**
+ * The storage hop behind `/api/storefront/image`. The browser only ever sees the
+ * signed proxy URL, so this credential-bearing URL lives for a minute.
+ */
+export async function signedStorefrontImageUrl(
+  path: string | null | undefined,
+): Promise<string | null> {
+  return signStorefrontObject(path, PROXY_SIGNED_URL_TTL_SECONDS)
 }
 
 export async function removeStorefrontImage(path: string | null | undefined): Promise<void> {

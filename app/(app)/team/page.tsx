@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { createTranslator } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/locales'
 import { getLocale, translatorFor } from '@/lib/i18n/server'
-import { appUrl } from '@/lib/app-url'
+import { requestOrigin } from '@/lib/http/request-origin.server'
 import { requireWorkspace } from '@/lib/auth/session'
 import { getDb } from '@/lib/db/client'
 import { withWorkspace } from '@/lib/db/workspace'
@@ -51,6 +51,9 @@ export default async function TeamPage({
   const locale = await getLocale()
   const t = translatorFor(locale)
   const params = await searchParams
+  // Invite links are copied into WhatsApp or email by the owner, so they carry the
+  // origin they are actually using rather than the deployment's configured one.
+  const origin = await requestOrigin()
 
   const demo = ctx.demo
   const members = demo
@@ -217,10 +220,10 @@ export default async function TeamPage({
                     </div>
                     <div className="flex items-center gap-2">
                       <code className="min-w-0 flex-1 truncate rounded bg-canvas px-1.5 py-1 text-[10px] text-ink-muted">
-                        {appUrl()}/invite/{invite.token}
+                        {origin}/invite/{invite.token}
                       </code>
                       <CopyButton
-                        value={`${appUrl()}/invite/${invite.token}`}
+                        value={`${origin}/invite/${invite.token}`}
                         label={t('team.copy')}
                         copiedLabel={t('team.copied')}
                       />

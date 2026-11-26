@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { withSentryConfig } from '@sentry/nextjs/config'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -49,4 +50,10 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+// Source maps upload only when SENTRY_ORG, SENTRY_PROJECT and SENTRY_AUTH_TOKEN
+// are present. Error reporting itself needs only the DSN.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: true,
+})

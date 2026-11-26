@@ -49,13 +49,13 @@
 | 4 | Public page published/unpublished switch | IMPLEMENTED AND VERIFIED |
 | 5 | Shareable public URL (slug) + copy/WhatsApp share | IMPLEMENTED AND VERIFIED |
 | 6 | Public enquiry persistence, idempotent, server-priced, rate-limited, notifies owner | IMPLEMENTED AND VERIFIED (for catalogue share links) |
-| 7 | Storefront-originated enquiry | PARTIALLY IMPLEMENTED (form exists on the public page; no `source`/version attribution) |
+| 7 | Storefront-originated enquiry | IMPLEMENTED (enquiries carry source, landing section, referrer host and UTM; gap register §11) |
 | 8 | Draft vs published versioning, immutable snapshots, rollback | IMPLEMENTED AND VERIFIED |
 | 9 | Multi-page storefront (pages, navigation, dynamic service detail) | NOT IMPLEMENTED |
 | 10 | Service-aware public content (capability-driven fields/CTAs per vertical) | PARTIALLY IMPLEMENTED (catalogue section is vertical-aware; no service pages) |
 | 11 | Custom domains | NOT IMPLEMENTED |
 | 12 | SEO (metadata, sitemap, canonical, OG) | NOT IMPLEMENTED |
-| 13 | Storefront analytics funnel | NOT IMPLEMENTED |
+| 13 | Storefront analytics funnel | PARTIAL (7-day views and enquiries per section; no step funnel or third-party tag) |
 | 14 | Marketplace discovery | NOT IMPLEMENTED |
 | 15 | Booking with availability | BLOCKED (no availability model; instant booking must not ship) |
 

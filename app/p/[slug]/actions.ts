@@ -5,15 +5,14 @@ import { redirect } from 'next/navigation'
 import { and, eq } from 'drizzle-orm'
 import { getSystemDb, isDatabaseConfigured } from '@/lib/db/client'
 import { clients, enquiries, notifications, organisations } from '@/lib/db/schema'
+import { parseAttribution } from '@/lib/domain/storefront-attribution'
 import { HONEYPOT_FIELD, consumeRateLimit, honeypotTripped } from '@/lib/security/rate-limit'
 
 function normalisePhone(value: string): string {
   return value.replace(/\D/g, '').slice(-10)
 }
 
-/**
- * Public, unauthenticated enquiry intake.
- *
+/** Public, unauthenticated enquiry intake.
  * The organisation is resolved from the slug on the server — never from the form.
  * Rows are written with that org_id only. No pricing or customer data is returned.
  */
@@ -28,6 +27,14 @@ export async function submitEnquiry(formData: FormData): Promise<void> {
   const eventDate = String(formData.get('eventDate') ?? '').slice(0, 10)
   const message = String(formData.get('message') ?? '').trim().slice(0, 1000)
   const eventType = String(formData.get('eventType') ?? '').trim().slice(0, 60)
+
+  // Hidden fields are as untrusted as the visible ones: sanitise before storing
+  // and keep a section id, a host and three short tokens — never a full URL.
+  const attribution = parseAttribution({
+    section: formData.get('landingSection'),
+    referrer: formData.get('landingReferrer'),
+    query: formData.get('landingQuery'),
+  })
 
   // Honeypot: answer exactly like success so a bot learns nothing, and write nothing.
   if (honeypotTripped(formData.get(HONEYPOT_FIELD))) {
@@ -84,7 +91,7 @@ export async function submitEnquiry(formData: FormData): Promise<void> {
         name,
         phone,
         phoneNormalized,
-        source: 'public page',
+        source: 'storefront',
       })
       .returning({ id: clients.id })
     clientId = created?.id
@@ -100,7 +107,12 @@ export async function submitEnquiry(formData: FormData): Promise<void> {
       eventType: eventType || null,
       message: message || null,
       status: 'new',
-      source: 'public page',
+      source: 'storefront',
+      landingSection: attribution.landingSection || null,
+      referrerHost: attribution.referrerHost || null,
+      utmSource: attribution.utmSource || null,
+      utmMedium: attribution.utmMedium || null,
+      utmCampaign: attribution.utmCampaign || null,
       nextFollowUpAt: new Date(Date.now() + 86_400_000),
     })
     .returning({ id: enquiries.id })

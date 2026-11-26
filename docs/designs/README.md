@@ -31,6 +31,7 @@ transport and a deposit, reused by unit, integration and E2E tests.
 |---|---|---|
 | [`2026-11-16-storefront-builder.md`](2026-11-16-storefront-builder.md) | Section engine (order, visibility, headings), three designs as one markup tree, tenant brand colour injection, motion budget, verification | Shipped |
 | [`2026-11-16-storefront-customise.md`](2026-11-16-storefront-customise.md) | The brand studio: identity, logo, colour, wordmark type, section builder and the client share strip; storage decisions and what the prototype offered that the product cannot | Shipped |
+| [`2026-11-19-storefront-config-gap-analysis.md`](2026-11-19-storefront-config-gap-analysis.md) | Live test of the storefront config surface, capability comparison against Wix/Shopify, engine gaps ranked P0–P2 (draft preview, custom domain, SEO, media, section instances, tokens, version pruning) and a proposed sequence | Audit complete; implementation not started |
 | [`2026-11-17-production-storefront.md`](2026-11-17-production-storefront.md) | Phase 0 audit of the real repository: 61 tables / 118 policies, existing enquiry and quote pipeline, capability status table, draft-vs-published snapshot architecture, migration `0012`, phased plan and blockers | Audit complete; **Phase 1 shipped** (migration `0012`, publish/rollback, isolation test) — §10; **Phase 2 shipped** (sections about/packages/team/FAQ/contact, migration `0013`, snapshot v2, honest publish state) — §11; **Phase 3 shipped** (service entitlement vs storefront visibility, migration `0014`, snapshot v3) — §12 |
 
 ## Template
